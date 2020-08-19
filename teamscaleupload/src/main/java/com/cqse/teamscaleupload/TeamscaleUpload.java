@@ -8,6 +8,8 @@ import okhttp3.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,6 +24,8 @@ public class TeamscaleUpload {
         public final String commit;
         public final String timestamp;
         public final List<String> files;
+        public final String inputFile;
+        public final String url;
 
         private Input(Namespace namespace) {
             this.project = namespace.getString("project");
@@ -32,11 +36,18 @@ public class TeamscaleUpload {
             this.commit = namespace.getString("commit");
             this.timestamp = namespace.getString("branch_and_timestamp");
             this.files = namespace.getList("files");
+            this.inputFile = namespace.getString("input");
+            this.url = namespace.getString("domain");
         }
 
         public void validate(ArgumentParser parser) throws ArgumentParserException {
             if (commit != null && timestamp != null) {
                 throw new ArgumentParserException("You may provide either a commit or a timestamp, not both", parser);
+            }
+
+            if (files== null && inputFile == null) {
+                throw new ArgumentParserException("You must either specify the paths of the coverage files as plain " +
+                        "arguments or provide them in an input file, see help for more information", parser);
             }
         }
     }
@@ -74,12 +85,14 @@ public class TeamscaleUpload {
                         " The timestamp must be milliseconds since 00:00:00 UTC Thursday, 1 January 1970." +
                         "\nFormat: BRANCH:TIMESTAMP" +
                         "\nExample: master:1597845930000");
-
-        parser.addArgument("files")
-                .metavar("FILES")
-                .type(String.class)
-                .nargs("+")
-                .help("path(s) or pattern(s) of the report files to upload");
+        parser.addArgument("-d", "--domain").type(String.class).metavar("DOMAIN").required(true)
+                .help("The url of the teamscale instance, e.g. demo.teamscale.com");
+        parser.addArgument("-i", "--input").type(String.class).metavar("INPUT").required(false)
+                .help("A file which contains the coverage file paths or patterns to be added. The entries are separated " +
+                        "by line breaks. If files are specified as plain arguments, they are added to the files which " +
+                        "are given in this file.");
+        parser.addArgument("files").metavar("FILES").type(String.class).nargs("*").
+                help("Path(s) or pattern(s) of the report files to upload. Alternatively, you may provide input files via -i or --input");
 
         try {
             Namespace namespace = parser.parseArgs(args);
@@ -99,8 +112,18 @@ public class TeamscaleUpload {
 
         FilePatternResolver resolver = new FilePatternResolver();
 
+        List<String> fileNames = new ArrayList<>();
+
+        if (input.files != null) {
+            fileNames.addAll(input.files);
+        }
+
+        if (input.inputFile != null) {
+            fileNames.addAll(readFileNamesFromInputFile(input.inputFile));
+        }
+
         List<File> fileList = new ArrayList<>();
-        for (String file : input.files) {
+        for (String file : fileNames) {
             fileList.addAll(resolver.resolveToMultipleFiles("files", file));
         }
 
@@ -109,11 +132,11 @@ public class TeamscaleUpload {
 
         for (File file : fileList) {
             multipartBodyBuilder.addFormDataPart("report", file.getName(),
-                RequestBody.create(MediaType.get("application/octet-stream"), file));
+                    RequestBody.create(MediaType.get("application/octet-stream"), file));
         }
         RequestBody requestBody = multipartBodyBuilder.build();
 
-        HttpUrl.Builder builder = new HttpUrl.Builder().scheme("https").host("demo.teamscale.com")
+        HttpUrl.Builder builder = new HttpUrl.Builder().scheme("https").host(input.url)
                 .addPathSegments("api/projects").addPathSegment(input.project).addPathSegments("external-analysis/session/auto-create/report")
                 .addQueryParameter("t", "master:HEAD")
                 .addQueryParameter("partition", input.partition)
@@ -138,8 +161,34 @@ public class TeamscaleUpload {
         OkHttpClient client = new OkHttpClient.Builder().build();
 
         Response response = client.newCall(request).execute();
-        if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
+        if (!response.isSuccessful()) {
+            String message;
+            switch(response.code()) {
+                case 401: message = "The provided credentials were invalid. Use the access key for your user " +
+                        "which can be found under '" + input.url + "/user.html#access-key'. " +
+                        "The access key is not the same as the password.";
+                        break;
+                case 403: message = "The authentication was successful, but the user does not have the necessary " +
+                        "permission to upload coverage for this project.";
+                case 404: message = "The project '" + input.project + "' does not exist.";
+                    break;
+                default:
+                    message = "Unexpected code";
+
+            }
+            throw new IOException(message + " " + response);
+        }
 
         System.out.println(response.body().string());
+    }
+
+    private static List<String> readFileNamesFromInputFile(String inputFilePath) {
+        try {
+             return Files.readAllLines(Paths.get(inputFilePath));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return new ArrayList<>();
     }
 }
