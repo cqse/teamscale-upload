@@ -17,6 +17,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 public class TeamscaleUpload {
 
@@ -129,8 +130,41 @@ public class TeamscaleUpload {
         OkHttpClient client = new OkHttpClient.Builder().build();
 
         Response response = client.newCall(request).execute();
-        if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
 
-        System.out.println(response.body().string());
+        handleCommonErrors(response, input);
+
+        if (!response.isSuccessful()) {
+            throw new IOException("Unexpected code " + response);
+        }
+
+        System.out.println("Upload to Teamscale successful");
+    }
+
+    private static void handleCommonErrors(Response response, Input input) {
+        if (response.code() == 401) {
+            fail("You provided incorrect credentials." +
+                            " Either the user '" + input.username + "' does not exist in Teamscale" +
+                            " or the access key you provided is incorrect." +
+                            " Please check both the username and access key in Teamscale under Admin > Users.",
+                    response);
+        }
+    }
+
+    private static void fail(String message, Response response) {
+        System.err.println("Upload to Teamscale failed:\n\n" + message);
+        System.err.println("\nTeamscale's response:\n" + response.toString() + "\n" + readBodySafe(response));
+        System.exit(1);
+    }
+
+    private static String readBodySafe(Response response) {
+        try {
+            ResponseBody body = response.body();
+            if (body == null) {
+                return "<no response body>";
+            }
+            return body.string();
+        } catch (IOException e) {
+            return "Failed to read response body: " + e.getMessage();
+        }
     }
 }
