@@ -4,7 +4,6 @@ import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
-import okhttp3.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,6 +11,16 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+
+import okhttp3.Credentials;
+import okhttp3.HttpUrl;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 public class TeamscaleUpload {
 
@@ -161,13 +170,28 @@ public class TeamscaleUpload {
         OkHttpClient client = new OkHttpClient.Builder().build();
 
         Response response = client.newCall(request).execute();
+
+        handleCommonErrors(response, input);
+
+        System.out.println("Upload to Teamscale successful");
+    }
+
+    private static void handleCommonErrors(Response response, Input input) {
+        if (response.code() == 401) {
+            fail("You provided incorrect credentials." +
+                            " Either the user '" + input.username + "' does not exist in Teamscale" +
+                            " or the access key you provided is incorrect." +
+                            " Please check both the username and access key in Teamscale under Admin > Users.",
+                    response);
+        }
+
         if (!response.isSuccessful()) {
             String message;
             switch(response.code()) {
                 case 401: message = "The provided credentials were invalid. Use the access key for your user " +
                         "which can be found under '" + input.url + "/user.html#access-key'. " +
                         "The access key is not the same as the password.";
-                        break;
+                    break;
                 case 403: message = "The authentication was successful, but the user does not have the necessary " +
                         "permission to upload coverage for this project.";
                 case 404: message = "The project '" + input.project + "' does not exist.";
@@ -178,8 +202,24 @@ public class TeamscaleUpload {
             }
             throw new IOException(message + " " + response);
         }
+    }
 
-        System.out.println(response.body().string());
+    private static void fail(String message, Response response) {
+        System.err.println("Upload to Teamscale failed:\n\n" + message);
+        System.err.println("\nTeamscale's response:\n" + response.toString() + "\n" + readBodySafe(response));
+        System.exit(1);
+    }
+
+    private static String readBodySafe(Response response) {
+        try {
+            ResponseBody body = response.body();
+            if (body == null) {
+                return "<no response body>";
+            }
+            return body.string();
+        } catch (IOException e) {
+            return "Failed to read response body: " + e.getMessage();
+        }
     }
 
     private static List<String> readFileNamesFromInputFile(String inputFilePath) {
