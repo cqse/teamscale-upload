@@ -4,19 +4,12 @@ import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
+import okhttp3.*;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import okhttp3.Credentials;
-import okhttp3.HttpUrl;
-import okhttp3.MediaType;
-import okhttp3.MultipartBody;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TeamscaleUpload {
 
@@ -28,6 +21,7 @@ public class TeamscaleUpload {
         public final String format;
         public final String commit;
         public final String timestamp;
+        public final List<String> files;
 
         private Input(Namespace namespace) {
             this.project = namespace.getString("project");
@@ -37,6 +31,7 @@ public class TeamscaleUpload {
             this.format = namespace.getString("format").toUpperCase();
             this.commit = namespace.getString("commit");
             this.timestamp = namespace.getString("branch_and_timestamp");
+            this.files = namespace.getList("files");
         }
 
         public void validate(ArgumentParser parser) throws ArgumentParserException {
@@ -80,6 +75,12 @@ public class TeamscaleUpload {
                         "\nFormat: BRANCH:TIMESTAMP" +
                         "\nExample: master:1597845930000");
 
+        parser.addArgument("files")
+                .metavar("FILES")
+                .type(String.class)
+                .nargs("+")
+                .help("path(s) or pattern(s) of the report files to upload");
+
         try {
             Namespace namespace = parser.parseArgs(args);
             Input input = new Input(namespace);
@@ -93,16 +94,24 @@ public class TeamscaleUpload {
 
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         Input input = parseArguments(args);
 
-        Path coverageFile = Paths.get("/home/k/proj/teamscale-upload/teamscaleupload/test.simple");
+        FilePatternResolver resolver = new FilePatternResolver();
 
-        RequestBody requestBody = new MultipartBody.Builder()
-                .setType(MultipartBody.FORM)
-                .addFormDataPart("report", coverageFile.getFileName().toString(),
-                        RequestBody.create(MediaType.get("application/octet-stream"), coverageFile.toFile()))
-                .build();
+        List<File> fileList = new ArrayList<>();
+        for (String file : input.files) {
+            fileList.addAll(resolver.resolveToMultipleFiles("files", file));
+        }
+
+        MultipartBody.Builder multipartBodyBuilder = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM);
+
+        for (File file : fileList) {
+            multipartBodyBuilder.addFormDataPart("report", file.getName(),
+                RequestBody.create(MediaType.get("application/octet-stream"), file));
+        }
+        RequestBody requestBody = multipartBodyBuilder.build();
 
         HttpUrl.Builder builder = new HttpUrl.Builder().scheme("https").host("demo.teamscale.com")
                 .addPathSegments("api/projects").addPathSegment(input.project).addPathSegments("external-analysis/session/auto-create/report")
