@@ -30,6 +30,7 @@ public class TeamscaleUpload {
         public final String format;
         public final String commit;
         public final String timestamp;
+        public final HttpUrl url;
         public final List<String> files;
 
         private Input(Namespace namespace) {
@@ -41,6 +42,7 @@ public class TeamscaleUpload {
             this.commit = namespace.getString("commit");
             this.timestamp = namespace.getString("branch_and_timestamp");
             this.files = namespace.getList("files");
+            this.url = HttpUrl.parse(namespace.getString("server"));
         }
 
         public void validate(ArgumentParser parser) throws ArgumentParserException {
@@ -55,6 +57,8 @@ public class TeamscaleUpload {
                 .defaultHelp(true)
                 .description("Upload coverage, findings, ... to Teamscale.");
 
+        parser.addArgument("-s", "--server").type(String.class).metavar("URL").required(true)
+                .help("The url under which the Teamscale server can be reached.");
         parser.addArgument("-p", "--project").type(String.class).metavar("PROJECT").required(true)
                 .help("The project ID or alias (NOT the project name!) to which to upload the data.");
         parser.addArgument("-u", "--user").type(String.class).metavar("USER").required(true)
@@ -122,7 +126,7 @@ public class TeamscaleUpload {
         }
         RequestBody requestBody = multipartBodyBuilder.build();
 
-        HttpUrl.Builder builder = new HttpUrl.Builder().scheme("https").host("demo.teamscale.com")
+        HttpUrl.Builder builder = input.url.newBuilder()
                 .addPathSegments("api/projects").addPathSegment(input.project).addPathSegments("external-analysis/session/auto-create/report")
                 .addQueryParameter("t", "master:HEAD")
                 .addQueryParameter("partition", input.partition)
