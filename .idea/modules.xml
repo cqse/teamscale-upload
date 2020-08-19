@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/TeamscaleUpload.iml" filepath="$PROJECT_DIR$/.idea/TeamscaleUpload.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/teamscale-upload.iml" filepath="$PROJECT_DIR$/.idea/teamscale-upload.iml" />
     </modules>
   </component>
 </project>
