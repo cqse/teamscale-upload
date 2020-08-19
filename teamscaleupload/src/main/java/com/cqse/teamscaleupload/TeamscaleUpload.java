@@ -12,5 +12,8 @@ public class TeamscaleUpload {
         String reportContent = new String(Files.readAllBytes(coverageFile));
         String project = "cgeo";
         System.out.println("cov:\n" + reportContent);
+
+        String userName = "msailer";
+        String accessKey = "7mmMTVbuQIWkwZlF0mHHoZmG9AR5RwOW";
     }
 }
