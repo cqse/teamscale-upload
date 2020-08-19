@@ -155,6 +155,7 @@ public class TeamscaleUpload {
         }
 
         System.out.println("Upload to Teamscale successful");
+        System.exit(0);
     }
 
     private static void handleCommonErrors(Response response, Input input) {
