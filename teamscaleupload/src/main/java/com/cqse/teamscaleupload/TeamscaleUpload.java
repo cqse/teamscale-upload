@@ -25,12 +25,24 @@ public class TeamscaleUpload {
         public final String username;
         public final String accessKey;
         public final String partition;
+        public final String format;
+        public final String commit;
+        public final String timestamp;
 
         private Input(Namespace namespace) {
             this.project = namespace.getString("project");
             this.username = namespace.getString("user");
             this.accessKey = namespace.getString("accesskey");
             this.partition = namespace.getString("partition");
+            this.format = namespace.getString("format").toUpperCase();
+            this.commit = namespace.getString("commit");
+            this.timestamp = namespace.getString("branch_and_timestamp");
+        }
+
+        public void validate(ArgumentParser parser) throws ArgumentParserException {
+            if (commit != null && timestamp != null) {
+                throw new ArgumentParserException("You may provide either a commit or a timestamp, not both", parser);
+            }
         }
     }
 
@@ -51,25 +63,40 @@ public class TeamscaleUpload {
                         " previously inserted there, so use different partitions if you'd instead" +
                         " like to merge data from different sources (e.g. one for Findbugs findings" +
                         " and one for JaCoCo coverage).");
+        parser.addArgument("-f", "--format").type(String.class).metavar("FORMAT").required(true)
+                .help("The file format of the uploaded report files." +
+                        " See https://docs.teamscale.com/reference/upload-formats-and-samples/#supported-formats-for-upload" +
+                        " for a full list of supported file formats.");
+        parser.addArgument("-c", "--commit").type(String.class).metavar("REVISION").required(false)
+                .help("The version control commit for which you obtained the report files." +
+                        " E.g. if you obtained a test coverage report in your CI pipeline, then this" +
+                        " is the commit the CI pipeline built before running the tests." +
+                        " Can be either a Git SHA1, a SVN revision number or an Team Foundation changeset ID.");
+        parser.addArgument("-b", "--branch-and-timestamp").type(String.class).metavar("BRANCH_AND_TIMESTAMP").required(false)
+                .help("The branch and Unix Epoch timestamp for which you obtained the report files." +
+                        " E.g. if you obtained a test coverage report in your CI pipeline, then this" +
+                        " is the branch and the commit timestamp of the commit that the CI pipeline built before running the tests." +
+                        " The timestamp must be milliseconds since 00:00:00 UTC Thursday, 1 January 1970." +
+                        "\nFormat: BRANCH:TIMESTAMP" +
+                        "\nExample: master:1597845930000");
 
-        Namespace namespace;
         try {
-            namespace = parser.parseArgs(args);
+            Namespace namespace = parser.parseArgs(args);
+            Input input = new Input(namespace);
+            input.validate(parser);
+            return input;
         } catch (ArgumentParserException e) {
             parser.handleError(e);
             System.exit(1);
             return null;
         }
 
-        return new Input(namespace);
     }
 
     public static void main(String[] args) throws IOException {
         Input input = parseArguments(args);
 
         Path coverageFile = Paths.get("/home/k/proj/teamscale-upload/teamscaleupload/test.simple");
-        String userName = input.username;
-        String accessKey = input.accessKey;
 
         RequestBody requestBody = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
@@ -77,15 +104,24 @@ public class TeamscaleUpload {
                         RequestBody.create(MediaType.get("application/octet-stream"), coverageFile.toFile()))
                 .build();
 
-        HttpUrl url = new HttpUrl.Builder().scheme("https").host("demo.teamscale.com")
+        HttpUrl.Builder builder = new HttpUrl.Builder().scheme("https").host("demo.teamscale.com")
                 .addPathSegments("api/projects").addPathSegment(input.project).addPathSegments("external-analysis/session/auto-create/report")
                 .addQueryParameter("t", "master:HEAD")
                 .addQueryParameter("partition", input.partition)
-                .addQueryParameter("format", "SIMPLE")
-                .build();
+                .addQueryParameter("format", input.format);
+
+        if (input.commit != null) {
+            builder.addQueryParameter("revision", input.commit);
+        }
+
+        if (input.timestamp != null) {
+            builder.addQueryParameter("t", input.timestamp);
+        }
+
+        HttpUrl url = builder.build();
 
         Request request = new Request.Builder()
-                .header("Authorization", Credentials.basic(userName, accessKey))
+                .header("Authorization", Credentials.basic(input.username, input.accessKey))
                 .url(url)
                 .post(requestBody)
                 .build();
