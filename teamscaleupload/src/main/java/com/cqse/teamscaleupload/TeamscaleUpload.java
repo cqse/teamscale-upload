@@ -177,31 +177,30 @@ public class TeamscaleUpload {
     }
 
     private static void handleCommonErrors(Response response, Input input) {
-        if (response.code() == 401) {
-            fail("You provided incorrect credentials." +
-                            " Either the user '" + input.username + "' does not exist in Teamscale" +
-                            " or the access key you provided is incorrect." +
-                            " Please check both the username and access key in Teamscale under Admin > Users.",
-                    response);
+        if (response.isSuccessful()) {
+            return;
         }
 
-        if (!response.isSuccessful()) {
-            String message;
-            switch(response.code()) {
-                case 401: message = "The provided credentials were invalid. Use the access key for your user " +
-                        "which can be found under '" + input.url + "/user.html#access-key'. " +
-                        "The access key is not the same as the password.";
-                    break;
-                case 403: message = "The authentication was successful, but the user does not have the necessary " +
-                        "permission to upload coverage for this project.";
-                case 404: message = "The project '" + input.project + "' does not exist.";
-                    break;
-                default:
-                    message = "Unexpected code";
+        String message;
+        switch(response.code()) {
+            case 401: message = "You provided incorrect credentials." +
+                    " Either the user '" + input.username + "' does not exist in Teamscale" +
+                    " or the access key you provided is incorrect." +
+                    " Please check both the username and access key in Teamscale under Admin > Users." +
+                    " The access key for the user can be found under '" + input.url + "/user.html#access-key' and" +
+                    " is not the same as the password.";
+                break;
+            case 403: message = "The authentication was successful, but the user does not have the necessary " +
+                    "permission to upload coverage for this project.";
+                break;
+            case 404: message = "The project '" + input.project + "' does not exist.";
+                break;
+            default:
+                message = "Unexpected code";
 
-            }
-            throw new IOException(message + " " + response);
         }
+
+        fail(message, response);
     }
 
     private static void fail(String message, Response response) {
