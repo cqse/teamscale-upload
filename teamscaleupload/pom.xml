@@ -82,8 +82,6 @@
           <mainClass>com.cqse.teamscaleupload.TeamscaleUpload</mainClass>
           <imageName>TeamscaleUpload</imageName>
           <buildArgs>
-            -H:IncludeResourceBundles=net.sourceforge.argparse4j.internal.ArgumentParserImpl
-            -H:+AllowIncompleteClasspath
             -H:+AddAllCharsets
             --no-fallback
             --enable-http

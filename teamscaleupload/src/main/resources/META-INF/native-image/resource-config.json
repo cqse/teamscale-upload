@@ -1,10 +1,3 @@
 {
-  "resources":[
-    {"pattern":"\\QMETA-INF/services/jdk.vm.ci.hotspot.HotSpotJVMCIBackendFactory\\E"}, 
-    {"pattern":"\\QMETA-INF/services/jdk.vm.ci.services.JVMCIServiceLocator\\E"}, 
-    {"pattern":"\\Qjavax/crypto/Cipher.class\\E"}, 
-    {"pattern":"\\Qsun/net/idn/uidna.spp\\E"}, 
-    {"pattern":"\\Qsun/text/resources/unorm.icu\\E"}
-  ],
   "bundles":[{"name":"net.sourceforge.argparse4j.internal.ArgumentParserImpl"}]
 }
