@@ -163,7 +163,16 @@ public class TeamscaleUpload {
             fail("You provided incorrect credentials." +
                             " Either the user '" + input.username + "' does not exist in Teamscale" +
                             " or the access key you provided is incorrect." +
-                            " Please check both the username and access key in Teamscale under Admin > Users.",
+                            " Please check both the username and access key in Teamscale under Admin > Users." +
+                            " Please use the user's access key, not their password.",
+                    response);
+        }
+        if (response.code() == 403) {
+            // TODO (FS) urls
+            fail("The user user '" + input.username + "' is not allowed to upload data to the Teamscale project '" + input.project + "'." +
+                            " Please grant this user the 'Perform External Uploads' permission in Teamscale" +
+                            " under Project Configuration > Projects by clicking on the button with the three" +
+                            " persons next to project '" + input.project + "'.",
                     response);
         }
     }
