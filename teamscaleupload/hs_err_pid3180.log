@@ -1,0 +1,226 @@
+#
+# A fatal error has been detected by the Java Runtime Environment:
+#
+#  EXCEPTION_ACCESS_VIOLATION (0xc0000005) at pc=0x00007ffb513120a3, pid=3180, tid=11300
+#
+# JRE version:  (11.0.8+10) (build )
+# Java VM: OpenJDK 64-Bit Server VM (11.0.8+10-jvmci-20.2-b03, mixed mode, sharing, tiered, compressed oops, g1 gc, windows-amd64)
+# Problematic frame:
+# V  [jvm.dll+0x1c20a3]
+#
+# No core dump will be written. Minidumps are not enabled by default on client versions of Windows
+#
+#
+
+---------------  S U M M A R Y ------------
+
+Command Line: -Dclassworlds.conf=C:/apache-maven/apache-maven-3.6.3/bin/m2.conf -Dmaven.home=C:/apache-maven/apache-maven-3.6.3 -Dlibrary.jansi.path=C:/apache-maven/apache-maven-3.6.3/lib/jansi-native -Dmaven.multiModuleProjectDirectory=C:/development/dev-gits/teamscale-upload/teamscaleupload org.codehaus.plexus.classworlds.launcher.Launcher package
+
+Host: Intel(R) Core(TM) i7-10510U CPU @ 1.80GHz, 8 cores, 15G,  Windows 10 , 64 bit Build 18362 (10.0.18362.959)
+Time: Wed Aug 19 13:07:54 2020 Mitteleuropäische Sommerzeit elapsed time: 7 seconds (0d 0h 0m 7s)
+
+---------------  T H R E A D  ---------------
+
+Current thread (0x00000227f5a1e800):  JavaThread "Unknown thread" [_thread_in_vm, id=11300, stack(0x000000eb34300000,0x000000eb34400000)]
+
+Stack: [0x000000eb34300000,0x000000eb34400000],  sp=0x000000eb343fed70,  free space=1019k
+Native frames: (J=compiled Java code, j=interpreted, Vv=VM code, C=native code)
+V  [jvm.dll+0x1c20a3]
+V  [jvm.dll+0x1c02c3]
+V  [jvm.dll+0x343b9b]
+V  [jvm.dll+0x6f86a0]
+V  [jvm.dll+0x3ab70f]
+V  [jvm.dll+0x3adbd1]
+C  [jli.dll+0x520b]
+C  [ucrtbase.dll+0x20e82]
+C  [KERNEL32.DLL+0x17bd4]
+C  [ntdll.dll+0x6ce51]
+
+
+siginfo: EXCEPTION_ACCESS_VIOLATION (0xc0000005), reading address 0x0000000000000000
+
+
+Registers:
+RAX=0x0000885233149050, RBX=0x0000000000000000, RCX=0x0000000000000000, RDX=0x0000000000000000
+RSP=0x000000eb343fed70, RBP=0x0000000000000000, RSI=0x00000227f5a1e800, RDI=0x0000000000000000
+R8 =0x0000000000000000, R9 =0x0000000000000000, R10=0x0000000000000000, R11=0x000000eb343feb30
+R12=0x0000000000000000, R13=0x00007ffb516fe130, R14=0x00000227f3976f48, R15=0x000000eb343ffab8
+RIP=0x00007ffb513120a3, EFLAGS=0x0000000000010256
+
+Top of Stack: (sp=0x000000eb343fed70)
+0x000000eb343fed70:   00000227f397cc10 00007ffb51404408
+0x000000eb343fed80:   000000eb343ffab8 0000000000000400
+0x000000eb343fed90:   0000000000000000 00000227f5a1e800
+0x000000eb343feda0:   000003ea532cf98a 00007ffb516fe130
+0x000000eb343fedb0:   000000eb343fee90 000000eb343ffab8
+0x000000eb343fedc0:   00000227f3976f48 00007ffb516fe130
+0x000000eb343fedd0:   0000000000000000 00007ffba6b90000
+0x000000eb343fede0:   00007ffb5196e4a8 0000000000000000
+0x000000eb343fedf0:   00007ffb5131016a 00007ffbe00b1a9c
+0x000000eb343fee00:   000000eb343fee90 0000000000000001
+0x000000eb343fee10:   0000885233149050 00000227f3976f48
+0x000000eb343fee20:   00007ffb00000000 00007ffb516fe130
+0x000000eb343fee30:   00000227f5a1e800 000000eb343fef50
+0x000000eb343fee40:   0000000000000000 00007ffb513102c3
+0x000000eb343fee50:   00007ffba16b0000 00007ffba6b9cfc0
+0x000000eb343fee60:   000000eb343fef50 00000227f5a1e800 
+
+Instructions: (pc=0x00007ffb513120a3)
+0x00007ffb51311fa3:   f0 ff 15 de 98 5a 00 48 8b cb 41 b1 01 48 2b 8c
+0x00007ffb51311fb3:   24 90 00 00 00 45 33 c0 33 d2 c6 04 31 00 48 8b
+0x00007ffb51311fc3:   ce e8 87 0b 00 00 42 80 3c 33 3b 4a 8d 3c 33 75
+0x00007ffb51311fd3:   1c 0f 1f 40 00 0f 1f 84 00 00 00 00 00 48 ff c3
+0x00007ffb51311fe3:   ff c5 42 80 3c 33 3b 4a 8d 3c 33 74 f0 49 83 3c
+0x00007ffb51311ff3:   24 00 74 18 48 8b 94 24 98 00 00 00 49 8b cf e8
+0x00007ffb51312003:   09 04 ef ff 49 8b cc e8 71 03 ef ff 48 8b 44 24
+0x00007ffb51312013:   20 48 8d 4c 24 30 49 89 47 18 48 8b 44 24 28 49
+0x00007ffb51312023:   89 47 20 4d 89 67 10 e8 b1 2d 0f 00 44 8b ed 48
+0x00007ffb51312033:   89 9c 24 90 00 00 00 48 3b 5c 24 38 0f 8c cd fe
+0x00007ffb51312043:   ff ff 4c 8b 7c 24 40 4c 8b 64 24 48 48 8b 7c 24
+0x00007ffb51312053:   50 48 8b 74 24 58 48 8b 9c 24 80 00 00 00 48 83
+0x00007ffb51312063:   c4 60 41 5e 41 5d 5d c3 cc cc cc cc cc 40 53 55
+0x00007ffb51312073:   56 41 55 48 81 ec b8 00 00 00 48 8b 05 c4 45 82
+0x00007ffb51312083:   00 48 33 c4 48 89 84 24 a0 00 00 00 48 8b e9 48
+0x00007ffb51312093:   c7 c3 ff ff ff ff 0f 1f 80 00 00 00 00 48 ff c3
+0x00007ffb513120a3:   80 3c 0b 00 75 f7 33 f6 c6 44 24 30 01 40 38 35
+0x00007ffb513120b3:   10 47 85 00 74 17 40 38 35 60 ae 84 00 75 0e 33
+0x00007ffb513120c3:   d2 48 8d 0d 05 c2 65 00 e8 80 c0 19 00 45 33 ed
+0x00007ffb513120d3:   85 db 0f 8e 11 02 00 00 48 89 bc 24 e8 00 00 00
+0x00007ffb513120e3:   48 8b fd 4c 89 a4 24 f0 00 00 00 48 63 c3 33 db
+0x00007ffb513120f3:   4c 89 b4 24 f8 00 00 00 4c 89 bc 24 b0 00 00 00
+0x00007ffb51312103:   48 89 44 24 68 48 89 74 24 40 0f 1f 00 0f b6 07
+0x00007ffb51312113:   84 c0 74 12 3c 3b 74 0e 0f b6 44 2b 01 48 ff c3
+0x00007ffb51312123:   ff c6 84 c0 75 ee 48 8d 54 24 38 48 c7 44 24 38
+0x00007ffb51312133:   00 00 00 00 48 8d 4c 24 60 e8 1f 2c 0f 00 48 8b
+0x00007ffb51312143:   44 24 38 33 d2 4c 8b b0 70 02 00 00 49 8b 46 18
+0x00007ffb51312153:   4d 8b 66 10 48 89 44 24 50 49 8b 46 20 48 89 44
+0x00007ffb51312163:   24 58 49 8b 46 28 48 89 44 24 48 8b c6 41 2b c5
+0x00007ffb51312173:   48 63 f8 48 8d 4f 01 e8 21 be 49 00 49 63 d5 4c
+0x00007ffb51312183:   8b c7 48 03 d5 48 8b c8 4c 8b f8 ff 15 f4 96 5a
+0x00007ffb51312193:   00 48 8b cb 48 2b 4c 24 40 80 7c 24 30 00 42 c6 
+
+
+
+---------------  P R O C E S S  ---------------
+
+Threads class SMR info:
+_java_thread_list=0x00000227f3977260, length=0, elements={
+}
+
+Java Threads: ( => current thread )
+
+Other Threads:
+
+[error occurred during error reporting (printing all threads), id 0xc0000005, EXCEPTION_ACCESS_VIOLATION (0xc0000005) at pc=0x00007ffb5184d70d]
+
+VM state:not at safepoint (not fully initialized)
+
+VM Mutex/Monitor currently owned by a thread: None
+
+
+[error occurred during error reporting (printing compressed oops mode), id 0xc0000005, EXCEPTION_ACCESS_VIOLATION (0xc0000005) at pc=0x00007ffb51866187]
+
+Deoptimization events (0 events):
+No events
+
+Classes redefined (0 events):
+No events
+
+Internal exceptions (0 events):
+No events
+
+Events (1 events):
+Event: 7.840 Loaded shared library C:\graalvm\graalvm-ce-java11-20.2.0\bin\zip.dll
+
+
+Dynamic libraries:
+0x00007ff727090000 - 0x00007ff72709d000 	C:\graalvm\graalvm-ce-java11-20.2.0\bin\java.exe
+0x00007ffbe2600000 - 0x00007ffbe27f0000 	C:\WINDOWS\SYSTEM32\ntdll.dll
+0x00007ffbe06b0000 - 0x00007ffbe0762000 	C:\WINDOWS\System32\KERNEL32.DLL
+0x00007ffbe00a0000 - 0x00007ffbe0344000 	C:\WINDOWS\System32\KERNELBASE.dll
+0x00007ffbdfdb0000 - 0x00007ffbdfeaa000 	C:\WINDOWS\System32\ucrtbase.dll
+0x00007ffbbe4e0000 - 0x00007ffbbe4f5000 	C:\graalvm\graalvm-ce-java11-20.2.0\bin\VCRUNTIME140.dll
+0x00007ffba6bc0000 - 0x00007ffba6bd7000 	C:\graalvm\graalvm-ce-java11-20.2.0\bin\jli.dll
+0x00007ffbe1580000 - 0x00007ffbe1715000 	C:\WINDOWS\System32\USER32.dll
+0x00007ffbe0600000 - 0x00007ffbe0621000 	C:\WINDOWS\System32\win32u.dll
+0x00007ffbe1720000 - 0x00007ffbe1746000 	C:\WINDOWS\System32\GDI32.dll
+0x00007ffbca0b0000 - 0x00007ffbca334000 	C:\WINDOWS\WinSxS\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.18362.1016_none_9e7a36bbe461dae4\COMCTL32.dll
+0x00007ffbe0350000 - 0x00007ffbe04e6000 	C:\WINDOWS\System32\gdi32full.dll
+0x00007ffbe0d40000 - 0x00007ffbe0dde000 	C:\WINDOWS\System32\msvcrt.dll
+0x00007ffbdfd10000 - 0x00007ffbdfdae000 	C:\WINDOWS\System32\msvcp_win.dll
+0x00007ffbe1140000 - 0x00007ffbe1475000 	C:\WINDOWS\System32\combase.dll
+0x00007ffbe2340000 - 0x00007ffbe2460000 	C:\WINDOWS\System32\RPCRT4.dll
+0x00007ffbe0630000 - 0x00007ffbe06b0000 	C:\WINDOWS\System32\bcryptPrimitives.dll
+0x00007ffbe1550000 - 0x00007ffbe157e000 	C:\WINDOWS\System32\IMM32.DLL
+0x00007ffba0740000 - 0x00007ffba07db000 	C:\graalvm\graalvm-ce-java11-20.2.0\bin\msvcp140.dll
+0x00007ffb51150000 - 0x00007ffb51c37000 	C:\graalvm\graalvm-ce-java11-20.2.0\bin\server\jvm.dll
+0x00007ffbe18a0000 - 0x00007ffbe1943000 	C:\WINDOWS\System32\ADVAPI32.dll
+0x00007ffbe22a0000 - 0x00007ffbe2337000 	C:\WINDOWS\System32\sechost.dll
+0x00007ffbe1890000 - 0x00007ffbe1898000 	C:\WINDOWS\System32\PSAPI.DLL
+0x00007ffbd9e40000 - 0x00007ffbd9e64000 	C:\WINDOWS\SYSTEM32\WINMM.dll
+0x00007ffbacca0000 - 0x00007ffbacca9000 	C:\WINDOWS\SYSTEM32\WSOCK32.dll
+0x00007ffbd4620000 - 0x00007ffbd462a000 	C:\WINDOWS\SYSTEM32\VERSION.dll
+0x00007ffbe10d0000 - 0x00007ffbe113f000 	C:\WINDOWS\System32\WS2_32.dll
+0x00007ffbd9e10000 - 0x00007ffbd9e3d000 	C:\WINDOWS\SYSTEM32\WINMMBASE.dll
+0x00007ffbdfeb0000 - 0x00007ffbdfefa000 	C:\WINDOWS\System32\cfgmgr32.dll
+0x00007ffbdf4c0000 - 0x00007ffbdf4d1000 	C:\WINDOWS\System32\kernel.appcore.dll
+0x00007ffbbf090000 - 0x00007ffbbf0a0000 	C:\graalvm\graalvm-ce-java11-20.2.0\bin\verify.dll
+0x00007ffbda550000 - 0x00007ffbda744000 	C:\WINDOWS\SYSTEM32\DBGHELP.DLL
+0x00007ffbb98a0000 - 0x00007ffbb98ca000 	C:\WINDOWS\SYSTEM32\dbgcore.DLL
+0x00007ffba6b90000 - 0x00007ffba6bb8000 	C:\graalvm\graalvm-ce-java11-20.2.0\bin\java.dll
+0x00007ffbbe6e0000 - 0x00007ffbbe6ea000 	C:\graalvm\graalvm-ce-java11-20.2.0\bin\jimage.dll
+0x00007ffba16b0000 - 0x00007ffba16c7000 	C:\graalvm\graalvm-ce-java11-20.2.0\bin\zip.dll
+
+dbghelp: loaded successfully - version: 4.0.5 - missing functions: none
+symbol engine: initialized successfully - sym options: 0x614 - pdb path: .;C:\graalvm\graalvm-ce-java11-20.2.0\bin;C:\WINDOWS\SYSTEM32;C:\WINDOWS\WinSxS\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.18362.1016_none_9e7a36bbe461dae4;C:\graalvm\graalvm-ce-java11-20.2.0\bin\server
+
+VM Arguments:
+jvm_args: -Dclassworlds.conf=C:/apache-maven/apache-maven-3.6.3/bin/m2.conf -Dmaven.home=C:/apache-maven/apache-maven-3.6.3 -Dlibrary.jansi.path=C:/apache-maven/apache-maven-3.6.3/lib/jansi-native -Dmaven.multiModuleProjectDirectory=C:/development/dev-gits/teamscale-upload/teamscaleupload 
+java_command: org.codehaus.plexus.classworlds.launcher.Launcher package
+java_class_path (initial): C:/apache-maven/apache-maven-3.6.3/boot/plexus-classworlds-2.6.0.jar
+Launcher Type: SUN_STANDARD
+
+[Global flags]
+     uint G1ConcRefinementThreads                  = 8                                         {product} {ergonomic}
+    uintx GCDrainStackTargetSize                   = 64                                        {product} {ergonomic}
+   size_t InitialHeapSize                          = 264875328                                 {product} {ergonomic}
+   size_t MaxHeapSize                              = 4238005248                                {product} {ergonomic}
+    uintx ReservedCodeCacheSize                    = 251658240                              {pd product} {ergonomic}
+     bool SegmentedCodeCache                       = true                                      {product} {ergonomic}
+     bool UseCompressedClassPointers               = true                                 {lp64_product} {ergonomic}
+     bool UseCompressedOops                        = true                                 {lp64_product} {ergonomic}
+     bool UseG1GC                                  = true                                      {product} {ergonomic}
+     bool UseLargePagesIndividualAllocation        = false                                  {pd product} {ergonomic}
+
+Logging:
+Log output configuration:
+ #0: stdout all=warning uptime,level,tags
+ #1: stderr all=off uptime,level,tags
+
+Environment Variables:
+JAVA_HOME=C:/graalvm/graalvm-ce-java11-20.2.0
+PATH=C:\Users\Michael\bin;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\local\bin;C:\Program Files\Git\usr\bin;C:\Program Files\Git\usr\bin;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\bin;C:\Users\Michael\bin;C:\Program Files\Common Files\Oracle\Java\javapath;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0;C:\WINDOWS\System32\OpenSSH;C:\Program Files\Git\cmd;C:\Program Files\TortoiseSVN\bin;C:\Program Files\nodejs;C:\Program Files\MiKTeX 2.9\miktex\bin\x64;C:\Python38-32;C:\graalvm\graalvm-ce-java11-20.2.0\bin;C:\Python38-32\Scripts;C:\graalvm\graalvm-ce-java11-20.2.0\bin;C:\Program Files\Microsoft Windows Performance Toolkit;C:\apache-maven\apache-maven-3.6.3\bin;C:\Users\Michael\AppData\Local\Microsoft\WindowsApps;C:\Users\Michael\AppData\Roaming\npm;C:\Users\Michael\AppData\Local\Programs\Microsoft VS Code\bin;C:\Program Files\Git\usr\bin\vendor_perl;C:\Program Files\Git\usr\bin\core_perl
+USERNAME=Michael
+SHELL=C:\Program Files\Git\usr\bin\bash.exe
+DISPLAY=needs-to-be-defined
+LANG=de_DE.UTF-8
+OS=Windows_NT
+PROCESSOR_IDENTIFIER=Intel64 Family 6 Model 142 Stepping 12, GenuineIntel
+
+
+
+---------------  S Y S T E M  ---------------
+
+OS: Windows 10 , 64 bit Build 18362 (10.0.18362.959)
+OS uptime: 0 days 0:20 hours
+
+CPU:total 8 (initial active 8) 
+
+Memory: 4k page, system-wide physical 16166M (5033M free)
+TotalPageFile size 31526M (AvailPageFile size 17873M)
+current process WorkingSet (physical memory assigned to process): 8M, peak: 8M
+current process commit charge ("private bytes"): 3M, peak: 3M
+
+vm_info: OpenJDK 64-Bit Server VM (11.0.8+10-jvmci-20.2-b03) for windows-amd64 JRE (11.0.8+10-jvmci-20.2-b03), built on Jul 20 2020 17:30:03 by "" with MS VC++ 15.9 (VS2017)
+
+END.
