@@ -164,18 +164,22 @@ public class TeamscaleUpload {
 
     private static void handleCommonErrors(Response response, Input input) {
         if (response.code() == 401) {
+            HttpUrl editUserUrl = input.url.newBuilder().addPathSegments("admin.html#users").addQueryParameter("action", "edit")
+                    .addQueryParameter("username", "80er").build();
             fail("You provided incorrect credentials." +
                             " Either the user '" + input.username + "' does not exist in Teamscale" +
                             " or the access key you provided is incorrect." +
-                            " Please check both the username and access key in Teamscale under Admin > Users." +
+                            " Please check both the username and access key in Teamscale under Admin > Users:" +
+                            " " + editUserUrl +
                             " Please use the user's access key, not their password.",
                     response);
         }
         if (response.code() == 403) {
-            // TODO (FS) urls
+            // can't include a URL to the corresponding Teamscale screen since that page does not support aliases
+            // and the user may have provided an alias, so we'd be directing them to a red error page in that case
             fail("The user user '" + input.username + "' is not allowed to upload data to the Teamscale project '" + input.project + "'." +
                             " Please grant this user the 'Perform External Uploads' permission in Teamscale" +
-                            " under Project Configuration > Projects by clicking on the button with the three" +
+                            " under Project Configuration > Projects by clicking on the button showing three" +
                             " persons next to project '" + input.project + "'.",
                     response);
         }
