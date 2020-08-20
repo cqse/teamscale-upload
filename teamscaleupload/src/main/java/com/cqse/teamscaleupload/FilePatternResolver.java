@@ -192,7 +192,7 @@ public class FilePatternResolver {
                         "The pattern " + this.suffixPattern + " in " + this.basePath
                                 .toString() + " for option " + optionName + " did not match any file!");
             }
-            System.out.println("Resolved " + pattern + " to " + this.matchingPaths.size() + "files");
+            System.out.println("Resolved " + pattern + " to " + this.matchingPaths.size() + " files");
             return this.matchingPaths;
         }
     }
