@@ -185,7 +185,7 @@ public class TeamscaleUpload {
     private static void handleCommonErrors(Response response, Input input) {
         if (response.code() == 401) {
             HttpUrl editUserUrl = input.url.newBuilder().addPathSegments("admin.html#users").addQueryParameter("action", "edit")
-                    .addQueryParameter("username", "80er").build();
+                    .addQueryParameter("username", input.username).build();
             fail("You provided incorrect credentials." +
                             " Either the user '" + input.username + "' does not exist in Teamscale" +
                             " or the access key you provided is incorrect." +
