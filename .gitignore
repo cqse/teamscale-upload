@@ -13,7 +13,7 @@ buildNumber.properties
 # IntelliJ Excludes from https://github.com/github/gitignore/blob/master/Global/JetBrains.gitignore
 
 # User-specific stuff
-.idea/**/workspace.xml
+**/workspace.xml
 .idea/**/tasks.xml
 .idea/**/usage.statistics.xml
 .idea/**/dictionaries
