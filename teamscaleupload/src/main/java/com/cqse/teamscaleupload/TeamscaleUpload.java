@@ -54,7 +54,7 @@ public class TeamscaleUpload {
                 throw new ArgumentParserException("You may provide either a commit or a timestamp, not both", parser);
             }
 
-            if (files== null && inputFile == null) {
+            if (files == null && inputFile == null) {
                 throw new ArgumentParserException("You must either specify the paths of the coverage files as plain " +
                         "arguments or provide them in an input file, see help for more information", parser);
             }
@@ -136,6 +136,11 @@ public class TeamscaleUpload {
             fileList.addAll(resolver.resolveToMultipleFiles("files", file));
         }
 
+        if (fileList.isEmpty()) {
+            System.err.println("Could not find any files to upload. You must provide patterns that match at least one file.");
+            System.exit(1);
+        }
+
         MultipartBody.Builder multipartBodyBuilder = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM);
 
@@ -189,6 +194,7 @@ public class TeamscaleUpload {
                             " Please use the user's access key, not their password.",
                     response);
         }
+
         if (response.code() == 403) {
             // can't include a URL to the corresponding Teamscale screen since that page does not support aliases
             // and the user may have provided an alias, so we'd be directing them to a red error page in that case
@@ -224,7 +230,7 @@ public class TeamscaleUpload {
 
     private static List<String> readFileNamesFromInputFile(String inputFilePath) {
         try {
-             return Files.readAllLines(Paths.get(inputFilePath));
+            return Files.readAllLines(Paths.get(inputFilePath));
         } catch (IOException e) {
             e.printStackTrace();
         }
