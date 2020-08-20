@@ -32,7 +32,7 @@ public class TeamscaleUpload {
         public final String format;
         public final String commit;
         public final String timestamp;
-        public final HttpUrl url;
+        public final String urlString;
         public final List<String> files;
         public final String inputFile;
 
@@ -45,7 +45,7 @@ public class TeamscaleUpload {
             this.commit = namespace.getString("commit");
             this.timestamp = namespace.getString("branch_and_timestamp");
             this.files = namespace.getList("files");
-            this.url = HttpUrl.parse(namespace.getString("server"));
+            this.urlString = namespace.getString("server");
             this.inputFile = namespace.getString("input");
         }
 
@@ -150,7 +150,13 @@ public class TeamscaleUpload {
         }
         RequestBody requestBody = multipartBodyBuilder.build();
 
-        HttpUrl.Builder builder = input.url.newBuilder()
+        HttpUrl serverUrl = HttpUrl.parse(input.urlString);
+        if (serverUrl == null) {
+            System.err.println("The server url '" + input.urlString + "' could not be resolved.");
+            System.exit(1);
+        }
+
+        HttpUrl.Builder builder = serverUrl.newBuilder()
                 .addPathSegments("api/projects").addPathSegment(input.project).addPathSegments("external-analysis/session/auto-create/report")
                 .addQueryParameter("t", "master:HEAD")
                 .addQueryParameter("partition", input.partition)
@@ -176,15 +182,15 @@ public class TeamscaleUpload {
 
         Response response = client.newCall(request).execute();
 
-        handleCommonErrors(response, input);
+        handleCommonErrors(response, input, serverUrl);
 
         System.out.println("Upload to Teamscale successful");
         System.exit(0);
     }
 
-    private static void handleCommonErrors(Response response, Input input) {
+    private static void handleCommonErrors(Response response, Input input, HttpUrl serverUrl) {
         if (response.code() == 401) {
-            HttpUrl editUserUrl = input.url.newBuilder().addPathSegments("admin.html#users").addQueryParameter("action", "edit")
+            HttpUrl editUserUrl = serverUrl.newBuilder().addPathSegments("admin.html#users").addQueryParameter("action", "edit")
                     .addQueryParameter("username", input.username).build();
             fail("You provided incorrect credentials." +
                             " Either the user '" + input.username + "' does not exist in Teamscale" +
