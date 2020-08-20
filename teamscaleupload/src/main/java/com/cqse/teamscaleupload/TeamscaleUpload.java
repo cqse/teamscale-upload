@@ -7,6 +7,8 @@ import net.sourceforge.argparse4j.inf.Namespace;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +34,7 @@ public class TeamscaleUpload {
         public final String timestamp;
         public final HttpUrl url;
         public final List<String> files;
+        public final String inputFile;
 
         private Input(Namespace namespace) {
             this.project = namespace.getString("project");
@@ -43,11 +46,17 @@ public class TeamscaleUpload {
             this.timestamp = namespace.getString("branch_and_timestamp");
             this.files = namespace.getList("files");
             this.url = HttpUrl.parse(namespace.getString("server"));
+            this.inputFile = namespace.getString("input");
         }
 
         public void validate(ArgumentParser parser) throws ArgumentParserException {
             if (commit != null && timestamp != null) {
                 throw new ArgumentParserException("You may provide either a commit or a timestamp, not both", parser);
+            }
+
+            if (files== null && inputFile == null) {
+                throw new ArgumentParserException("You must either specify the paths of the coverage files as plain " +
+                        "arguments or provide them in an input file, see help for more information", parser);
             }
         }
     }
@@ -87,12 +96,12 @@ public class TeamscaleUpload {
                         " The timestamp must be milliseconds since 00:00:00 UTC Thursday, 1 January 1970." +
                         "\nFormat: BRANCH:TIMESTAMP" +
                         "\nExample: master:1597845930000");
-
-        parser.addArgument("files")
-                .metavar("FILES")
-                .type(String.class)
-                .nargs("+")
-                .help("path(s) or pattern(s) of the report files to upload");
+        parser.addArgument("-i", "--input").type(String.class).metavar("INPUT").required(false)
+                .help("A file which contains the coverage file paths or patterns to be added. The entries are separated " +
+                        "by line breaks. If files are specified as plain arguments, they are added to the files which " +
+                        "are given in this file.");
+        parser.addArgument("files").metavar("FILES").type(String.class).nargs("*").
+                help("Path(s) or pattern(s) of the report files to upload. Alternatively, you may provide input files via -i or --input");
 
         try {
             Namespace namespace = parser.parseArgs(args);
@@ -112,8 +121,18 @@ public class TeamscaleUpload {
 
         FilePatternResolver resolver = new FilePatternResolver();
 
+        List<String> fileNames = new ArrayList<>();
+
+        if (input.files != null) {
+            fileNames.addAll(input.files);
+        }
+
+        if (input.inputFile != null) {
+            fileNames.addAll(readFileNamesFromInputFile(input.inputFile));
+        }
+
         List<File> fileList = new ArrayList<>();
-        for (String file : input.files) {
+        for (String file : fileNames) {
             fileList.addAll(resolver.resolveToMultipleFiles("files", file));
         }
 
@@ -154,10 +173,6 @@ public class TeamscaleUpload {
 
         handleCommonErrors(response, input);
 
-        if (!response.isSuccessful()) {
-            throw new IOException("Unexpected code " + response);
-        }
-
         System.out.println("Upload to Teamscale successful");
         System.exit(0);
     }
@@ -183,6 +198,10 @@ public class TeamscaleUpload {
                             " persons next to project '" + input.project + "'.",
                     response);
         }
+
+        if (!response.isSuccessful()) {
+            fail("Unexpected response from Teamscale", response);
+        }
     }
 
     private static void fail(String message, Response response) {
@@ -201,5 +220,15 @@ public class TeamscaleUpload {
         } catch (IOException e) {
             return "Failed to read response body: " + e.getMessage();
         }
+    }
+
+    private static List<String> readFileNamesFromInputFile(String inputFilePath) {
+        try {
+             return Files.readAllLines(Paths.get(inputFilePath));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return new ArrayList<>();
     }
 }
