@@ -191,7 +191,7 @@ public class TeamscaleUpload {
                             " or the access key you provided is incorrect." +
                             " Please check both the username and access key in Teamscale under Admin > Users:" +
                             " " + editUserUrl +
-                            " Please use the user's access key, not their password.",
+                            "\nPlease use the user's access key, not their password.",
                     response);
         }
 
