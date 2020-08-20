@@ -173,7 +173,7 @@ public class FilePatternResolver {
                         "Invalid path given for option " + optionName + ": " + this.pattern + ". The pattern " + this.suffixPattern +
                                 " did not match any files in " + this.basePath.toAbsolutePath());
             } else if (this.matchingPaths.size() > 1) {
-                System.out.println(
+                System.err.println(
                         "Multiple files match the pattern " + this.suffixPattern + " in " + this.basePath
                                 .toString() + " for option " + optionName + "! " +
                                 "The first one is used, but consider to adjust the " +
@@ -188,11 +188,11 @@ public class FilePatternResolver {
         /** Returns all matched paths after the resolution. */
         private List<Path> getAllMatchingPaths() {
             if (this.matchingPaths.isEmpty()) {
-                System.out.println(
+                System.err.println(
                         "The pattern " + this.suffixPattern + " in " + this.basePath
                                 .toString() + " for option " + optionName + " did not match any file!");
             }
-            System.out.println("Resolved " + pattern + " to " + this.matchingPaths.size() + " for option " + optionName);
+            System.out.println("Resolved " + pattern + " to " + this.matchingPaths.size() + "files");
             return this.matchingPaths;
         }
     }
