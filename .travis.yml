@@ -8,7 +8,9 @@ jobs:
       env: JAVA_HOME="$HOME/.sdkman/candidates/java/current"
     - os: windows
       language: shell
-      env: JAVA_HOME="$HOME/.sdkman/candidates/java/current"
+      env: 
+        - JAVA_HOME="$HOME/.sdkman/candidates/java/current"
+        - MAVEN_OPTS="--add-exports=java.base/jdk.internal.module=ALL-UNNAMED"
 
 # install SDKMAN
 before_install:
