@@ -42,8 +42,8 @@ before_script:
 script:
   - $MVN --version
   - $MVN clean package
-  - if [ $TRAVIS_OS_NAME  = windows ]; then $MVN clean package ; fi
-  - if [ $TRAVIS_OS_NAME != windows ]; then ./travis-build-windows.bat ; fi
+  - if [ $TRAVIS_OS_NAME  = windows ]; then ./travis-build-windows.bat ; fi
+  - if [ $TRAVIS_OS_NAME != windows ]; then $MVN clean package ; fi
   - ls -al ./target/
   - echo "--->> Running"
   - ./target/teamscale-upload -h
