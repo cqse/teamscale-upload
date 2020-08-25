@@ -41,8 +41,7 @@ before_script:
   - chmod +x mvnw
 script:
   - $MVN --version
-  - $MVN clean package
-  - if [ $TRAVIS_OS_NAME  = windows ]; then ./travis-build-windows.bat ; fi
+  - if [ $TRAVIS_OS_NAME = windows ]; then ./travis-build-windows.bat ; fi
   - if [ $TRAVIS_OS_NAME != windows ]; then $MVN clean package ; fi
   - ls -al ./target/
   - echo "--->> Running"
