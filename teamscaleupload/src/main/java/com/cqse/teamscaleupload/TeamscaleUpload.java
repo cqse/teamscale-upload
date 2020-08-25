@@ -32,7 +32,7 @@ public class TeamscaleUpload {
         public final String format;
         public final String commit;
         public final String timestamp;
-        public final String urlString;
+        public final HttpUrl url;
         public final List<String> files;
         public final String inputFile;
 
@@ -45,11 +45,15 @@ public class TeamscaleUpload {
             this.commit = namespace.getString("commit");
             this.timestamp = namespace.getString("branch_and_timestamp");
             this.files = namespace.getList("files");
-            this.urlString = namespace.getString("server");
+            this.url = HttpUrl.parse(namespace.getString("server"));
             this.inputFile = namespace.getString("input");
         }
 
         public void validate(ArgumentParser parser) throws ArgumentParserException {
+            if (url == null) {
+                throw new ArgumentParserException("You provided an invalid URL in the --server option", parser);
+            }
+
             if (commit != null && timestamp != null) {
                 throw new ArgumentParserException("You may provide either a commit or a timestamp, not both", parser);
             }
@@ -150,14 +154,9 @@ public class TeamscaleUpload {
         }
         RequestBody requestBody = multipartBodyBuilder.build();
 
-        HttpUrl serverUrl = HttpUrl.parse(input.urlString);
-        if (serverUrl == null) {
-            System.err.println("The server url '" + input.urlString + "' could not be resolved.");
-            System.exit(1);
-        }
-
-        HttpUrl.Builder builder = serverUrl.newBuilder()
-                .addPathSegments("api/projects").addPathSegment(input.project).addPathSegments("external-analysis/session/auto-create/report")
+        HttpUrl.Builder builder = input.url.newBuilder()
+                .addPathSegments("api/projects").addPathSegment(input.project)
+                .addPathSegments("external-analysis/session/auto-create/report")
                 .addQueryParameter("t", "master:HEAD")
                 .addQueryParameter("partition", input.partition)
                 .addQueryParameter("format", input.format);
@@ -182,15 +181,15 @@ public class TeamscaleUpload {
 
         Response response = client.newCall(request).execute();
 
-        handleCommonErrors(response, input, serverUrl);
+        handleCommonErrors(response, input);
 
         System.out.println("Upload to Teamscale successful");
         System.exit(0);
     }
 
-    private static void handleCommonErrors(Response response, Input input, HttpUrl serverUrl) {
+    private static void handleCommonErrors(Response response, Input input) {
         if (response.code() == 401) {
-            HttpUrl editUserUrl = serverUrl.newBuilder().addPathSegments("admin.html#users").addQueryParameter("action", "edit")
+            HttpUrl editUserUrl = input.url.newBuilder().addPathSegments("admin.html#users").addQueryParameter("action", "edit")
                     .addQueryParameter("username", input.username).build();
             fail("You provided incorrect credentials." +
                             " Either the user '" + input.username + "' does not exist in Teamscale" +
@@ -212,7 +211,7 @@ public class TeamscaleUpload {
         }
 
         if (response.code() == 404) {
-            HttpUrl projectPerspectiveUrl = serverUrl.newBuilder().addPathSegments("project.html").build();
+            HttpUrl projectPerspectiveUrl = input.url.newBuilder().addPathSegments("project.html").build();
             fail("The project with ID or alias '" + input.project + "' does not seem to exist in Teamscale." +
                             " Please ensure that you used the project ID or the project alias, NOT the project name." +
                             " You can see the IDs of all projects at " + projectPerspectiveUrl +
