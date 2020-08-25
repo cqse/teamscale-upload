@@ -6,11 +6,12 @@ jobs:
   include:
     - os: linux
       env: JAVA_HOME="$HOME/.sdkman/candidates/java/current"
-    - os: windows
-      language: shell
-      env: JAVA_HOME="$HOME/.sdkman/candidates/java/current"
+  # - os: windows
+    # language: shell
+    # env: JAVA_HOME="$HOME/.sdkman/candidates/java/current"
 
 before_install:
+  # install SDKMAN
   - if [ $TRAVIS_OS_NAME = windows ]; then choco install zip unzip ; fi
   # adding $HOME/.sdkman to cache would create an empty directory, which interferes with the initial installation
   - "[[ -d $HOME/.sdkman/ ]] && [[ -d $HOME/.sdkman/bin/ ]] || rm -rf $HOME/.sdkman/"
@@ -37,9 +38,10 @@ before_script:
 script:
   - java -version
   - ./mvnw --version
-  - ./mvnw -DbuildArgs=${BUILD_ARGS} clean package
-  - if [ $TRAVIS_OS_NAME  = windows ]; then "$JAVA_HOME/bin/jar.exe" -cMvf target/checksum-$TRAVIS_OS_NAME.zip target/picocli-native-image-maven-demo.exe ; fi
-  - if [ $TRAVIS_OS_NAME != windows ]; then zip -v target/picocli-native-image-maven-demo-$TRAVIS_OS_NAME.zip target/picocli-native-image-maven-demo ; fi
+  - ./mvnw clean package
+  - echo "--->> Running"
+  - ./target/teamscale-upload -h
+  - echo "--->> Done"
 
 # Deploy the resulting artifact to GitHub Releases
 #deploy:

@@ -80,7 +80,7 @@
         <version>20.2.0</version>
         <configuration>
           <mainClass>com.cqse.teamscaleupload.TeamscaleUpload</mainClass>
-          <imageName>TeamscaleUpload</imageName>
+          <imageName>teamscale-upload</imageName>
           <buildArgs>
             -H:+AddAllCharsets
             --no-fallback
