@@ -1,4 +1,4 @@
-#language: java
+language: java
 #jdk:
 #  - openjdk11
 
@@ -20,7 +20,7 @@ jobs:
 
 # install SDKMAN
 before_install:
-  - if [ $TRAVIS_OS_NAME = windows ]; then choco install zip unzip ; fi
+  - if [ $TRAVIS_OS_NAME = windows ]; then choco install zip unzip visualstudio2017-workload-vctools -y ; fi
   # adding $HOME/.sdkman to cache would create an empty directory, which interferes with the initial installation
   - "[[ -d $HOME/.sdkman/ ]] && [[ -d $HOME/.sdkman/bin/ ]] || rm -rf $HOME/.sdkman/"
   - curl -sL https://get.sdkman.io | bash
@@ -35,7 +35,6 @@ install:
   - sdk current java
   - sdk current java | grep '20.2.0.r11-grl' || sdk install java 20.2.0.r11-grl
   - $GU install native-image
-  - ls -al "$JAVA_HOME/bin/"
   - $NATIVEIMAGE --version
 
 before_script:
