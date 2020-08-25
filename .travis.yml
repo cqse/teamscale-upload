@@ -20,7 +20,7 @@ jobs:
 
 # install SDKMAN
 before_install:
-  - if [ $TRAVIS_OS_NAME = windows ]; then choco install zip unzip visualstudio2017-workload-vctools -y ; fi
+  - if [ $TRAVIS_OS_NAME = windows ]; then choco install zip unzip -y ; fi
   # adding $HOME/.sdkman to cache would create an empty directory, which interferes with the initial installation
   - "[[ -d $HOME/.sdkman/ ]] && [[ -d $HOME/.sdkman/bin/ ]] || rm -rf $HOME/.sdkman/"
   - curl -sL https://get.sdkman.io | bash
@@ -42,6 +42,8 @@ before_script:
 script:
   - $MVN --version
   - $MVN clean package
+  - if [ $TRAVIS_OS_NAME  = windows ]; then $MVN clean package ; fi
+  - if [ $TRAVIS_OS_NAME != windows ]; then ./travis-build-windows.bat ; fi
   - ls -al ./target/
   - echo "--->> Running"
   - ./target/teamscale-upload -h
