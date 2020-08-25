@@ -211,6 +211,15 @@ public class TeamscaleUpload {
                     response);
         }
 
+        if (response.code() == 404) {
+            HttpUrl projectPerspectiveUrl = serverUrl.newBuilder().addPathSegments("project.html").build();
+            fail("The project with ID or alias '" + input.project + "' does not seem to exist in Teamscale." +
+                            " Please ensure that you used the project ID or the project alias, NOT the project name." +
+                            " You can see the IDs of all projects at " + projectPerspectiveUrl +
+                            "\nPlease also ensure that the Teamscale URL is correct and no proxy is required to access it.",
+                    response);
+        }
+
         if (!response.isSuccessful()) {
             fail("Unexpected response from Teamscale", response);
         }
