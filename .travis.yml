@@ -49,8 +49,11 @@ deploy:
   provider: releases
   api_key:
     secure: On+wFJOvh7Cidb4GaNrEtkC9ZaQCGaItIJROeyDWXnIqdA2MTO7KYLlBlwD3UaZwqSiq29BmCyza9qbWUCXwhxxYBWZsAqjB1sCbydAKpE4EXrRmnlyjnbTTZzOQEuq49vdkYMzghQlXthlEoCHROs25WiboAtA70uusCHsUnQyGkcLAqYq7JYhZd77u5Ef8wyR/IFN6lBKfwIMvoOSeVCUrOhYT+2NBqa23G7vt55oD41O+KFTnSSc1LdXf0geFGC4b3CQXLuWvoRoJ4XJHNj4gfq6ziq5CJh+mInh/VwtZaR2wPZaaEipOdF3mBpPghHYoIiZ24PaZcUONG9qAvJKekgLpiQOYglBjRaApY6SOV/glUEO2RGIyV0ftxY1dt/DRH1xg8eMNmr2H22xRh7X5h1pHP6MvBe5+JnmCdX0/sLMgXet7B/oorsTx6SpHs4A6icuZc054rE9igD2xGWBajONxHRATc4dMooCoVIvwhs6Kymil1r6/vzaaSJ+OhJPezOpVq8TuoxIa+MmB1LNN6o5Oa6IY7wxr9/0RszB4qfpPYWKaNOWL6OZonh6/NO258jCFHumRjG0adeqKMAG8xY47Z83EnQIRjR2u+OMb8+IWQJuakQFABHPern2o1uqhA6pMTHTizRQqrv7xe4hjOxUD5DBYMI2Dj43c2OY=
-  file: teamscale-upload-$TRAVIS_OS_NAME.zip
+  file:
+    - teamscale-upload-*.zip
+  file_glob: true
   on:
+    tags: true
     repo: cqse/teamscale-upload
-  skip_cleanup: 'true'
+  skip_cleanup: true
 
