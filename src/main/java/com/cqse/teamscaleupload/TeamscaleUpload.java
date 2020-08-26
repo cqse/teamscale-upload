@@ -1,6 +1,7 @@
 package com.cqse.teamscaleupload;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -35,6 +36,7 @@ public class TeamscaleUpload {
         public final HttpUrl url;
         public final List<String> files;
         public final String inputFile;
+        public final Boolean validateSsl;
 
         private Input(Namespace namespace) {
             this.project = namespace.getString("project");
@@ -47,6 +49,7 @@ public class TeamscaleUpload {
             this.files = namespace.getList("files");
             this.url = HttpUrl.parse(namespace.getString("server"));
             this.inputFile = namespace.getString("input");
+            this.validateSsl = namespace.getBoolean("validate_ssl");
         }
 
         public void validate(ArgumentParser parser) throws ArgumentParserException {
@@ -104,6 +107,9 @@ public class TeamscaleUpload {
                 .help("A file which contains the coverage file paths or patterns to be added. The entries are separated " +
                         "by line breaks. If files are specified as plain arguments, they are added to the files which " +
                         "are given in this file.");
+        parser.addArgument("--validate-ssl").action(Arguments.storeTrue()).required(false)
+                .help("By default, SSL certificates are accepted without validation, which makes using this tool with self-signed" +
+                        " certificates easier. This flag enables validation.");
         parser.addArgument("files").metavar("FILES").type(String.class).nargs("*").
                 help("Path(s) or pattern(s) of the report files to upload. Alternatively, you may provide input files via -i or --input");
 
@@ -177,7 +183,7 @@ public class TeamscaleUpload {
                 .post(requestBody)
                 .build();
 
-        OkHttpClient client = new OkHttpClient.Builder().build();
+        OkHttpClient client = OkHttpClientUtils.createClient(input.validateSsl);
 
         Response response = client.newCall(request).execute();
 
