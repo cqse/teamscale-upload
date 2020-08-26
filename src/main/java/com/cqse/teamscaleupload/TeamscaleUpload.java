@@ -137,8 +137,8 @@ public class TeamscaleUpload {
                 .help("A file which contains the coverage file paths or patterns to be added. The entries are separated " +
                         "by line breaks. If files are specified as plain arguments, they are added to the files which " +
                         "are given in this file.");
-        parser.addArgument("--detect-commit").type(Arguments.booleanType()).setDefault(false).required(false)
-                .help("If set to true, tries to detect the code commit to which to upload from environment variables or" +
+        parser.addArgument("--detect-commit").action(Arguments.storeTrue()).required(false)
+                .help("Tries to automatically detect the code commit to which to upload from environment variables or" +
                         " a Git or SVN checkout in the current working directory. If guessing fails, the upload will fail." +
                         " This feature supports many common CI tools like Jenkins, GitLab, GitHub Actions, Travis CI etc.");
         parser.addArgument("files").metavar("FILES").type(String.class).nargs("*").
