@@ -16,7 +16,10 @@ public class OkHttpClientUtils {
 
     public static OkHttpClient createClient(boolean validateSsl) {
         OkHttpClient.Builder builder = new OkHttpClient.Builder();
+
         setSensibleTimeouts(builder);
+        builder.followRedirects(false).followSslRedirects(false);
+
         if (!validateSsl) {
             disableSslValidation(builder);
         }

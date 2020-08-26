@@ -194,6 +194,18 @@ public class TeamscaleUpload {
     }
 
     private static void handleCommonErrors(Response response, Input input) {
+        if (response.isRedirect()) {
+            String location = response.header("Location");
+            if (location == null) {
+                location = "<server did not provide a location header>";
+            }
+            fail("You provided an incorrect URL. The server responded with a redirect to " +
+                            "'" + location + "'." +
+                            " This may e.g. happen if you used HTTP instead of HTTPS." +
+                            " Please use the correct URL for Teamscale instead.",
+                    response);
+        }
+
         if (response.code() == 401) {
             HttpUrl editUserUrl = input.url.newBuilder().addPathSegments("admin.html#users").addQueryParameter("action", "edit")
                     .addQueryParameter("username", input.username).build();
