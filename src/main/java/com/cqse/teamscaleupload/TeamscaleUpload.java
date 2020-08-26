@@ -179,12 +179,10 @@ public class TeamscaleUpload {
 
         OkHttpClient client = new OkHttpClient.Builder().build();
 
-        Response response = client.newCall(request).execute();
-
-        handleCommonErrors(response, input);
-
-        System.out.println("Upload to Teamscale successful");
-        System.exit(0);
+        try (Response response = client.newCall(request).execute()) {
+            handleCommonErrors(response, input);
+            System.out.println("Upload to Teamscale successful");
+        }
     }
 
     private static void handleCommonErrors(Response response, Input input) {
