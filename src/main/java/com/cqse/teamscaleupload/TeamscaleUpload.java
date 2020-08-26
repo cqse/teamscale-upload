@@ -123,8 +123,6 @@ public class TeamscaleUpload {
     public static void main(String[] args) throws Exception {
         Input input = parseArguments(args);
 
-        FilePatternResolver resolver = new FilePatternResolver();
-
         List<String> fileNames = new ArrayList<>();
 
         if (input.files != null) {
@@ -135,15 +133,7 @@ public class TeamscaleUpload {
             fileNames.addAll(readFileNamesFromInputFile(input.inputFile));
         }
 
-        List<File> fileList = new ArrayList<>();
-        for (String file : fileNames) {
-            fileList.addAll(resolver.resolveToMultipleFiles("files", file));
-        }
-
-        if (fileList.isEmpty()) {
-            System.err.println("Could not find any files to upload. You must provide patterns that match at least one file.");
-            System.exit(1);
-        }
+        List<File> fileList = buildFileList(fileNames);
 
         MultipartBody.Builder multipartBodyBuilder = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM);
@@ -185,6 +175,29 @@ public class TeamscaleUpload {
 
         System.out.println("Upload to Teamscale successful");
         System.exit(0);
+    }
+
+    private static List<File> buildFileList(List<String> patterns) throws AgentOptionParseException {
+        FilePatternResolver resolver = new FilePatternResolver();
+
+        List<File> fileList = new ArrayList<>();
+        for (String pattern : patterns) {
+            List<File> resolvedFiles = resolver.resolveToMultipleFiles("files", pattern);
+            for (File resolvedFile : resolvedFiles) {
+                if (resolvedFile.exists()) {
+                    fileList.add(resolvedFile);
+                } else {
+                    System.err.println("The file '" + resolvedFile + "' that you specified on the command line explicitly" +
+                            " does not exist. Ignoring this file.");
+                }
+            }
+        }
+
+        if (fileList.isEmpty()) {
+            System.err.println("Could not find any files to upload. You must provide patterns that match at least one file.");
+            System.exit(1);
+        }
+        return fileList;
     }
 
     private static void handleCommonErrors(Response response, Input input) {
