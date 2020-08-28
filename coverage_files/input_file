@@ -1,2 +1,3 @@
+[simple]
 coverage_files\test*.simple
 coverage_files\coverage.simple
