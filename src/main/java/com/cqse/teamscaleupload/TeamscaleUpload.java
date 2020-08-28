@@ -244,8 +244,7 @@ public class TeamscaleUpload {
         }
 
         if (fileList.isEmpty()) {
-            System.err.println("Could not find any files to upload. You must provide patterns that match at least one file.");
-            System.exit(1);
+            fail("Could not find any files to upload. You must provide patterns that match at least one file.");
         }
         return fileList;
     }
