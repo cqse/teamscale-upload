@@ -1,6 +1,11 @@
 package com.cqse.teamscaleupload;
 
+import com.cqse.teamscaleupload.autodetect_revision.EnvironmentVariableChecker;
+import com.cqse.teamscaleupload.autodetect_revision.GitChecker;
+import com.cqse.teamscaleupload.autodetect_revision.SvnChecker;
+
 import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -31,6 +36,7 @@ public class TeamscaleUpload {
         public final String partition;
         public final String format;
         public final String commit;
+        public final boolean autoDetectedCommit;
         public final String timestamp;
         public final HttpUrl url;
         public final List<String> files;
@@ -43,6 +49,7 @@ public class TeamscaleUpload {
             this.partition = namespace.getString("partition");
             this.format = namespace.getString("format").toUpperCase();
             this.commit = namespace.getString("commit");
+            this.autoDetectedCommit = namespace.getBoolean("detect_commit");
             this.timestamp = namespace.getString("branch_and_timestamp");
             this.files = namespace.getList("files");
             this.url = HttpUrl.parse(namespace.getString("server"));
@@ -54,8 +61,10 @@ public class TeamscaleUpload {
                 throw new ArgumentParserException("You provided an invalid URL in the --server option", parser);
             }
 
-            if (commit != null && timestamp != null) {
-                throw new ArgumentParserException("You may provide either a commit or a timestamp, not both", parser);
+            if (hasMoreThanOneCommitOptionSet()) {
+                throw new ArgumentParserException("You used more than one of --detect-commit, --commit and --timestamp." +
+                        " You must choose one of these three options to specify the commit for which you would like to" +
+                        " upload data to Teamscale", parser);
             }
 
             if (files == null && inputFile == null) {
@@ -63,6 +72,30 @@ public class TeamscaleUpload {
                         "arguments or provide them in an input file, see help for more information", parser);
             }
         }
+
+        private boolean hasMoreThanOneCommitOptionSet() {
+            if (commit != null && timestamp != null) {
+                return true;
+            }
+            if (commit != null && autoDetectedCommit) {
+                return true;
+            }
+            return timestamp != null && autoDetectedCommit;
+        }
+    }
+
+    private static String detectCommit() {
+        String commit = EnvironmentVariableChecker.findCommit();
+        if (commit != null) {
+            return commit;
+        }
+
+        commit = GitChecker.findCommit();
+        if (commit != null) {
+            return commit;
+        }
+
+        return SvnChecker.findRevision();
     }
 
     private static Input parseArguments(String[] args) {
@@ -104,6 +137,10 @@ public class TeamscaleUpload {
                 .help("A file which contains the coverage file paths or patterns to be added. The entries are separated " +
                         "by line breaks. If files are specified as plain arguments, they are added to the files which " +
                         "are given in this file.");
+        parser.addArgument("--detect-commit").action(Arguments.storeTrue()).required(false)
+                .help("Tries to automatically detect the code commit to which to upload from environment variables or" +
+                        " a Git or SVN checkout in the current working directory. If guessing fails, the upload will fail." +
+                        " This feature supports many common CI tools like Jenkins, GitLab, GitHub Actions, Travis CI etc.");
         parser.addArgument("files").metavar("FILES").type(String.class).nargs("*").
                 help("Path(s) or pattern(s) of the report files to upload. Alternatively, you may provide input files via -i or --input");
 
@@ -141,8 +178,7 @@ public class TeamscaleUpload {
         }
 
         if (fileList.isEmpty()) {
-            System.err.println("Could not find any files to upload. You must provide patterns that match at least one file.");
-            System.exit(1);
+            fail("Could not find any files to upload. You must provide patterns that match at least one file.");
         }
 
         MultipartBody.Builder multipartBodyBuilder = new MultipartBody.Builder()
@@ -157,16 +193,21 @@ public class TeamscaleUpload {
         HttpUrl.Builder builder = input.url.newBuilder()
                 .addPathSegments("api/projects").addPathSegment(input.project)
                 .addPathSegments("external-analysis/session/auto-create/report")
-                .addQueryParameter("t", "master:HEAD")
                 .addQueryParameter("partition", input.partition)
                 .addQueryParameter("format", input.format);
 
         if (input.commit != null) {
             builder.addQueryParameter("revision", input.commit);
-        }
-
-        if (input.timestamp != null) {
+        } else if (input.timestamp != null) {
             builder.addQueryParameter("t", input.timestamp);
+        } else if (input.autoDetectedCommit) {
+            String commit = detectCommit();
+            if (commit == null) {
+                fail("Failed to automatically detect the commit. Please specify it manually via --commit or --timestamp");
+            }
+            builder.addQueryParameter("revision", commit);
+        } else {
+            builder.addQueryParameter("t", "master:HEAD");
         }
 
         HttpUrl url = builder.build();
@@ -225,8 +266,12 @@ public class TeamscaleUpload {
     }
 
     private static void fail(String message, Response response) {
-        System.err.println("Upload to Teamscale failed:\n\n" + message);
-        System.err.println("\nTeamscale's response:\n" + response.toString() + "\n" + readBodySafe(response));
+        fail("Upload to Teamscale failed:\n\n" + message + "\n\nTeamscale's response:\n" +
+                response.toString() + "\n" + readBodySafe(response));
+    }
+
+    private static void fail(String message) {
+        System.err.println(message);
         System.exit(1);
     }
 
