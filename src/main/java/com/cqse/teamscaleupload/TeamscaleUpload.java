@@ -220,12 +220,15 @@ public class TeamscaleUpload {
 
         OkHttpClient client = new OkHttpClient.Builder().build();
 
-        Response response = client.newCall(request).execute();
-
-        handleCommonErrors(response, input);
-
-        System.out.println("Upload to Teamscale successful");
-        System.exit(0);
+        try (Response response = client.newCall(request).execute()) {
+            handleCommonErrors(response, input);
+            System.out.println("Upload to Teamscale successful");
+        } finally {
+            // we must shut down OkHttp as otherwise it will leave threads running and
+            // prevent JVM shutdown
+            client.dispatcher().executorService().shutdownNow();
+            client.connectionPool().evictAll();
+        }
     }
 
     private static void handleCommonErrors(Response response, Input input) {
