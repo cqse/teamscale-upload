@@ -41,6 +41,7 @@ public class TeamscaleUpload {
         public final HttpUrl url;
         public final List<String> files;
         public final String inputFile;
+        public final Boolean validateSsl;
 
         private Input(Namespace namespace) {
             this.project = namespace.getString("project");
@@ -54,6 +55,7 @@ public class TeamscaleUpload {
             this.files = namespace.getList("files");
             this.url = HttpUrl.parse(namespace.getString("server"));
             this.inputFile = namespace.getString("input");
+            this.validateSsl = namespace.getBoolean("validate_ssl");
         }
 
         public void validate(ArgumentParser parser) throws ArgumentParserException {
@@ -141,6 +143,9 @@ public class TeamscaleUpload {
                 .help("Tries to automatically detect the code commit to which to upload from environment variables or" +
                         " a Git or SVN checkout in the current working directory. If guessing fails, the upload will fail." +
                         " This feature supports many common CI tools like Jenkins, GitLab, GitHub Actions, Travis CI etc.");
+        parser.addArgument("--validate-ssl").action(Arguments.storeTrue()).required(false)
+                .help("By default, SSL certificates are accepted without validation, which makes using this tool with self-signed" +
+                        " certificates easier. This flag enables validation.");
         parser.addArgument("files").metavar("FILES").type(String.class).nargs("*").
                 help("Path(s) or pattern(s) of the report files to upload. Alternatively, you may provide input files via -i or --input");
 
@@ -218,7 +223,7 @@ public class TeamscaleUpload {
                 .post(requestBody)
                 .build();
 
-        OkHttpClient client = new OkHttpClient.Builder().build();
+        OkHttpClient client = OkHttpClientUtils.createClient(input.validateSsl);
 
         try (Response response = client.newCall(request).execute()) {
             handleCommonErrors(response, input);
@@ -232,6 +237,18 @@ public class TeamscaleUpload {
     }
 
     private static void handleCommonErrors(Response response, Input input) {
+        if (response.isRedirect()) {
+            String location = response.header("Location");
+            if (location == null) {
+                location = "<server did not provide a location header>";
+            }
+            fail("You provided an incorrect URL. The server responded with a redirect to " +
+                            "'" + location + "'." +
+                            " This may e.g. happen if you used HTTP instead of HTTPS." +
+                            " Please use the correct URL for Teamscale instead.",
+                    response);
+        }
+
         if (response.code() == 401) {
             HttpUrl editUserUrl = input.url.newBuilder().addPathSegments("admin.html#users").addQueryParameter("action", "edit")
                     .addQueryParameter("username", input.username).build();
