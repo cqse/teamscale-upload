@@ -52,6 +52,12 @@ Thus, if you or one of your dependencies uses reflection, classes may be missing
 - If reflection is needed, explicitly specify the necessary reflective accesses in `./src/main/resources/META-INF/native-image/reflect-config.json`.
     Do not use the GraalVM agent to create these files. It's not a fool-proof way (i.e. may fail at runtime for customers) and maintaining the generated files is impossible.
 
+### Running Tests Locally
+
+The integration tests (classes ending in `IT`) require that you first build a native image via `./mvnw package`.
+To run them locally, e.g. from IntelliJ, you'll furthermore need to define an environment variable `ACCESS_KEY` that contains the access key to https://demo.teamscale.com for the `build` user.
+This key is used during the integration tests to simulate uploads.
+
 ## Creating an Release
 
 Simply create a release in GitHub.
