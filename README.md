@@ -58,6 +58,9 @@ The integration tests (classes ending in `IT`) require that you first build a na
 To run them locally, e.g. from IntelliJ, you'll furthermore need to define an environment variable `ACCESS_KEY` that contains the access key to https://demo.teamscale.com for the `build` user.
 This key is used during the integration tests to simulate uploads.
 
+IntelliJ will not automatically recompile the native image after you made code changes.
+You must manually invoke `./mvnw package`.
+
 ## Creating an Release
 
 Simply create a release in GitHub.

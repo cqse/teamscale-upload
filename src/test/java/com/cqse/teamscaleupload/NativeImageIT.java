@@ -24,6 +24,33 @@ public class NativeImageIT {
     }
 
     @Test
+    public void incorrectUrl() {
+        ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("no-protocol:9999"));
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(result.exitCode).isNotZero();
+        softly.assertThat(result.stdoutAndStdErr).contains("You  provided  an  invalid  URL");
+        softly.assertAll();
+    }
+
+    @Test
+    public void unresolvableUrl() {
+        ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("http://does-not-existt:9999"));
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(result.exitCode).isNotZero();
+        softly.assertThat(result.stdoutAndStdErr).contains("could not be resolved");
+        softly.assertAll();
+    }
+
+    @Test
+    public void unreachableUrl() {
+        ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("http://localhost:9999"));
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(result.exitCode).isNotZero();
+        softly.assertThat(result.stdoutAndStdErr).contains("refused a connection");
+        softly.assertAll();
+    }
+
+    @Test
     public void wrongUser() {
         ProcessUtils.ProcessResult result = runUploader(new Arguments().withUser("wrong-user_"));
         SoftAssertions softly = new SoftAssertions();
@@ -87,6 +114,11 @@ public class NativeImageIT {
 
         public Arguments withPattern(String pattern) {
             this.pattern = pattern;
+            return this;
+        }
+
+        public Arguments withUrl(String url) {
+            this.url = url;
             return this;
         }
 
