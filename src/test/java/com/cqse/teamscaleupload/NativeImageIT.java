@@ -108,36 +108,36 @@ public class NativeImageIT {
         private String user = "build";
         private String accessKey = getAccessKeyFromCi();
         private String project = "teamscale-upload";
-        private String format = "simple";
-        private String partition = "NativeImageIT";
+        private final String format = "simple";
+        private final String partition = "NativeImageIT";
         private String pattern = "**.simple";
 
-        public Arguments withPattern(String pattern) {
+        private Arguments withPattern(String pattern) {
             this.pattern = pattern;
             return this;
         }
 
-        public Arguments withUrl(String url) {
+        private Arguments withUrl(String url) {
             this.url = url;
             return this;
         }
 
-        public Arguments withAccessKey(String accessKey) {
+        private Arguments withAccessKey(String accessKey) {
             this.accessKey = accessKey;
             return this;
         }
 
-        public Arguments withUser(String user) {
+        private Arguments withUser(String user) {
             this.user = user;
             return this;
         }
 
-        public Arguments withProject(String project) {
+        private Arguments withProject(String project) {
             this.project = project;
             return this;
         }
 
-        public String[] toStringArray() {
+        private String[] toStringArray() {
             return new String[]{"-s", url, "-u", user, "-a", accessKey, "-f", format,
                     "-p", project, "-t", partition, pattern};
         }
