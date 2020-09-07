@@ -3,33 +3,19 @@ package com.cqse.teamscaleupload;
 import com.cqse.teamscaleupload.autodetect_revision.EnvironmentVariableChecker;
 import com.cqse.teamscaleupload.autodetect_revision.GitChecker;
 import com.cqse.teamscaleupload.autodetect_revision.SvnChecker;
-
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
+import okhttp3.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import okhttp3.Credentials;
-import okhttp3.HttpUrl;
-import okhttp3.MediaType;
-import okhttp3.MultipartBody;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
 
 public class TeamscaleUpload {
 
@@ -52,7 +38,6 @@ public class TeamscaleUpload {
             this.username = namespace.getString("user");
             this.accessKey = namespace.getString("accesskey");
             this.partition = namespace.getString("partition");
-            this.format = namespace.getString("format") == null ? null : namespace.getString("format").toUpperCase();
             this.commit = namespace.getString("commit");
             this.autoDetectedCommit = namespace.getBoolean("detect_commit");
             this.timestamp = namespace.getString("branch_and_timestamp");
@@ -60,6 +45,13 @@ public class TeamscaleUpload {
             this.url = HttpUrl.parse(namespace.getString("server"));
             this.inputFile = namespace.getString("input");
             this.validateSsl = namespace.getBoolean("validate_ssl");
+
+            String formatRaw = namespace.getString("format");
+            if (formatRaw != null) {
+                this.format = formatRaw.toUpperCase();
+            } else {
+                this.format = null;
+            }
         }
 
         public void validate(ArgumentParser parser) throws ArgumentParserException {
@@ -74,13 +66,12 @@ public class TeamscaleUpload {
             }
 
             if (files == null && inputFile == null) {
-                throw new ArgumentParserException("You must either specify the paths of the coverage files as plain " +
-                        "arguments or provide them in an input file, see help for more information", parser);
+                throw new ArgumentParserException("You must either specify the paths of the coverage files as command line " +
+                        "arguments or provide them in an input file via --input", parser);
             }
 
             if (!files.isEmpty() && format == null) {
-                throw new ArgumentParserException("You must provide the upload format if you specify files as plain" +
-                        " arguments, see help for more information.", parser);
+                throw new ArgumentParserException("You must specify the report file format with --format if you specify files on the command line.", parser);
             }
         }
 
@@ -130,7 +121,7 @@ public class TeamscaleUpload {
                         " and one for JaCoCo coverage).");
         parser.addArgument("-f", "--format").type(String.class).metavar("FORMAT").required(false)
                 .help("The default file format of the uploaded report files. This is applied for all files given as" +
-                        " plain arguments or via -i/--input where no format is specified." +
+                        " command line arguments or via -i/--input where no format is specified." +
                         " See https://docs.teamscale.com/reference/upload-formats-and-samples/#supported-formats-for-upload" +
                         " for a full list of supported file formats.");
         parser.addArgument("-c", "--commit").type(String.class).metavar("REVISION").required(false)
@@ -146,17 +137,7 @@ public class TeamscaleUpload {
                         "\nFormat: BRANCH:TIMESTAMP" +
                         "\nExample: master:1597845930000");
         parser.addArgument("-i", "--input").type(String.class).metavar("INPUT").required(false)
-                .help("A file which contains the file paths or patterns to be added. The entries are separated " +
-                        "by line breaks. If files are specified as plain arguments, they are added to the files which " +
-                        "are given in this file. It is possible to specify the format of upload files here. This allows " +
-                        "to upload files for different formats in one execution: \n" +
-                        "pattern1/**.simple\n" +
-                        "[jacoco]\n" +
-                        "pattern1/**.xml\n" +
-                        "pattern2/**.xml\n" +
-                        "[findbugs]\n" +
-                        "pattern1/**.findbugs.xml\n" +
-                        "pattern2/**.findbugs.xml");
+                .help("A file which contains additional report file patterns. See INPUTFILE for a detailed description of the file format.\n");
         parser.addArgument("--detect-commit").action(Arguments.storeTrue()).required(false)
                 .help("Tries to automatically detect the code commit to which to upload from environment variables or" +
                         " a Git or SVN checkout in the current working directory. If guessing fails, the upload will fail." +
@@ -166,6 +147,21 @@ public class TeamscaleUpload {
                         " certificates easier. This flag enables validation.");
         parser.addArgument("files").metavar("FILES").type(String.class).nargs("*").
                 help("Path(s) or pattern(s) of the report files to upload. Alternatively, you may provide input files via -i or --input");
+
+        parser.epilog("INPUTFILE" +
+                "\n" +
+                "\n" +
+                "The file you provide via --input consists of file patterns in the same format as used on the command line" +
+                " and optionally sections that specify additional report file formats." +
+                " The entries in the file are separated by line breaks. Uses the format specified with --format," +
+                " unless you overwrite the format explicitly for a set of patterns:\n\n" +
+                "pattern1/**.simple\n" +
+                "[jacoco]\n" +
+                "pattern1/**.xml\n" +
+                "pattern2/**.xml\n" +
+                "[findbugs]\n" +
+                "pattern1/**.findbugs.xml\n" +
+                "pattern2/**.findbugs.xml");
 
         try {
             Namespace namespace = parser.parseArgs(args);
@@ -183,20 +179,13 @@ public class TeamscaleUpload {
     public static void main(String[] args) throws Exception {
         Input input = parseArguments(args);
 
-        Map<String, List<String>> formatToFileNames;
+        FormatToFileNamesWrapper formatToFileNamesWrapper = new FormatToFileNamesWrapper();
 
-        if (input.inputFile != null) {
-            formatToFileNames = readFileNamesFromInputFile(input.inputFile, input.format);
-        } else {
-            formatToFileNames = new HashMap<>();
-        }
+        formatToFileNamesWrapper.addReportFilePatternsFromInputFile(input.inputFile, input.format);
+        formatToFileNamesWrapper.addFilePatternsForFormat(input.files, input.format);
 
-        if (!input.files.isEmpty()) {
-            formatToFileNames.computeIfAbsent(input.format, k -> new ArrayList<>()).addAll(input.files);
-        }
-
-        for (String format : formatToFileNames.keySet()) {
-            sendRequestForFormat(input, format, formatToFileNames.get(format));
+        for (String format : formatToFileNamesWrapper.getAllAvailableFormats()) {
+            sendRequestForFormat(input, format, formatToFileNamesWrapper.getFilesForFormat(format));
         }
     }
 
@@ -325,12 +314,14 @@ public class TeamscaleUpload {
         }
     }
 
-    private static void fail(String message, Response response) {
+    /** Print error message and server response, then exit program */
+    public static void fail(String message, Response response) {
         fail("Upload to Teamscale failed:\n\n" + message + "\n\nTeamscale's response:\n" +
                 response.toString() + "\n" + readBodySafe(response));
     }
 
-    private static void fail(String message) {
+    /** Print error message and exit the program */
+    public static void fail(String message) {
         System.err.println(message);
         System.exit(1);
     }
@@ -345,38 +336,5 @@ public class TeamscaleUpload {
         } catch (IOException e) {
             return "Failed to read response body: " + e.getMessage();
         }
-    }
-
-    private static Map<String, List<String>> readFileNamesFromInputFile(String inputFilePath, String defaultFormat) {
-        Map<String, List<String>> formatToFiles = new HashMap<>();
-
-        // Pattern to match e.g. "[vs_coverage]"
-        Pattern formatPattern = Pattern.compile("\\[(\\w+)\\]");
-        try {
-            String currentFormat = defaultFormat;
-            List<String> filesForCurrentFormat = new ArrayList<>();
-            for (String line : Files.readAllLines(Paths.get(inputFilePath))) {
-                Matcher formatPatternMatcher = formatPattern.matcher(line);
-                if (formatPatternMatcher.matches()) {
-                    if (currentFormat != null) {
-                        formatToFiles.put(currentFormat, filesForCurrentFormat);
-                        filesForCurrentFormat = new ArrayList<>();
-                    }
-                    currentFormat = formatPatternMatcher.group(1);
-                } else {
-                    if (currentFormat == null) {
-                        fail("You must specify a default format via -f or provide the format in the input file, " +
-                                "see help for more information.");
-                    }
-                    filesForCurrentFormat.add(line);
-                }
-            }
-            formatToFiles.put(currentFormat.toUpperCase(), filesForCurrentFormat);
-            return formatToFiles;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return new HashMap<>();
     }
 }
