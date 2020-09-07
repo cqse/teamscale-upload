@@ -12,8 +12,6 @@ import okhttp3.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -184,12 +182,60 @@ public class TeamscaleUpload {
         formatToFileNamesWrapper.addReportFilePatternsFromInputFile(input.inputFile, input.format);
         formatToFileNamesWrapper.addFilePatternsForFormat(input.files, input.format);
 
-        for (String format : formatToFileNamesWrapper.getAllAvailableFormats()) {
-            sendRequestForFormat(input, format, formatToFileNamesWrapper.getFilesForFormat(format));
-        }
+        sendRequest(formatToFileNamesWrapper, input);
     }
 
-    private static void sendRequestForFormat(Input input, String format, List<String> fileNames) throws AgentOptionParseException, IOException {
+    private static void sendRequest(FormatToFileNamesWrapper formatToFileNamesWrapper, Input input) throws IOException, AgentOptionParseException {
+        OkHttpClient client = OkHttpClientUtils.createClient(input.validateSsl);
+
+        // TODO: refactor duplication in request creation
+        String sessionId = openSession(client, input);
+        for (String format : formatToFileNamesWrapper.getAllAvailableFormats()) {
+            sendRequestForFormat(client, input, format, formatToFileNamesWrapper.getFilesForFormat(format), sessionId);
+        }
+        closeSession(client, input, sessionId);
+    }
+
+    private static String openSession(OkHttpClient client, Input input) throws IOException {
+        HttpUrl.Builder builder = input.url.newBuilder()
+                .addPathSegments("api/projects").addPathSegment(input.project)
+                .addPathSegments("external-analysis/session")
+                .addQueryParameter("partition", input.partition);
+
+        HttpUrl url = builder.build();
+
+        Request request = new Request.Builder()
+                .header("Authorization", Credentials.basic(input.username, input.accessKey))
+                .url(url)
+                .build();
+        Response response = client.newCall(request).execute();
+        handleCommonErrors(response, input);
+        String sessionId = response.toString();
+        System.out.println("Successfully opened upload session with id: " + sessionId);
+        return sessionId;
+    }
+
+    private static void closeSession(OkHttpClient client, Input input, String sessionId) throws IOException {
+        HttpUrl.Builder builder = input.url.newBuilder()
+                .addPathSegments("api/projects").addPathSegment(input.project)
+                .addPathSegments("external-analysis/session")
+                .addPathSegment(sessionId);
+
+        HttpUrl url = builder.build();
+
+        Request request = new Request.Builder()
+                .header("Authorization", Credentials.basic(input.username, input.accessKey))
+                .url(url)
+                .build();
+        Response response = client.newCall(request).execute();
+        handleCommonErrors(response, input);
+        System.out.println("Successfully closed upload session with id: " + sessionId);
+    }
+
+
+    private static void sendRequestForFormat(OkHttpClient client, Input input, String format,
+                                             List<String> fileNames, String sessionId)
+            throws AgentOptionParseException, IOException {
         List<File> fileList = buildFileList(fileNames);
 
         MultipartBody.Builder multipartBodyBuilder = new MultipartBody.Builder()
@@ -203,8 +249,11 @@ public class TeamscaleUpload {
         RequestBody requestBody = multipartBodyBuilder.build();
 
         HttpUrl.Builder builder = input.url.newBuilder()
-                .addPathSegments("api/projects").addPathSegment(input.project)
-                .addPathSegments("external-analysis/session/auto-create/report")
+                .addPathSegments("api/projects")
+                .addPathSegment(input.project)
+                .addPathSegment("external-analysis/session")
+                .addPathSegment(sessionId)
+                .addPathSegment("report")
                 .addQueryParameter("partition", input.partition)
                 .addQueryParameter("format", format);
 
@@ -229,8 +278,6 @@ public class TeamscaleUpload {
                 .url(url)
                 .post(requestBody)
                 .build();
-
-        OkHttpClient client = OkHttpClientUtils.createClient(input.validateSsl);
 
         try (Response response = client.newCall(request).execute()) {
             handleCommonErrors(response, input);
