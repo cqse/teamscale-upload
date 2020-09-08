@@ -14,8 +14,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.UnknownHostException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -186,21 +184,18 @@ public class TeamscaleUpload {
         formatToFileNamesWrapper.addReportFilePatternsFromInputFile(input.inputFile, input.format);
         formatToFileNamesWrapper.addFilePatternsForFormat(input.files, input.format);
 
-        sendRequest(formatToFileNamesWrapper, input);
+        performUpload(formatToFileNamesWrapper, input);
     }
 
-    private static void sendRequest(FormatToFileNamesWrapper formatToFileNamesWrapper, Input input) throws IOException, AgentOptionParseException {
-        OkHttpClient client = OkHttpClientUtils.createClient(input.validateSsl);
-
-        // TODO: refactor duplication in request creation
-        String sessionId = openSession(client, input);
+    private static void performUpload(FormatToFileNamesWrapper formatToFileNamesWrapper, Input input) throws IOException, AgentOptionParseException {
+        String sessionId = openSession(input);
         for (String format : formatToFileNamesWrapper.getAllAvailableFormats()) {
-            sendRequestForFormat(client, input, format, formatToFileNamesWrapper.getFilesForFormat(format), sessionId);
+            sendRequestForFormat(input, format, formatToFileNamesWrapper.getFilesForFormat(format), sessionId);
         }
-        closeSession(client, input, sessionId);
+        closeSession(input, sessionId);
     }
 
-    private static String openSession(OkHttpClient client, Input input) throws IOException {
+    private static String openSession(Input input) throws IOException {
         HttpUrl.Builder builder = input.url.newBuilder()
                 .addPathSegments("api/projects").addPathSegment(input.project)
                 .addPathSegments("external-analysis/session")
@@ -208,18 +203,25 @@ public class TeamscaleUpload {
 
         HttpUrl url = builder.build();
 
+        // Empty body
+        RequestBody body = RequestBody.create(null, new byte[0]);
+
         Request request = new Request.Builder()
                 .header("Authorization", Credentials.basic(input.username, input.accessKey))
                 .url(url)
+                .post(body)
                 .build();
-        Response response = client.newCall(request).execute();
-        handleCommonErrors(response, input);
-        String sessionId = response.toString();
+
+        System.out.println("Opening upload session");
+        String sessionId = sendRequest(input, url, request);
+        if (sessionId == null) {
+            fail("Could not open session.");
+        }
         System.out.println("Successfully opened upload session with id: " + sessionId);
         return sessionId;
     }
 
-    private static void closeSession(OkHttpClient client, Input input, String sessionId) throws IOException {
+    private static void closeSession(Input input, String sessionId) throws IOException {
         HttpUrl.Builder builder = input.url.newBuilder()
                 .addPathSegments("api/projects").addPathSegment(input.project)
                 .addPathSegments("external-analysis/session")
@@ -227,17 +229,20 @@ public class TeamscaleUpload {
 
         HttpUrl url = builder.build();
 
+        // Empty body
+        RequestBody body = RequestBody.create(null, new byte[0]);
+
         Request request = new Request.Builder()
                 .header("Authorization", Credentials.basic(input.username, input.accessKey))
                 .url(url)
+                .post(body)
                 .build();
-        Response response = client.newCall(request).execute();
-        handleCommonErrors(response, input);
-        System.out.println("Successfully closed upload session with id: " + sessionId);
+        System.out.println("Closing upload session with id: " + sessionId);
+        sendRequest(input, url, request);
     }
 
 
-    private static void sendRequestForFormat(OkHttpClient client, Input input, String format,
+    private static void sendRequestForFormat(Input input, String format,
                                              List<String> fileNames, String sessionId)
             throws AgentOptionParseException, IOException {
         List<File> fileList = buildFileList(fileNames);
@@ -255,7 +260,7 @@ public class TeamscaleUpload {
         HttpUrl.Builder builder = input.url.newBuilder()
                 .addPathSegments("api/projects")
                 .addPathSegment(input.project)
-                .addPathSegment("external-analysis/session")
+                .addPathSegments("external-analysis/session")
                 .addPathSegment(sessionId)
                 .addPathSegment("report")
                 .addQueryParameter("partition", input.partition)
@@ -283,10 +288,17 @@ public class TeamscaleUpload {
                 .post(requestBody)
                 .build();
 
+        System.out.println("Sending upload for format " + format);
+        sendRequest(input, url, request);
+    }
+
+    private static String sendRequest(Input input, HttpUrl url, Request request) throws IOException {
+        OkHttpClient client = OkHttpClientUtils.createClient(input.validateSsl);
+
         try (Response response = client.newCall(request).execute()) {
             handleCommonErrors(response, input);
-            System.out.println("Upload to Teamscale successful for format " + format);
-            System.out.println("Upload to Teamscale successful");
+            System.out.println("Request successful");
+            return response.body().string();
         } catch (UnknownHostException e) {
             fail("The host " + url + " could not be resolved. Please ensure you have no typo and that" +
                     " this host is reachable from this server. " + e.getMessage());
@@ -299,6 +311,7 @@ public class TeamscaleUpload {
             client.dispatcher().executorService().shutdownNow();
             client.connectionPool().evictAll();
         }
+        return null;
     }
 
     private static List<File> buildFileList(List<String> patterns) throws AgentOptionParseException {
