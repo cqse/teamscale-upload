@@ -12,6 +12,8 @@ import net.sourceforge.argparse4j.inf.Namespace;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.ConnectException;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -219,6 +221,12 @@ public class TeamscaleUpload {
         try (Response response = client.newCall(request).execute()) {
             handleCommonErrors(response, input);
             System.out.println("Upload to Teamscale successful");
+        } catch (UnknownHostException e) {
+            fail("The host " + url + " could not be resolved. Please ensure you have no typo and that" +
+                    " this host is reachable from this server. " + e.getMessage());
+        } catch (ConnectException e) {
+            fail("The URL " + url + " refused a connection. Please ensure that you have no typo and that" +
+                    " this endpoint is reachable and not blocked by firewalls. " + e.getMessage());
         } finally {
             // we must shut down OkHttp as otherwise it will leave threads running and
             // prevent JVM shutdown

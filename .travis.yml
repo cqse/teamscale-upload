@@ -42,7 +42,7 @@ before_script:
 script:
   - $MVN --version
   - if [ $TRAVIS_OS_NAME = windows ]; then ./build-windows.bat ; fi
-  - if [ $TRAVIS_OS_NAME != windows ]; then $MVN clean package ; fi
+  - if [ $TRAVIS_OS_NAME != windows ]; then $MVN clean verify -Pfailsafe ; fi
   - (cd ./target; zip teamscale-upload-$TRAVIS_OS_NAME.zip "./$TARGET")
 
 deploy:
