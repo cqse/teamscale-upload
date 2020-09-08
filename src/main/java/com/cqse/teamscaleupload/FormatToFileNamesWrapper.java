@@ -50,6 +50,8 @@ public class FormatToFileNamesWrapper {
                 if (!filesForCurrentFormat.isEmpty()) {
                     formatToFileNames.put(currentFormat, filesForCurrentFormat);
                     filesForCurrentFormat = new ArrayList<>();
+                } else {
+                    System.err.println("Input file contains empty block for format " + currentFormat);
                 }
                 currentFormat = formatPatternMatcher.group(1);
             } else {

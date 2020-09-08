@@ -81,13 +81,14 @@ public class TeamscaleUpload {
                         " upload data to Teamscale", parser);
             }
 
-            if (files == null && input == null) {
-                throw new ArgumentParserException("You must either specify the paths of the coverage files as command line " +
-                        "arguments or provide them in an input file via --input", parser);
+            if (files.isEmpty() && input == null) {
+                throw new ArgumentParserException("No report files provided." +
+                        " You must either specify the paths of the coverage files as command line" +
+                        " arguments or provide them in an input file via --input", parser);
             }
 
-            if (!files.isEmpty() && format == null) {
-                throw new ArgumentParserException("You must specify the report file format with --format if you specify files on the command line.", parser);
+            if (format == null) {
+                throw new ArgumentParserException("Please provide the default report format with --format", parser);
             }
         }
 
@@ -228,12 +229,12 @@ public class TeamscaleUpload {
                 .post(body)
                 .build();
 
-        System.out.println("Opening upload session");
+        System.out.print("Opening upload session...");
         String sessionId = sendRequest(input, url, request);
         if (sessionId == null) {
             fail("Could not open session.");
         }
-        System.out.println("Successfully opened upload session with id: " + sessionId);
+        System.out.println("Session id: " + sessionId);
         return sessionId;
     }
 
@@ -253,7 +254,7 @@ public class TeamscaleUpload {
                 .url(url)
                 .post(body)
                 .build();
-        System.out.println("Closing upload session with id: " + sessionId);
+        System.out.print("Closing upload session...");
         sendRequest(input, url, request);
     }
 
@@ -304,7 +305,7 @@ public class TeamscaleUpload {
                 .post(requestBody)
                 .build();
 
-        System.out.println("Sending upload for format " + format);
+        System.out.print("Sending upload for format " + format + "...");
         sendRequest(input, url, request);
     }
 
@@ -313,7 +314,7 @@ public class TeamscaleUpload {
 
         try (Response response = client.newCall(request).execute()) {
             handleCommonErrors(response, input);
-            System.out.println("Request successful");
+            System.out.println("Successful");
             return response.body().string();
         } catch (UnknownHostException e) {
             fail("The host " + url + " could not be resolved. Please ensure you have no typo and that" +

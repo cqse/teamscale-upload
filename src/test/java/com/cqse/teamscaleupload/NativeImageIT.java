@@ -93,6 +93,15 @@ public class NativeImageIT {
     }
 
     @Test
+    public void noPatternProvided() {
+        ProcessUtils.ProcessResult result = runUploader(new Arguments().withPattern(""));
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(result.exitCode).isNotZero();
+        softly.assertThat(result.stdoutAndStdErr).contains("No report files");
+        softly.assertAll();
+    }
+
+    @Test
     public void successfulSingleFormatUpload() {
         ProcessUtils.ProcessResult result = runUploader(new Arguments());
         assertThat(result.exitCode)
