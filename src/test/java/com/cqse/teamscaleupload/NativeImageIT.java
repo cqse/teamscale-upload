@@ -5,6 +5,11 @@ import com.cqse.teamscaleupload.autodetect_revision.ProcessUtils;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -88,8 +93,16 @@ public class NativeImageIT {
     }
 
     @Test
-    public void successfulUpload() {
+    public void successfulSingleFormatUpload() {
         ProcessUtils.ProcessResult result = runUploader(new Arguments());
+        assertThat(result.exitCode)
+                .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+                .isZero();
+    }
+
+    @Test
+    public void successfulSessionUpload() {
+        ProcessUtils.ProcessResult result = runUploader(new Arguments().withInput("coverage_files/input_file"));
         assertThat(result.exitCode)
                 .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
                 .isZero();
@@ -111,6 +124,7 @@ public class NativeImageIT {
         private final String format = "simple";
         private final String partition = "NativeImageIT";
         private String pattern = "**.simple";
+        private String input = null;
 
         private Arguments withPattern(String pattern) {
             this.pattern = pattern;
@@ -137,9 +151,21 @@ public class NativeImageIT {
             return this;
         }
 
+        private Arguments withInput(String input) {
+            this.input = input;
+            return this;
+        }
+
         private String[] toStringArray() {
-            return new String[]{"-s", url, "-u", user, "-a", accessKey, "-f", format,
-                    "-p", project, "-t", partition, pattern};
+            List<String> arguments = new ArrayList<>(Arrays.asList("-s", url, "-u", user, "-a", accessKey, "-f", format,
+                    "-p", project, "-t", partition));
+            if (input != null) {
+                arguments.add("-i");
+                arguments.add(input);
+            }
+            arguments.add(pattern);
+
+            return arguments.toArray(new String[arguments.size()]);
         }
     }
 

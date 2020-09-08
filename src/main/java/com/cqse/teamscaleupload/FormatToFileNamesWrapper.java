@@ -27,12 +27,12 @@ public class FormatToFileNamesWrapper {
      * If the input file does not specify a report format, the given default
      * format is used.
      */
-    public void addReportFilePatternsFromInputFile(String inputFilePath, String defaultFormat) throws IOException {
-        if (inputFilePath == null) {
+    public void addReportFilePatternsFromInputFile(Path input, String defaultFormat) throws IOException {
+        if (input == null) {
             return;
         }
 
-        readFileNamesFromInputFile(Paths.get(inputFilePath), defaultFormat);
+        readFileNamesFromInputFile(input, defaultFormat);
     }
 
     /**

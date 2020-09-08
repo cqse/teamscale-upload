@@ -1,3 +1,4 @@
-[simple]
 coverage_files\test*.simple
+[jacoco]
+[simple]
 coverage_files\coverage.simple

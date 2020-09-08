@@ -22,6 +22,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.UnknownHostException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,7 +40,7 @@ public class TeamscaleUpload {
         public final String timestamp;
         public final HttpUrl url;
         public final List<String> files;
-        public final String inputFile;
+        public final Path input;
         public final Boolean validateSsl;
 
         private Input(Namespace namespace) {
@@ -51,8 +53,14 @@ public class TeamscaleUpload {
             this.timestamp = namespace.getString("branch_and_timestamp");
             this.files = namespace.getList("files");
             this.url = HttpUrl.parse(namespace.getString("server"));
-            this.inputFile = namespace.getString("input");
             this.validateSsl = namespace.getBoolean("validate_ssl");
+
+            String inputFilePath = namespace.getString("input");
+            if (inputFilePath != null) {
+                this.input = Paths.get(inputFilePath);
+            } else {
+                this.input = null;
+            }
 
             String formatRaw = namespace.getString("format");
             if (formatRaw != null) {
@@ -73,7 +81,7 @@ public class TeamscaleUpload {
                         " upload data to Teamscale", parser);
             }
 
-            if (files == null && inputFile == null) {
+            if (files == null && input == null) {
                 throw new ArgumentParserException("You must either specify the paths of the coverage files as command line " +
                         "arguments or provide them in an input file via --input", parser);
             }
@@ -189,7 +197,7 @@ public class TeamscaleUpload {
 
         FormatToFileNamesWrapper formatToFileNamesWrapper = new FormatToFileNamesWrapper();
 
-        formatToFileNamesWrapper.addReportFilePatternsFromInputFile(input.inputFile, input.format);
+        formatToFileNamesWrapper.addReportFilePatternsFromInputFile(input.input, input.format);
         formatToFileNamesWrapper.addFilePatternsForFormat(input.files, input.format);
 
         performUpload(formatToFileNamesWrapper, input);
