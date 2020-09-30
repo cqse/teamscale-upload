@@ -3,7 +3,6 @@ package com.cqse.teamscaleupload;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -16,32 +15,22 @@ import java.util.regex.Pattern;
  * This class manages the given file formats and
  * corresponding report file patterns.
  */
-public class FormatToFileNamesWrapper {
+public class ReportPatternManager {
 
 
     /** A map from file formats to corresponding report file patterns. */
     private final Map<String, List<String>> formatToFileNames = new HashMap<>();
 
-    /**
-     * Adds all file patterns from the input file given by --input, may be null.
-     * If the input file does not specify a report format, the given default
-     * format is used.
-     */
-    public void addReportFilePatternsFromInputFile(Path input, String defaultFormat) throws IOException {
-        if (input == null) {
-            return;
-        }
-
-        readFileNamesFromInputFile(input, defaultFormat);
-    }
+    /** Expected pattern for formats in the input file, matches e.g. "[vs_coverage]" */
+    private static final Pattern formatPattern = Pattern.compile("\\[(\\w+)\\]");
 
     /**
      * Reads all file patterns which are specified in the given input file
      * and adds them to {@link #formatToFileNames} for the respective format.
+     *
+     * TODO: If the input file does not specify a report format, the given default format is used.
      */
-    private void readFileNamesFromInputFile(Path input, String defaultFormat) throws IOException {
-        // Pattern to match e.g. "[vs_coverage]"
-        Pattern formatPattern = Pattern.compile("\\[(\\w+)\\]");
+    public void addReportFilePatternsFromInputFile(Path input, String defaultFormat) throws IOException {
         String currentFormat = defaultFormat;
         List<String> filesForCurrentFormat = new ArrayList<>();
         for (String line : Files.readAllLines(input)) {
@@ -51,7 +40,8 @@ public class FormatToFileNamesWrapper {
                     formatToFileNames.put(currentFormat, filesForCurrentFormat);
                     filesForCurrentFormat = new ArrayList<>();
                 } else {
-                    System.err.println("Input file contains empty block for format " + currentFormat);
+                    System.err.println("The input file contains no patterns for format [" + currentFormat + "]. " +
+                            "Did you forget to specify files to upload for that format?");
                 }
                 currentFormat = formatPatternMatcher.group(1);
             } else {
@@ -65,20 +55,20 @@ public class FormatToFileNamesWrapper {
      * Return a list of all file patterns for the given format.
      * Returns null if the given format does not exist.
      */
-    public List<String> getFilesForFormat(String format) {
+    public List<String> getPatternsForFormat(String format) {
         return formatToFileNames.get(format);
     }
 
     /**
-     * Returns all available formats for this session.
+     * Returns all formats which are used in this session.
      */
-    public Set<String> getAllAvailableFormats() {
+    public Set<String> getAllUsedFormats() {
         return formatToFileNames.keySet();
     }
 
     /**
      * Adds the file patters for the given format.
-     * This is used for file patterns which are directly specified via command line.
+     * This is used for file patterns which are directly specified via the command line.
      */
     public void addFilePatternsForFormat(List<String> filePatterns, String format) {
         if (!filePatterns.isEmpty()) {
