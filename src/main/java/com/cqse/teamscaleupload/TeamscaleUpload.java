@@ -196,18 +196,18 @@ public class TeamscaleUpload {
     public static void main(String[] args) throws Exception {
         Input input = parseArguments(args);
 
-        FormatToFileNamesWrapper formatToFileNamesWrapper = new FormatToFileNamesWrapper();
+        ReportPatternManager reportPatternManager = new ReportPatternManager();
 
-        formatToFileNamesWrapper.addReportFilePatternsFromInputFile(input.input, input.format);
-        formatToFileNamesWrapper.addFilePatternsForFormat(input.files, input.format);
+        reportPatternManager.addReportFilePatternsFromInputFile(input.input, input.format);
+        reportPatternManager.addFilePatternsForFormat(input.files, input.format);
 
-        performUpload(formatToFileNamesWrapper, input);
+        performUpload(reportPatternManager, input);
     }
 
-    private static void performUpload(FormatToFileNamesWrapper formatToFileNamesWrapper, Input input) throws IOException, AgentOptionParseException {
+    private static void performUpload(ReportPatternManager reportPatternManager, Input input) throws IOException, AgentOptionParseException {
         String sessionId = openSession(input);
-        for (String format : formatToFileNamesWrapper.getAllAvailableFormats()) {
-            sendRequestForFormat(input, format, formatToFileNamesWrapper.getFilesForFormat(format), sessionId);
+        for (String format : reportPatternManager.getAllUsedFormats()) {
+            sendRequestForFormat(input, format, reportPatternManager.getPatternsForFormat(format), sessionId);
         }
         closeSession(input, sessionId);
     }
