@@ -40,7 +40,7 @@ public class TeamscaleUpload {
         public final String timestamp;
         public final HttpUrl url;
         public final List<String> files;
-        public final Path input;
+        public final Path inputFile;
         public final Boolean validateSsl;
 
         private Input(Namespace namespace) {
@@ -57,9 +57,9 @@ public class TeamscaleUpload {
 
             String inputFilePath = namespace.getString("input");
             if (inputFilePath != null) {
-                this.input = Paths.get(inputFilePath);
+                this.inputFile = Paths.get(inputFilePath);
             } else {
-                this.input = null;
+                this.inputFile = null;
             }
 
             String formatRaw = namespace.getString("format");
@@ -81,9 +81,9 @@ public class TeamscaleUpload {
                         " upload data to Teamscale", parser);
             }
 
-            if (files.isEmpty() && input == null) {
-                throw new ArgumentParserException("No report files provided." +
-                        " You must either specify the paths of the coverage files as command line" +
+            if (files.isEmpty() && inputFile == null) {
+                throw new ArgumentParserException("You did not provide any report files to upload." +
+                        " You must either specify the paths of the report files as command line" +
                         " arguments or provide them in an input file via --input", parser);
             }
 
@@ -154,7 +154,7 @@ public class TeamscaleUpload {
                         "\nFormat: BRANCH:TIMESTAMP" +
                         "\nExample: master:1597845930000");
         parser.addArgument("-i", "--input").type(String.class).metavar("INPUT").required(false)
-                .help("A file which contains additional report file patterns. See INPUTFILE for a detailed description of the file format.\n");
+                .help("A file which contains additional report file patterns. See INPUTFILE for a detailed description of the file format.");
         parser.addArgument("--detect-commit").action(Arguments.storeTrue()).required(false)
                 .help("Tries to automatically detect the code commit to which to upload from environment variables or" +
                         " a Git or SVN checkout in the current working directory. If guessing fails, the upload will fail." +
@@ -171,7 +171,8 @@ public class TeamscaleUpload {
                 "The file you provide via --input consists of file patterns in the same format as used on the command line" +
                 " and optionally sections that specify additional report file formats." +
                 " The entries in the file are separated by line breaks. Uses the format specified with --format," +
-                " unless you overwrite the format explicitly for a set of patterns:\n\n" +
+                " unless you overwrite the format explicitly for a set of patterns.\n\n" +
+                "Example:\n\n" +
                 "pattern1/**.simple\n" +
                 "[jacoco]\n" +
                 "pattern1/**.xml\n" +
@@ -198,21 +199,29 @@ public class TeamscaleUpload {
 
         ReportPatternManager reportPatternManager = new ReportPatternManager();
 
-        reportPatternManager.addReportFilePatternsFromInputFile(input.input, input.format);
+        reportPatternManager.addReportFilePatternsFromInputFile(input.inputFile, input.format);
         reportPatternManager.addFilePatternsForFormat(input.files, input.format);
 
-        performUpload(reportPatternManager, input);
-    }
-
-    private static void performUpload(ReportPatternManager reportPatternManager, Input input) throws IOException, AgentOptionParseException {
-        String sessionId = openSession(input);
-        for (String format : reportPatternManager.getAllUsedFormats()) {
-            sendRequestForFormat(input, format, reportPatternManager.getPatternsForFormat(format), sessionId);
+        OkHttpClient client = OkHttpClientUtils.createClient(input.validateSsl);
+        try {
+            performUpload(client, reportPatternManager, input);
+        } finally {
+            // we must shut down OkHttp as otherwise it will leave threads running and
+            // prevent JVM shutdown
+            client.dispatcher().executorService().shutdownNow();
+            client.connectionPool().evictAll();
         }
-        closeSession(input, sessionId);
     }
 
-    private static String openSession(Input input) throws IOException {
+    private static void performUpload(OkHttpClient client, ReportPatternManager reportPatternManager, Input input) throws IOException, AgentOptionParseException {
+        String sessionId = openSession(client, input);
+        for (String format : reportPatternManager.getAllUsedFormats()) {
+            sendRequestForFormat(client, input, format, reportPatternManager.getPatternsForFormat(format), sessionId);
+        }
+        closeSession(client, input, sessionId);
+    }
+
+    private static String openSession(OkHttpClient client, Input input) throws IOException {
         HttpUrl.Builder builder = input.url.newBuilder()
                 .addPathSegments("api/projects").addPathSegment(input.project)
                 .addPathSegments("external-analysis/session")
@@ -229,16 +238,16 @@ public class TeamscaleUpload {
                 .post(body)
                 .build();
 
-        System.out.print("Opening upload session...");
-        String sessionId = sendRequest(input, url, request);
+        System.out.println("Opening upload session");
+        String sessionId = sendRequest(client, input, url, request);
         if (sessionId == null) {
             fail("Could not open session.");
         }
-        System.out.println("Session id: " + sessionId);
+        System.out.println("Session ID: " + sessionId);
         return sessionId;
     }
 
-    private static void closeSession(Input input, String sessionId) throws IOException {
+    private static void closeSession(OkHttpClient client, Input input, String sessionId) throws IOException {
         HttpUrl.Builder builder = input.url.newBuilder()
                 .addPathSegments("api/projects").addPathSegment(input.project)
                 .addPathSegments("external-analysis/session")
@@ -254,12 +263,12 @@ public class TeamscaleUpload {
                 .url(url)
                 .post(body)
                 .build();
-        System.out.print("Closing upload session...");
-        sendRequest(input, url, request);
+        System.out.println("Closing upload session");
+        sendRequest(client, input, url, request);
     }
 
 
-    private static void sendRequestForFormat(Input input, String format,
+    private static void sendRequestForFormat(OkHttpClient client, Input input, String format,
                                              List<String> fileNames, String sessionId)
             throws AgentOptionParseException, IOException {
         List<File> fileList = buildFileList(fileNames);
@@ -305,29 +314,24 @@ public class TeamscaleUpload {
                 .post(requestBody)
                 .build();
 
-        System.out.print("Sending upload for format " + format + "...");
-        sendRequest(input, url, request);
+        System.out.println("Uploading reports for format " + format);
+        sendRequest(client, input, url, request);
     }
 
-    private static String sendRequest(Input input, HttpUrl url, Request request) throws IOException {
-        OkHttpClient client = OkHttpClientUtils.createClient(input.validateSsl);
+    private static String sendRequest(OkHttpClient client, Input input, HttpUrl url, Request request) throws IOException {
 
         try (Response response = client.newCall(request).execute()) {
-            handleCommonErrors(response, input);
+            handleErrors(response, input);
             System.out.println("Successful");
-            return response.body().string();
+            return readBodySafe(response);
         } catch (UnknownHostException e) {
             fail("The host " + url + " could not be resolved. Please ensure you have no typo and that" +
                     " this host is reachable from this server. " + e.getMessage());
         } catch (ConnectException e) {
             fail("The URL " + url + " refused a connection. Please ensure that you have no typo and that" +
                     " this endpoint is reachable and not blocked by firewalls. " + e.getMessage());
-        } finally {
-            // we must shut down OkHttp as otherwise it will leave threads running and
-            // prevent JVM shutdown
-            client.dispatcher().executorService().shutdownNow();
-            client.connectionPool().evictAll();
         }
+
         return null;
     }
 
@@ -353,7 +357,7 @@ public class TeamscaleUpload {
         return fileList;
     }
 
-    private static void handleCommonErrors(Response response, Input input) {
+    private static void handleErrors(Response response, Input input) {
         if (response.isRedirect()) {
             String location = response.header("Location");
             if (location == null) {

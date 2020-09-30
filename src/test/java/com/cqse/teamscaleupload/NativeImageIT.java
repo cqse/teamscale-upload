@@ -101,7 +101,7 @@ public class NativeImageIT {
     }
 
     @Test
-    public void successfulSessionUpload() {
+    public void successfulMultiFormatUpload() {
         ProcessUtils.ProcessResult result = runUploader(new Arguments().withInput("coverage_files/input_file"));
         assertThat(result.exitCode)
                 .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
