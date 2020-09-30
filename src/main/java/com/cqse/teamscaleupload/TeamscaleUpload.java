@@ -29,6 +29,8 @@ import java.util.List;
 
 public class TeamscaleUpload {
 
+    public static final RequestBody EMPTY_BODY = RequestBody.create(null, new byte[0]);
+
     private static class Input {
         public final String project;
         public final String username;
@@ -229,13 +231,10 @@ public class TeamscaleUpload {
 
         HttpUrl url = builder.build();
 
-        // Empty body
-        RequestBody body = RequestBody.create(null, new byte[0]);
-
         Request request = new Request.Builder()
                 .header("Authorization", Credentials.basic(input.username, input.accessKey))
                 .url(url)
-                .post(body)
+                .post(EMPTY_BODY)
                 .build();
 
         System.out.println("Opening upload session");
@@ -255,13 +254,10 @@ public class TeamscaleUpload {
 
         HttpUrl url = builder.build();
 
-        // Empty body
-        RequestBody body = RequestBody.create(null, new byte[0]);
-
         Request request = new Request.Builder()
                 .header("Authorization", Credentials.basic(input.username, input.accessKey))
                 .url(url)
-                .post(body)
+                .post(EMPTY_BODY)
                 .build();
         System.out.println("Closing upload session");
         sendRequest(client, input, url, request);
