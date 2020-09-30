@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * This class manages the given file formats and
@@ -33,7 +34,10 @@ public class ReportPatternManager {
     public void addReportFilePatternsFromInputFile(Path input, String defaultFormat) throws IOException {
         String currentFormat = defaultFormat;
         List<String> filesForCurrentFormat = new ArrayList<>();
-        for (String line : Files.readAllLines(input)) {
+
+        List<String> nonEmptyLines = Files.readAllLines(input).stream().filter(line -> !line.trim().isEmpty()).
+                collect(Collectors.toList());
+        for (String line : nonEmptyLines) {
             Matcher formatPatternMatcher = formatPattern.matcher(line);
             if (formatPatternMatcher.matches()) {
                 if (!filesForCurrentFormat.isEmpty()) {
