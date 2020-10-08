@@ -236,6 +236,21 @@ public class TeamscaleUpload {
                 .addPathSegments("external-analysis/session")
                 .addQueryParameter("partition", input.partition);
 
+        // We track revision or branch:timestamp for the session instead as it should be the same for all uploads
+        if (input.commit != null) {
+            builder.addQueryParameter("revision", input.commit);
+        } else if (input.timestamp != null) {
+            builder.addQueryParameter("t", input.timestamp);
+        } else if (input.autoDetectedCommit) {
+            String commit = detectCommit();
+            if (commit == null) {
+                fail("Failed to automatically detect the commit. Please specify it manually via --commit or --timestamp");
+            }
+            builder.addQueryParameter("revision", commit);
+        } else {
+            builder.addQueryParameter("t", "master:HEAD");
+        }
+
         HttpUrl url = builder.build();
 
         Request request = new Request.Builder()
@@ -292,22 +307,7 @@ public class TeamscaleUpload {
                 .addPathSegments("external-analysis/session")
                 .addPathSegment(sessionId)
                 .addPathSegment("report")
-                .addQueryParameter("partition", input.partition)
                 .addQueryParameter("format", format);
-
-        if (input.commit != null) {
-            builder.addQueryParameter("revision", input.commit);
-        } else if (input.timestamp != null) {
-            builder.addQueryParameter("t", input.timestamp);
-        } else if (input.autoDetectedCommit) {
-            String commit = detectCommit();
-            if (commit == null) {
-                fail("Failed to automatically detect the commit. Please specify it manually via --commit or --timestamp");
-            }
-            builder.addQueryParameter("revision", commit);
-        } else {
-            builder.addQueryParameter("t", "master:HEAD");
-        }
 
         HttpUrl url = builder.build();
 
