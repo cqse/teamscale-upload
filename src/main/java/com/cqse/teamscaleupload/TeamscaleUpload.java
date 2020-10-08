@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class TeamscaleUpload {
 
@@ -89,8 +90,9 @@ public class TeamscaleUpload {
                         " arguments or provide them in an input file via --input", parser);
             }
 
-            if (format == null) {
-                throw new ArgumentParserException("Please provide the default report format with --format", parser);
+            if (!files.isEmpty() && format == null) {
+                throw new ArgumentParserException("Please specify a report format with --format " +
+                        "if you pass report patterns as command line arguments", parser);
             }
         }
 
@@ -139,8 +141,7 @@ public class TeamscaleUpload {
                         " like to merge data from different sources (e.g. one for Findbugs findings" +
                         " and one for JaCoCo coverage).");
         parser.addArgument("-f", "--format").type(String.class).metavar("FORMAT").required(false)
-                .help("The default file format of the uploaded report files. This is applied for all files given as" +
-                        " command line arguments or via -i/--input where no format is specified." +
+                .help("The file format of the reports which are specified as command line arguments." +
                         " See https://docs.teamscale.com/reference/upload-formats-and-samples/#supported-formats-for-upload" +
                         " for a full list of supported file formats.");
         parser.addArgument("-c", "--commit").type(String.class).metavar("REVISION").required(false)
@@ -170,12 +171,11 @@ public class TeamscaleUpload {
         parser.epilog("INPUTFILE" +
                 "\n" +
                 "\n" +
-                "The file you provide via --input consists of file patterns in the same format as used on the command line" +
-                " and optionally sections that specify additional report file formats." +
-                " The entries in the file are separated by line breaks. Uses the format specified with --format," +
-                " unless you overwrite the format explicitly for a set of patterns.\n\n" +
+                "The input file allows to upload report files for different file patterns in one upload session." +
+                " Each section of reports must start with a specification of the report format. The report file" +
+                " patterns have the same format as used on the command line." +
+                " The entries in the file are separated by line breaks.\n\n" +
                 "Example:\n\n" +
-                "pattern1/**.simple\n" +
                 "[jacoco]\n" +
                 "pattern1/**.xml\n" +
                 "pattern2/**.xml\n" +
@@ -201,7 +201,9 @@ public class TeamscaleUpload {
 
         ReportPatternManager reportPatternManager = new ReportPatternManager();
 
-        reportPatternManager.addReportFilePatternsFromInputFile(input.inputFile, input.format);
+        if (input.inputFile != null) {
+            reportPatternManager.addReportFilePatternsFromInputFile(input.inputFile);
+        }
         reportPatternManager.addFilePatternsForFormat(input.files, input.format);
 
         OkHttpClient client = OkHttpClientUtils.createClient(input.validateSsl);
@@ -218,7 +220,12 @@ public class TeamscaleUpload {
     private static void performUpload(OkHttpClient client, ReportPatternManager reportPatternManager, Input input) throws IOException, AgentOptionParseException {
         String sessionId = openSession(client, input);
         for (String format : reportPatternManager.getAllUsedFormats()) {
-            sendRequestForFormat(client, input, format, reportPatternManager.getPatternsForFormat(format), sessionId);
+            Set<String> patternsForFormat = reportPatternManager.getPatternsForFormat(format);
+            if (patternsForFormat.isEmpty()) {
+                fail("The input file contains no patterns for [" + format + "]." +
+                        " Did you forget to specify files to upload for that format?");
+            }
+            sendRequestForFormat(client, input, format, patternsForFormat, sessionId);
         }
         closeSession(client, input, sessionId);
     }
@@ -265,7 +272,7 @@ public class TeamscaleUpload {
 
 
     private static void sendRequestForFormat(OkHttpClient client, Input input, String format,
-                                             List<String> fileNames, String sessionId)
+                                             Set<String> fileNames, String sessionId)
             throws AgentOptionParseException, IOException {
         List<File> fileList = buildFileList(fileNames);
 
@@ -331,7 +338,7 @@ public class TeamscaleUpload {
         return null;
     }
 
-    private static List<File> buildFileList(List<String> patterns) throws AgentOptionParseException {
+    private static List<File> buildFileList(Set<String> patterns) throws AgentOptionParseException {
         FilePatternResolver resolver = new FilePatternResolver();
 
         List<File> fileList = new ArrayList<>();

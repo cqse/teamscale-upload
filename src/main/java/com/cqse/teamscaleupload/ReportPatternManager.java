@@ -3,8 +3,8 @@ package com.cqse.teamscaleupload;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -20,46 +20,46 @@ public class ReportPatternManager {
 
 
     /** A map from file formats to corresponding report file patterns. */
-    private final Map<String, List<String>> formatToFileNames = new HashMap<>();
+    private final Map<String, Set<String>> formatToFileNames = new HashMap<>();
 
     /** Expected pattern for formats in the input file, matches e.g. "[vs_coverage]" */
-    private static final Pattern formatPattern = Pattern.compile("\\[(\\w+)\\]");
+    private static final Pattern FORMAT_PATTERN = Pattern.compile("\\[(\\w+)\\]");
 
     /**
      * Reads all file patterns which are specified in the given input file
      * and adds them to {@link #formatToFileNames} for the respective format.
-     *
-     * TODO: If the input file does not specify a report format, the given default format is used.
      */
-    public void addReportFilePatternsFromInputFile(Path input, String defaultFormat) throws IOException {
-        String currentFormat = defaultFormat;
-        List<String> filesForCurrentFormat = new ArrayList<>();
+    public void addReportFilePatternsFromInputFile(Path input) throws IOException {
 
         List<String> nonEmptyLines = Files.readAllLines(input).stream().filter(line -> !line.trim().isEmpty()).
                 collect(Collectors.toList());
-        for (String line : nonEmptyLines) {
-            Matcher formatPatternMatcher = formatPattern.matcher(line);
-            if (formatPatternMatcher.matches()) {
-                if (!filesForCurrentFormat.isEmpty()) {
-                    formatToFileNames.put(currentFormat, filesForCurrentFormat);
-                    filesForCurrentFormat = new ArrayList<>();
-                } else {
-                    System.err.println("The input file contains no patterns for format [" + currentFormat + "]. " +
-                            "Did you forget to specify files to upload for that format?");
-                }
-                currentFormat = formatPatternMatcher.group(1);
-            } else {
-                filesForCurrentFormat.add(line);
+
+        if (!nonEmptyLines.isEmpty()) {
+            String line = nonEmptyLines.get(0);
+            Matcher formatPatternMatcher = FORMAT_PATTERN.matcher(line);
+            if (!formatPatternMatcher.matches()) {
+                TeamscaleUpload.fail("The first line in the input file '" + line + "' must specify a report format," +
+                        " but does not match the expected format. See help for more information.");
             }
         }
-        formatToFileNames.put(currentFormat.toUpperCase(), filesForCurrentFormat);
+
+        String currentFormat = null;
+        for (String line : nonEmptyLines) {
+            Matcher formatPatternMatcher = FORMAT_PATTERN.matcher(line);
+            if (formatPatternMatcher.matches()) {
+                currentFormat = formatPatternMatcher.group(1).toUpperCase();
+                formatToFileNames.computeIfAbsent(currentFormat, k -> new HashSet<>());
+            } else {
+                formatToFileNames.get(currentFormat).add(line);
+            }
+        }
     }
 
     /**
-     * Return a list of all file patterns for the given format.
+     * Return a set of all file patterns for the given format.
      * Returns null if the given format does not exist.
      */
-    public List<String> getPatternsForFormat(String format) {
+    public Set<String> getPatternsForFormat(String format) {
         return formatToFileNames.get(format);
     }
 
@@ -76,7 +76,7 @@ public class ReportPatternManager {
      */
     public void addFilePatternsForFormat(List<String> filePatterns, String format) {
         if (!filePatterns.isEmpty()) {
-            formatToFileNames.computeIfAbsent(format, k -> new ArrayList<>()).addAll(filePatterns);
+            formatToFileNames.computeIfAbsent(format, k -> new HashSet<>()).addAll(filePatterns);
         }
     }
 }
