@@ -236,7 +236,7 @@ public class TeamscaleUpload {
                 .addPathSegments("external-analysis/session")
                 .addQueryParameter("partition", input.partition);
 
-        // We track revision or branch:timestamp for the session instead as it should be the same for all uploads
+        // We track revision or branch:timestamp for the session as it should be the same for all uploads
         if (input.commit != null) {
             builder.addQueryParameter("revision", input.commit);
         } else if (input.timestamp != null) {
