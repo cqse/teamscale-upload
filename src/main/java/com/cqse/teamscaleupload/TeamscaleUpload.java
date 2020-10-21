@@ -28,23 +28,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Main class of the teamscale-upload project.
+ */
 public class TeamscaleUpload {
 
-    public static final RequestBody EMPTY_BODY = RequestBody.create(null, new byte[0]);
+    private static final RequestBody EMPTY_BODY = RequestBody.create(null, new byte[0]);
 
     private static class Input {
-        public final String project;
-        public final String username;
-        public final String accessKey;
-        public final String partition;
-        public final String format;
-        public final String commit;
-        public final boolean autoDetectedCommit;
-        public final String timestamp;
-        public final HttpUrl url;
-        public final List<String> files;
-        public final Path inputFile;
-        public final Boolean validateSsl;
+        private final String project;
+        private final String username;
+        private final String accessKey;
+        private final String partition;
+        private final String format;
+        private final String commit;
+        private final boolean autoDetectedCommit;
+        private final String timestamp;
+        private final HttpUrl url;
+        private final List<String> files;
+        private final Path inputFile;
+        private final Boolean validateSsl;
 
         private Input(Namespace namespace) {
             this.project = namespace.getString("project");
@@ -73,6 +76,10 @@ public class TeamscaleUpload {
             }
         }
 
+        /**
+         * Checks the validity of the command line arguments and throws an exception if any
+         * invalid configuration is detected.
+         */
         public void validate(ArgumentParser parser) throws ArgumentParserException {
             if (url == null) {
                 throw new ArgumentParserException("You provided an invalid URL in the --server option", parser);
@@ -196,6 +203,7 @@ public class TeamscaleUpload {
 
     }
 
+    /** This method serves as entry point to the teamscale-upload application. */
     public static void main(String[] args) throws Exception {
         Input input = parseArguments(args);
 
