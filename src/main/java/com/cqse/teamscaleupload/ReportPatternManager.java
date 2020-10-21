@@ -1,5 +1,6 @@
 package com.cqse.teamscaleupload;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,23 +14,49 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * This class manages the given file formats and
- * corresponding report file patterns.
+ * This class provides the functionality to resolve the report file patterns and formats
+ * from the command line to a map from report formats to actual files which can then be
+ * used for the upload to Teamscale.
  */
 public class ReportPatternManager {
-
-
-    /** A map from file formats to corresponding report file patterns. */
-    private final Map<String, Set<String>> formatToFileNames = new HashMap<>();
 
     /** Expected pattern for formats in the input file, matches e.g. "[vs_coverage]" */
     private static final Pattern FORMAT_PATTERN = Pattern.compile("\\[(\\w+)\\]");
 
     /**
-     * Reads all file patterns which are specified in the given input file
-     * and adds them to {@link #formatToFileNames} for the respective format.
+     * Returns a map from file formats to corresponding report files.
+     *
+     * <ol>
+     *     <li>Reads file patterns and formats from the input file</li>
+     *     <li>Reads file patterns for the format specified on the command line</li>
+     *     <li>Resolves all file patterns from the previous steps to actual files.</li>
+     * </ol>
      */
-    public void addReportFilePatternsFromInputFile(Path input) throws IOException {
+    public static Map<String, Set<File>> resolveInputFilePatters(Path inputFile, List<String> filePatterns, String format)
+            throws IOException, AgentOptionParseException {
+        Map<String, Set<String>> formatToFilePatterns = new HashMap<>();
+
+        if (inputFile != null) {
+            formatToFilePatterns = addReportFilePatternsFromInputFile(inputFile);
+        }
+        addFilePatternsForFormatOnCommandLine(formatToFilePatterns, filePatterns, format);
+
+        // Resolve all file patterns to the actual files for all given formats.
+        Map<String, Set<File>> formatToFiles = new HashMap<>();
+        for (String key : formatToFilePatterns.keySet()) {
+            Set<String> patternsForFormat = formatToFilePatterns.get(key);
+            formatToFiles.put(format, resolveFilesForPatterns(patternsForFormat));
+        }
+
+        return formatToFiles;
+    }
+
+    /**
+     * Returns a map from report format to file patterns which are read from the given input file.
+     * In the end, it is verified that no format has an empty set of patterns ({@link #validatePatternsForFormats(Map)})
+     */
+    private static Map<String, Set<String>> addReportFilePatternsFromInputFile(Path input) throws IOException {
+        Map<String, Set<String>> formatToFilePatterns = new HashMap<>();
 
         List<String> nonEmptyLines = Files.readAllLines(input).stream().filter(line -> !line.trim().isEmpty()).
                 collect(Collectors.toList());
@@ -48,11 +75,62 @@ public class ReportPatternManager {
             Matcher formatPatternMatcher = FORMAT_PATTERN.matcher(line);
             if (formatPatternMatcher.matches()) {
                 currentFormat = formatPatternMatcher.group(1).toUpperCase();
-                formatToFileNames.computeIfAbsent(currentFormat, k -> new HashSet<>());
+                formatToFilePatterns.computeIfAbsent(currentFormat, k -> new HashSet<>());
             } else {
-                formatToFileNames.get(currentFormat).add(normalizeFilePattern(line));
+                formatToFilePatterns.get(currentFormat).add(normalizeFilePattern(line));
             }
         }
+
+        validatePatternsForFormats(formatToFilePatterns);
+        return formatToFilePatterns;
+    }
+
+    /**
+     * This method verifies that no report format contains an empty set of patterns. This could indicate
+     * that the user forgot to specify some patterns. In this case, we terminate the program with an error message.
+     */
+    private static void validatePatternsForFormats(Map<String, Set<String>> formatToFilePatterns) {
+        for(String format : formatToFilePatterns.keySet()) {
+            Set<String> patternsForFormat = formatToFilePatterns.get(format);
+            if (patternsForFormat.isEmpty()) {
+                TeamscaleUpload.fail("The input file contains no patterns for [" + format + "]." +
+                        " Did you forget to specify file patterns for that format?");
+            }
+        }
+    }
+
+    /**
+     * Normalizes the given file patterns, @see {@link #normalizeFilePattern(String)}, and adds them
+     * for the given format.
+     */
+    private static void addFilePatternsForFormatOnCommandLine(Map<String, Set<String>> formatToFilePatterns,
+                                                              List<String> filePatterns, String format) {
+        if (!filePatterns.isEmpty()) {
+            List<String> normalizedFilePatters = filePatterns.stream().map(ReportPatternManager::normalizeFilePattern).
+                    collect(Collectors.toList());
+            formatToFilePatterns.computeIfAbsent(format, k -> new HashSet<>()).addAll(normalizedFilePatters);
+        }
+    }
+
+    /**
+     * Resolves the given patterns to actual files. The program is terminated with an error message
+     * if a pattern cannot be resolved to any actual files.
+     */
+    private static Set<File> resolveFilesForPatterns(Set<String> patterns) throws AgentOptionParseException {
+        FilePatternResolver resolver = new FilePatternResolver();
+
+        Set<File> fileList = new HashSet<>();
+        for (String pattern : patterns) {
+            List<File> resolvedFiles = resolver.resolveToMultipleFiles("files", pattern);
+
+            if (resolvedFiles.isEmpty()) {
+                TeamscaleUpload.fail("The pattern '" + pattern + "' could not be resolved to any files." +
+                        " Please check the pattern for correctness or remove it if you do not need it.");
+            }
+
+            fileList.addAll(resolvedFiles);
+        }
+        return fileList;
     }
 
     /**
@@ -60,35 +138,7 @@ public class ReportPatternManager {
      * handle backward slashes as path separator, Windows can usually handle both. So, we normalize
      * all paths to use only forward slashes as they are expected to work for all operating systems.
      */
-    private String normalizeFilePattern(String pattern) {
+    private static String normalizeFilePattern(String pattern) {
         return pattern.replaceAll("\\\\", "/");
-    }
-
-    /**
-     * Return a set of all file patterns for the given format.
-     * Returns null if the given format does not exist.
-     */
-    public Set<String> getPatternsForFormat(String format) {
-        return formatToFileNames.get(format);
-    }
-
-    /**
-     * Returns all formats which are used in this session.
-     */
-    public Set<String> getAllUsedFormats() {
-        return formatToFileNames.keySet();
-    }
-
-    /**
-     * Normalizes the given file patterns, @see {@link #normalizeFilePattern(String)}, and adds them
-     * for the given format. This is used for file patterns which are directly specified via the
-     * command line.
-     */
-    public void addFilePatternsForFormat(List<String> filePatterns, String format) {
-        if (!filePatterns.isEmpty()) {
-            List<String> normalizedFilePatters = filePatterns.stream().map(this::normalizeFilePattern).
-                    collect(Collectors.toList());
-            formatToFileNames.computeIfAbsent(format, k -> new HashSet<>()).addAll(normalizedFilePatters);
-        }
     }
 }

@@ -24,8 +24,8 @@ import java.net.ConnectException;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class TeamscaleUpload {
@@ -199,16 +199,12 @@ public class TeamscaleUpload {
     public static void main(String[] args) throws Exception {
         Input input = parseArguments(args);
 
-        ReportPatternManager reportPatternManager = new ReportPatternManager();
-
-        if (input.inputFile != null) {
-            reportPatternManager.addReportFilePatternsFromInputFile(input.inputFile);
-        }
-        reportPatternManager.addFilePatternsForFormat(input.files, input.format);
+        Map<String, Set<File>> formatToFiles =
+                ReportPatternManager.resolveInputFilePatters(input.inputFile, input.files, input.format);
 
         OkHttpClient client = OkHttpClientUtils.createClient(input.validateSsl);
         try {
-            performUpload(client, reportPatternManager, input);
+            performUpload(client, formatToFiles, input);
         } finally {
             // we must shut down OkHttp as otherwise it will leave threads running and
             // prevent JVM shutdown
@@ -217,15 +213,12 @@ public class TeamscaleUpload {
         }
     }
 
-    private static void performUpload(OkHttpClient client, ReportPatternManager reportPatternManager, Input input) throws IOException, AgentOptionParseException {
+    private static void performUpload(OkHttpClient client, Map<String, Set<File>> formatToFiles, Input input)
+            throws IOException {
         String sessionId = openSession(client, input);
-        for (String format : reportPatternManager.getAllUsedFormats()) {
-            Set<String> patternsForFormat = reportPatternManager.getPatternsForFormat(format);
-            if (patternsForFormat.isEmpty()) {
-                fail("The input file contains no patterns for [" + format + "]." +
-                        " Did you forget to specify files to upload for that format?");
-            }
-            sendRequestForFormat(client, input, format, patternsForFormat, sessionId);
+        for (String format : formatToFiles.keySet()) {
+            Set<File> filesFormFormat = formatToFiles.get(format);
+            sendRequestForFormat(client, input, format, filesFormFormat, sessionId);
         }
         closeSession(client, input, sessionId);
     }
@@ -287,10 +280,8 @@ public class TeamscaleUpload {
 
 
     private static void sendRequestForFormat(OkHttpClient client, Input input, String format,
-                                             Set<String> fileNames, String sessionId)
-            throws AgentOptionParseException, IOException {
-        List<File> fileList = buildFileList(fileNames);
-
+                                             Set<File> fileList, String sessionId)
+            throws IOException {
         MultipartBody.Builder multipartBodyBuilder = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM);
 
@@ -336,28 +327,6 @@ public class TeamscaleUpload {
         }
 
         return null;
-    }
-
-    private static List<File> buildFileList(Set<String> patterns) throws AgentOptionParseException {
-        FilePatternResolver resolver = new FilePatternResolver();
-
-        List<File> fileList = new ArrayList<>();
-        for (String pattern : patterns) {
-            List<File> resolvedFiles = resolver.resolveToMultipleFiles("files", pattern);
-            for (File resolvedFile : resolvedFiles) {
-                if (resolvedFile.exists()) {
-                    fileList.add(resolvedFile);
-                } else {
-                    System.err.println("The file '" + resolvedFile + "' that you specified on the command line explicitly" +
-                            " does not exist. Ignoring this file.");
-                }
-            }
-        }
-
-        if (fileList.isEmpty()) {
-            fail("Could not find any files to upload. You must provide patterns that match at least one file.");
-        }
-        return fileList;
     }
 
     private static void handleErrors(Response response, Input input) {

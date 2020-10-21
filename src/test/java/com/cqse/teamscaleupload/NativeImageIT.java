@@ -76,7 +76,7 @@ public class NativeImageIT {
         ProcessUtils.ProcessResult result = runUploader(new Arguments().withPattern("**/matches.nothing"));
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(result.exitCode).isNotZero();
-        softly.assertThat(result.stdoutAndStdErr).contains("Could not find any files to upload");
+        softly.assertThat(result.stdoutAndStdErr).contains("The pattern").contains("could not be resolved to any files");
         softly.assertAll();
     }
 
