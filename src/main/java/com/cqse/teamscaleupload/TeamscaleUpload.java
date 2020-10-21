@@ -171,10 +171,10 @@ public class TeamscaleUpload {
         parser.epilog("INPUTFILE" +
                 "\n" +
                 "\n" +
-                "The input file allows to upload report files for different file patterns in one upload session." +
+                "The input file allows to upload multiple report files for different formats in one upload session." +
                 " Each section of reports must start with a specification of the report format. The report file" +
                 " patterns have the same format as used on the command line." +
-                " The entries in the file are separated by line breaks.\n\n" +
+                " The entries in the file are separated by line breaks. Blank lines are ignored.\n\n" +
                 "Example:\n\n" +
                 "[jacoco]\n" +
                 "pattern1/**.xml\n" +
