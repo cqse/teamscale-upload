@@ -50,9 +50,18 @@ public class ReportPatternManager {
                 currentFormat = formatPatternMatcher.group(1).toUpperCase();
                 formatToFileNames.computeIfAbsent(currentFormat, k -> new HashSet<>());
             } else {
-                formatToFileNames.get(currentFormat).add(line);
+                formatToFileNames.get(currentFormat).add(normalizeFilePattern(line));
             }
         }
+    }
+
+    /**
+     * Replace backslashes by forwards slashes in the pattern. The linux file system usually cannot
+     * handle backward slashes as path separator, Windows can usually handle both. So, we normalize
+     * all paths to use only forward slashes as they are expected to work for all operating systems.
+     */
+    private String normalizeFilePattern(String pattern) {
+        return pattern.replaceAll("\\\\", "/");
     }
 
     /**
@@ -71,12 +80,15 @@ public class ReportPatternManager {
     }
 
     /**
-     * Adds the file patters for the given format.
-     * This is used for file patterns which are directly specified via the command line.
+     * Normalizes the given file patterns, @see {@link #normalizeFilePattern(String)}, and adds them
+     * for the given format. This is used for file patterns which are directly specified via the
+     * command line.
      */
     public void addFilePatternsForFormat(List<String> filePatterns, String format) {
         if (!filePatterns.isEmpty()) {
-            formatToFileNames.computeIfAbsent(format, k -> new HashSet<>()).addAll(filePatterns);
+            List<String> normalizedFilePatters = filePatterns.stream().map(this::normalizeFilePattern).
+                    collect(Collectors.toList());
+            formatToFileNames.computeIfAbsent(format, k -> new HashSet<>()).addAll(normalizedFilePatters);
         }
     }
 }

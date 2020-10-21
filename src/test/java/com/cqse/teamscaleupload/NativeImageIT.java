@@ -1,13 +1,11 @@
 package com.cqse.teamscaleupload;
 
 import com.cqse.teamscaleupload.autodetect_revision.ProcessUtils;
-
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -123,7 +121,7 @@ public class NativeImageIT {
         private String project = "teamscale-upload";
         private final String format = "simple";
         private final String partition = "NativeImageIT";
-        private String pattern = "**.simple";
+        private String pattern = "coverage_files\\*.simple";
         private String input = null;
 
         private Arguments withPattern(String pattern) {
