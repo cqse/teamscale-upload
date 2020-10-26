@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
  * from the command line to a map from report formats to actual files which can then be
  * used for the upload to Teamscale.
  */
-public class ReportPatternManager {
+public class ReportPatternUtils {
 
     /** Expected pattern for formats in the input file, matches e.g. "[vs_coverage]" */
     private static final Pattern FORMAT_PATTERN = Pattern.compile("\\[(\\w+)\\]");
@@ -32,33 +32,38 @@ public class ReportPatternManager {
      *     <li>Resolves all file patterns from the previous steps to actual files.</li>
      * </ol>
      */
-    public static Map<String, Set<File>> resolveInputFilePatters(Path inputFile, List<String> filePatterns, String format)
+    public static Map<String, Set<File>> resolveInputFilePatterns(Path inputFile, List<String> commandLineFilePatterns,
+                                                                  String commandLineFormat)
             throws IOException, AgentOptionParseException {
         Map<String, Set<String>> formatToFilePatterns = new HashMap<>();
 
         if (inputFile != null) {
-            formatToFilePatterns = addReportFilePatternsFromInputFile(inputFile);
+            formatToFilePatterns = parsePatternsFromInputFile(inputFile);
         }
-        addFilePatternsForFormatOnCommandLine(formatToFilePatterns, filePatterns, format);
+        parseFilePatternsForFormatOnCommandLine(formatToFilePatterns, commandLineFilePatterns, commandLineFormat);
 
-        // Resolve all file patterns to the actual files for all given formats.
+        return resolveFilePatternsToFiles(formatToFilePatterns);
+    }
+
+    /** Resolve all file patterns to the actual files for all given formats. */
+    private static Map<String, Set<File>> resolveFilePatternsToFiles(Map<String, Set<String>> formatToFilePatterns)
+            throws AgentOptionParseException {
         Map<String, Set<File>> formatToFiles = new HashMap<>();
-        for (String key : formatToFilePatterns.keySet()) {
-            Set<String> patternsForFormat = formatToFilePatterns.get(key);
+        for (String format : formatToFilePatterns.keySet()) {
+            Set<String> patternsForFormat = formatToFilePatterns.get(format);
             formatToFiles.put(format, resolveFilesForPatterns(patternsForFormat));
         }
-
         return formatToFiles;
     }
 
     /**
-     * Returns a map from report format to file patterns which are read from the given input file.
+     * Returns a map from report format to file patterns which are parsed from the given input file.
      * In the end, it is verified that no format has an empty set of patterns ({@link #validatePatternsForFormats(Map)})
      */
-    private static Map<String, Set<String>> addReportFilePatternsFromInputFile(Path input) throws IOException {
+    private static Map<String, Set<String>> parsePatternsFromInputFile(Path inputFile) throws IOException {
         Map<String, Set<String>> formatToFilePatterns = new HashMap<>();
 
-        List<String> nonEmptyLines = Files.readAllLines(input).stream().filter(line -> !line.trim().isEmpty()).
+        List<String> nonEmptyLines = Files.readAllLines(inputFile).stream().filter(line -> !line.trim().isEmpty()).
                 collect(Collectors.toList());
 
         if (!nonEmptyLines.isEmpty()) {
@@ -103,10 +108,10 @@ public class ReportPatternManager {
      * Normalizes the given file patterns, @see {@link #normalizeFilePattern(String)}, and adds them
      * for the given format.
      */
-    private static void addFilePatternsForFormatOnCommandLine(Map<String, Set<String>> formatToFilePatterns,
-                                                              List<String> filePatterns, String format) {
+    private static void parseFilePatternsForFormatOnCommandLine(Map<String, Set<String>> formatToFilePatterns,
+                                                                List<String> filePatterns, String format) {
         if (!filePatterns.isEmpty()) {
-            List<String> normalizedFilePatters = filePatterns.stream().map(ReportPatternManager::normalizeFilePattern).
+            List<String> normalizedFilePatters = filePatterns.stream().map(ReportPatternUtils::normalizeFilePattern).
                     collect(Collectors.toList());
             formatToFilePatterns.computeIfAbsent(format, k -> new HashSet<>()).addAll(normalizedFilePatters);
         }
@@ -134,7 +139,7 @@ public class ReportPatternManager {
     }
 
     /**
-     * Replace backslashes by forwards slashes in the pattern. The linux file system usually cannot
+     * Replace backslashes by forward slashes in the pattern. The linux file system usually cannot
      * handle backward slashes as path separator, Windows can usually handle both. So, we normalize
      * all paths to use only forward slashes as they are expected to work for all operating systems.
      */

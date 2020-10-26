@@ -208,7 +208,7 @@ public class TeamscaleUpload {
         Input input = parseArguments(args);
 
         Map<String, Set<File>> formatToFiles =
-                ReportPatternManager.resolveInputFilePatters(input.inputFile, input.files, input.format);
+                ReportPatternUtils.resolveInputFilePatterns(input.inputFile, input.files, input.format);
 
         OkHttpClient client = OkHttpClientUtils.createClient(input.validateSsl);
         try {
@@ -249,7 +249,7 @@ public class TeamscaleUpload {
             }
             builder.addQueryParameter("revision", commit);
         } else {
-            builder.addQueryParameter("t", "master:HEAD");
+            builder.addQueryParameter("t", "HEAD");
         }
 
         HttpUrl url = builder.build();
