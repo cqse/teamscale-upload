@@ -1,2 +1,7 @@
+
+
+[jacoco]
 coverage_files\test*.simple
-coverage_files\coverage.simple
+
+[simple]
+coverage_files/coverage.simple

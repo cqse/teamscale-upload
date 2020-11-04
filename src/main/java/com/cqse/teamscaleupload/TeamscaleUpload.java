@@ -3,22 +3,11 @@ package com.cqse.teamscaleupload;
 import com.cqse.teamscaleupload.autodetect_revision.EnvironmentVariableChecker;
 import com.cqse.teamscaleupload.autodetect_revision.GitChecker;
 import com.cqse.teamscaleupload.autodetect_revision.SvnChecker;
-
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.ConnectException;
-import java.net.UnknownHostException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-
 import okhttp3.Credentials;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
@@ -29,37 +18,68 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.UnknownHostException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Main class of the teamscale-upload project.
+ */
 public class TeamscaleUpload {
 
+    private static final RequestBody EMPTY_BODY = RequestBody.create(null, new byte[0]);
+
     private static class Input {
-        public final String project;
-        public final String username;
-        public final String accessKey;
-        public final String partition;
-        public final String format;
-        public final String commit;
-        public final boolean autoDetectedCommit;
-        public final String timestamp;
-        public final HttpUrl url;
-        public final List<String> files;
-        public final String inputFile;
-        public final Boolean validateSsl;
+        private final String project;
+        private final String username;
+        private final String accessKey;
+        private final String partition;
+        private final String format;
+        private final String commit;
+        private final boolean autoDetectedCommit;
+        private final String timestamp;
+        private final HttpUrl url;
+        private final List<String> files;
+        private final Path inputFile;
+        private final Boolean validateSsl;
 
         private Input(Namespace namespace) {
             this.project = namespace.getString("project");
             this.username = namespace.getString("user");
             this.accessKey = namespace.getString("accesskey");
             this.partition = namespace.getString("partition");
-            this.format = namespace.getString("format").toUpperCase();
             this.commit = namespace.getString("commit");
             this.autoDetectedCommit = namespace.getBoolean("detect_commit");
             this.timestamp = namespace.getString("branch_and_timestamp");
             this.files = namespace.getList("files");
             this.url = HttpUrl.parse(namespace.getString("server"));
-            this.inputFile = namespace.getString("input");
             this.validateSsl = namespace.getBoolean("validate_ssl");
+
+            String inputFilePath = namespace.getString("input");
+            if (inputFilePath != null) {
+                this.inputFile = Paths.get(inputFilePath);
+            } else {
+                this.inputFile = null;
+            }
+
+            String formatRaw = namespace.getString("format");
+            if (formatRaw != null) {
+                this.format = formatRaw.toUpperCase();
+            } else {
+                this.format = null;
+            }
         }
 
+        /**
+         * Checks the validity of the command line arguments and throws an exception if any
+         * invalid configuration is detected.
+         */
         public void validate(ArgumentParser parser) throws ArgumentParserException {
             if (url == null) {
                 throw new ArgumentParserException("You provided an invalid URL in the --server option", parser);
@@ -71,9 +91,15 @@ public class TeamscaleUpload {
                         " upload data to Teamscale", parser);
             }
 
-            if (files == null && inputFile == null) {
-                throw new ArgumentParserException("You must either specify the paths of the coverage files as plain " +
-                        "arguments or provide them in an input file, see help for more information", parser);
+            if (files.isEmpty() && inputFile == null) {
+                throw new ArgumentParserException("You did not provide any report files to upload." +
+                        " You must either specify the paths of the report files as command line" +
+                        " arguments or provide them in an input file via --input", parser);
+            }
+
+            if (!files.isEmpty() && format == null) {
+                throw new ArgumentParserException("Please specify a report format with --format " +
+                        "if you pass report patterns as command line arguments", parser);
             }
         }
 
@@ -121,8 +147,8 @@ public class TeamscaleUpload {
                         " previously inserted there, so use different partitions if you'd instead" +
                         " like to merge data from different sources (e.g. one for Findbugs findings" +
                         " and one for JaCoCo coverage).");
-        parser.addArgument("-f", "--format").type(String.class).metavar("FORMAT").required(true)
-                .help("The file format of the uploaded report files." +
+        parser.addArgument("-f", "--format").type(String.class).metavar("FORMAT").required(false)
+                .help("The file format of the reports which are specified as command line arguments." +
                         " See https://docs.teamscale.com/reference/upload-formats-and-samples/#supported-formats-for-upload" +
                         " for a full list of supported file formats.");
         parser.addArgument("-c", "--commit").type(String.class).metavar("REVISION").required(false)
@@ -138,9 +164,7 @@ public class TeamscaleUpload {
                         "\nFormat: BRANCH:TIMESTAMP" +
                         "\nExample: master:1597845930000");
         parser.addArgument("-i", "--input").type(String.class).metavar("INPUT").required(false)
-                .help("A file which contains the coverage file paths or patterns to be added. The entries are separated " +
-                        "by line breaks. If files are specified as plain arguments, they are added to the files which " +
-                        "are given in this file.");
+                .help("A file which contains additional report file patterns. See INPUTFILE for a detailed description of the file format.");
         parser.addArgument("--detect-commit").action(Arguments.storeTrue()).required(false)
                 .help("Tries to automatically detect the code commit to which to upload from environment variables or" +
                         " a Git or SVN checkout in the current working directory. If guessing fails, the upload will fail." +
@@ -150,6 +174,21 @@ public class TeamscaleUpload {
                         " certificates easier. This flag enables validation.");
         parser.addArgument("files").metavar("FILES").type(String.class).nargs("*").
                 help("Path(s) or pattern(s) of the report files to upload. Alternatively, you may provide input files via -i or --input");
+
+        parser.epilog("INPUTFILE" +
+                "\n" +
+                "\n" +
+                "The input file allows to upload multiple report files for different formats in one upload session." +
+                " Each section of reports must start with a specification of the report format. The report file" +
+                " patterns have the same format as used on the command line." +
+                " The entries in the file are separated by line breaks. Blank lines are ignored.\n\n" +
+                "Example:\n\n" +
+                "[jacoco]\n" +
+                "pattern1/**.xml\n" +
+                "pattern2/**.xml\n" +
+                "[findbugs]\n" +
+                "pattern1/**.findbugs.xml\n" +
+                "pattern2/**.findbugs.xml");
 
         try {
             Namespace namespace = parser.parseArgs(args);
@@ -164,36 +203,41 @@ public class TeamscaleUpload {
 
     }
 
+    /** This method serves as entry point to the teamscale-upload application. */
     public static void main(String[] args) throws Exception {
         Input input = parseArguments(args);
 
-        List<String> fileNames = new ArrayList<>();
+        Map<String, Set<File>> formatToFiles =
+                ReportPatternUtils.resolveInputFilePatterns(input.inputFile, input.files, input.format);
 
-        if (input.files != null) {
-            fileNames.addAll(input.files);
+        OkHttpClient client = OkHttpClientUtils.createClient(input.validateSsl);
+        try {
+            performUpload(client, formatToFiles, input);
+        } finally {
+            // we must shut down OkHttp as otherwise it will leave threads running and
+            // prevent JVM shutdown
+            client.dispatcher().executorService().shutdownNow();
+            client.connectionPool().evictAll();
         }
+    }
 
-        if (input.inputFile != null) {
-            fileNames.addAll(readFileNamesFromInputFile(input.inputFile));
+    private static void performUpload(OkHttpClient client, Map<String, Set<File>> formatToFiles, Input input)
+            throws IOException {
+        String sessionId = openSession(client, input);
+        for (String format : formatToFiles.keySet()) {
+            Set<File> filesFormFormat = formatToFiles.get(format);
+            sendRequestForFormat(client, input, format, filesFormFormat, sessionId);
         }
+        closeSession(client, input, sessionId);
+    }
 
-        List<File> fileList = buildFileList(fileNames);
-
-        MultipartBody.Builder multipartBodyBuilder = new MultipartBody.Builder()
-                .setType(MultipartBody.FORM);
-
-        for (File file : fileList) {
-            multipartBodyBuilder.addFormDataPart("report", file.getName(),
-                    RequestBody.create(MediaType.get("application/octet-stream"), file));
-        }
-        RequestBody requestBody = multipartBodyBuilder.build();
-
+    private static String openSession(OkHttpClient client, Input input) throws IOException {
         HttpUrl.Builder builder = input.url.newBuilder()
                 .addPathSegments("api/projects").addPathSegment(input.project)
-                .addPathSegments("external-analysis/session/auto-create/report")
-                .addQueryParameter("partition", input.partition)
-                .addQueryParameter("format", input.format);
+                .addPathSegments("external-analysis/session")
+                .addQueryParameter("partition", input.partition);
 
+        // We track revision or branch:timestamp for the session as it should be the same for all uploads
         if (input.commit != null) {
             builder.addQueryParameter("revision", input.commit);
         } else if (input.timestamp != null) {
@@ -205,8 +249,64 @@ public class TeamscaleUpload {
             }
             builder.addQueryParameter("revision", commit);
         } else {
-            builder.addQueryParameter("t", "master:HEAD");
+            builder.addQueryParameter("t", "HEAD");
         }
+
+        HttpUrl url = builder.build();
+
+        Request request = new Request.Builder()
+                .header("Authorization", Credentials.basic(input.username, input.accessKey))
+                .url(url)
+                .post(EMPTY_BODY)
+                .build();
+
+        System.out.println("Opening upload session");
+        String sessionId = sendRequest(client, input, url, request);
+        if (sessionId == null) {
+            fail("Could not open session.");
+        }
+        System.out.println("Session ID: " + sessionId);
+        return sessionId;
+    }
+
+    private static void closeSession(OkHttpClient client, Input input, String sessionId) throws IOException {
+        HttpUrl.Builder builder = input.url.newBuilder()
+                .addPathSegments("api/projects").addPathSegment(input.project)
+                .addPathSegments("external-analysis/session")
+                .addPathSegment(sessionId);
+
+        HttpUrl url = builder.build();
+
+        Request request = new Request.Builder()
+                .header("Authorization", Credentials.basic(input.username, input.accessKey))
+                .url(url)
+                .post(EMPTY_BODY)
+                .build();
+        System.out.println("Closing upload session");
+        sendRequest(client, input, url, request);
+    }
+
+
+    private static void sendRequestForFormat(OkHttpClient client, Input input, String format,
+                                             Set<File> fileList, String sessionId)
+            throws IOException {
+        MultipartBody.Builder multipartBodyBuilder = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM);
+
+        for (File file : fileList) {
+            multipartBodyBuilder.addFormDataPart("report", file.getName(),
+                    RequestBody.create(MediaType.get("application/octet-stream"), file));
+        }
+
+        RequestBody requestBody = multipartBodyBuilder.build();
+
+        HttpUrl.Builder builder = input.url.newBuilder()
+                .addPathSegments("api/projects")
+                .addPathSegment(input.project)
+                .addPathSegments("external-analysis/session")
+                .addPathSegment(sessionId)
+                .addPathSegment("report")
+                .addQueryParameter("format", format);
 
         HttpUrl url = builder.build();
 
@@ -216,48 +316,28 @@ public class TeamscaleUpload {
                 .post(requestBody)
                 .build();
 
-        OkHttpClient client = OkHttpClientUtils.createClient(input.validateSsl);
+        System.out.println("Uploading reports for format " + format);
+        sendRequest(client, input, url, request);
+    }
+
+    private static String sendRequest(OkHttpClient client, Input input, HttpUrl url, Request request) throws IOException {
 
         try (Response response = client.newCall(request).execute()) {
-            handleCommonErrors(response, input);
-            System.out.println("Upload to Teamscale successful");
+            handleErrors(response, input);
+            System.out.println("Successful");
+            return readBodySafe(response);
         } catch (UnknownHostException e) {
             fail("The host " + url + " could not be resolved. Please ensure you have no typo and that" +
                     " this host is reachable from this server. " + e.getMessage());
         } catch (ConnectException e) {
             fail("The URL " + url + " refused a connection. Please ensure that you have no typo and that" +
                     " this endpoint is reachable and not blocked by firewalls. " + e.getMessage());
-        } finally {
-            // we must shut down OkHttp as otherwise it will leave threads running and
-            // prevent JVM shutdown
-            client.dispatcher().executorService().shutdownNow();
-            client.connectionPool().evictAll();
         }
+
+        return null;
     }
 
-    private static List<File> buildFileList(List<String> patterns) throws AgentOptionParseException {
-        FilePatternResolver resolver = new FilePatternResolver();
-
-        List<File> fileList = new ArrayList<>();
-        for (String pattern : patterns) {
-            List<File> resolvedFiles = resolver.resolveToMultipleFiles("files", pattern);
-            for (File resolvedFile : resolvedFiles) {
-                if (resolvedFile.exists()) {
-                    fileList.add(resolvedFile);
-                } else {
-                    System.err.println("The file '" + resolvedFile + "' that you specified on the command line explicitly" +
-                            " does not exist. Ignoring this file.");
-                }
-            }
-        }
-
-        if (fileList.isEmpty()) {
-            fail("Could not find any files to upload. You must provide patterns that match at least one file.");
-        }
-        return fileList;
-    }
-
-    private static void handleCommonErrors(Response response, Input input) {
+    private static void handleErrors(Response response, Input input) {
         if (response.isRedirect()) {
             String location = response.header("Location");
             if (location == null) {
@@ -306,12 +386,14 @@ public class TeamscaleUpload {
         }
     }
 
-    private static void fail(String message, Response response) {
+    /** Print error message and server response, then exit program */
+    public static void fail(String message, Response response) {
         fail("Upload to Teamscale failed:\n\n" + message + "\n\nTeamscale's response:\n" +
                 response.toString() + "\n" + readBodySafe(response));
     }
 
-    private static void fail(String message) {
+    /** Print error message and exit the program */
+    public static void fail(String message) {
         System.err.println(message);
         System.exit(1);
     }
@@ -326,15 +408,5 @@ public class TeamscaleUpload {
         } catch (IOException e) {
             return "Failed to read response body: " + e.getMessage();
         }
-    }
-
-    private static List<String> readFileNamesFromInputFile(String inputFilePath) {
-        try {
-            return Files.readAllLines(Paths.get(inputFilePath));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return new ArrayList<>();
     }
 }

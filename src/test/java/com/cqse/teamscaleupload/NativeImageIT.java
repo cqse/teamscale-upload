@@ -1,9 +1,12 @@
 package com.cqse.teamscaleupload;
 
 import com.cqse.teamscaleupload.autodetect_revision.ProcessUtils;
-
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -73,7 +76,7 @@ public class NativeImageIT {
         ProcessUtils.ProcessResult result = runUploader(new Arguments().withPattern("**/matches.nothing"));
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(result.exitCode).isNotZero();
-        softly.assertThat(result.stdoutAndStdErr).contains("Could not find any files to upload");
+        softly.assertThat(result.stdoutAndStdErr).contains("The pattern").contains("could not be resolved to any files");
         softly.assertAll();
     }
 
@@ -88,8 +91,16 @@ public class NativeImageIT {
     }
 
     @Test
-    public void successfulUpload() {
+    public void successfulSingleFormatUpload() {
         ProcessUtils.ProcessResult result = runUploader(new Arguments());
+        assertThat(result.exitCode)
+                .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+                .isZero();
+    }
+
+    @Test
+    public void successfulMultiFormatUpload() {
+        ProcessUtils.ProcessResult result = runUploader(new Arguments().withInput("coverage_files/input_file"));
         assertThat(result.exitCode)
                 .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
                 .isZero();
@@ -110,7 +121,8 @@ public class NativeImageIT {
         private String project = "teamscale-upload";
         private final String format = "simple";
         private final String partition = "NativeImageIT";
-        private String pattern = "**.simple";
+        private String pattern = "coverage_files\\*.simple";
+        private String input = null;
 
         private Arguments withPattern(String pattern) {
             this.pattern = pattern;
@@ -137,9 +149,21 @@ public class NativeImageIT {
             return this;
         }
 
+        private Arguments withInput(String input) {
+            this.input = input;
+            return this;
+        }
+
         private String[] toStringArray() {
-            return new String[]{"-s", url, "-u", user, "-a", accessKey, "-f", format,
-                    "-p", project, "-t", partition, pattern};
+            List<String> arguments = new ArrayList<>(Arrays.asList("-s", url, "-u", user, "-a", accessKey, "-f", format,
+                    "-p", project, "-t", partition));
+            if (input != null) {
+                arguments.add("-i");
+                arguments.add(input);
+            }
+            arguments.add(pattern);
+
+            return arguments.toArray(new String[arguments.size()]);
         }
     }
 
