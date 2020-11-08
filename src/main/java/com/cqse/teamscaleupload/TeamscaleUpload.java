@@ -16,6 +16,7 @@ import java.net.ConnectException;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,7 +45,7 @@ public class TeamscaleUpload {
         private final String partition;
         private final String format;
         private final String commit;
-        private final boolean autoDetectedCommit;
+        private final boolean autoDetectCommit;
         private final String timestamp;
         private final HttpUrl url;
         private final List<String> files;
@@ -58,7 +59,7 @@ public class TeamscaleUpload {
             this.accessKey = namespace.getString("accesskey");
             this.partition = namespace.getString("partition");
             this.commit = namespace.getString("commit");
-            this.autoDetectedCommit = namespace.getBoolean("detect_commit");
+            this.autoDetectCommit = namespace.getBoolean("detect_commit");
             this.timestamp = namespace.getString("branch_and_timestamp");
             this.files = namespace.getList("files");
             this.url = HttpUrl.parse(namespace.getString("server"));
@@ -111,10 +112,10 @@ public class TeamscaleUpload {
             if (commit != null && timestamp != null) {
                 return true;
             }
-            if (commit != null && autoDetectedCommit) {
+            if (commit != null && autoDetectCommit) {
                 return true;
             }
-            return timestamp != null && autoDetectedCommit;
+            return timestamp != null && autoDetectCommit;
         }
     }
 
@@ -233,7 +234,7 @@ public class TeamscaleUpload {
 
     private static void performUpload(OkHttpClient client, Map<String, Set<File>> formatToFiles, Input input)
             throws IOException {
-        String sessionId = openSession(client, input);
+        String sessionId = openSession(client, input, formatToFiles.keySet());
         for (String format : formatToFiles.keySet()) {
             Set<File> filesFormFormat = formatToFiles.get(format);
             sendRequestForFormat(client, input, format, filesFormFormat, sessionId);
@@ -241,7 +242,7 @@ public class TeamscaleUpload {
         closeSession(client, input, sessionId);
     }
 
-    private static String openSession(OkHttpClient client, Input input) throws IOException {
+    private static String openSession(OkHttpClient client, Input input, Collection<String> formats) throws IOException {
         HttpUrl.Builder builder = input.url.newBuilder()
                 .addPathSegments("api/projects").addPathSegment(input.project)
                 .addPathSegments("external-analysis/session")
@@ -255,7 +256,7 @@ public class TeamscaleUpload {
         } else if (input.timestamp != null) {
             builder.addQueryParameter("t", input.timestamp);
             revision = input.timestamp;
-        } else if (input.autoDetectedCommit) {
+        } else if (input.autoDetectCommit) {
             String commit = detectCommit();
             if (commit == null) {
                 fail("Failed to automatically detect the commit. Please specify it manually via --commit or --timestamp");
@@ -267,7 +268,7 @@ public class TeamscaleUpload {
             revision = "HEAD";
         }
 
-        builder.addQueryParameter("message", MessageUtils.createDefaultMessage(revision, input.partition));
+        builder.addQueryParameter("message", MessageUtils.createDefaultMessage(revision, input.partition, formats));
 
         HttpUrl url = builder.build();
 

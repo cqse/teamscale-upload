@@ -4,19 +4,22 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collection;
 
 public class MessageUtils {
 
-    public static String createDefaultMessage(String revision, String partition) {
+    public static String createDefaultMessage(String commit, String partition, Collection<String> formats) {
         String revisionPart = "";
-        if (revision != null) {
-            revisionPart = "\nfor revision: " + revision;
+        if (commit != null) {
+            revisionPart = "\nfor revision: " + commit;
         }
 
-        return partition + " coverage uploaded at " +
+
+        return partition + " external analysis results uploaded at " +
                 DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now()) + "\n\n" +
                 "uploaded from " + guessHostName() +
-                revisionPart;
+                revisionPart +
+                "Includes data in the following formats: " + String.join(", ", formats);
     }
 
     /**
