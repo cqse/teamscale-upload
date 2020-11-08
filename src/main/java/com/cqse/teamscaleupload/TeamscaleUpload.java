@@ -160,9 +160,10 @@ public class TeamscaleUpload {
                 .help("The branch and Unix Epoch timestamp for which you obtained the report files." +
                         " E.g. if you obtained a test coverage report in your CI pipeline, then this" +
                         " is the branch and the commit timestamp of the commit that the CI pipeline built before running the tests." +
-                        " The timestamp must be milliseconds since 00:00:00 UTC Thursday, 1 January 1970." +
+                        " The timestamp must be milliseconds since 00:00:00 UTC Thursday, 1 January 1970 or the string 'HEAD' to upload to the latest revision on that branch." +
                         "\nFormat: BRANCH:TIMESTAMP" +
                         "\nExample: master:1597845930000");
+                        "\nExample: develop:HEAD");
         parser.addArgument("-i", "--input").type(String.class).metavar("INPUT").required(false)
                 .help("A file which contains additional report file patterns. See INPUTFILE for a detailed description of the file format.");
         parser.addArgument("--detect-commit").action(Arguments.storeTrue()).required(false)
