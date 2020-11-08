@@ -7,19 +7,21 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
+/**
+ * Utilities for the upload session's message parameter.
+ */
 public class MessageUtils {
 
-    public static String createDefaultMessage(String commit, String partition, Collection<String> formats) {
-        String revisionPart = "";
-        if (commit != null) {
-            revisionPart = "\nfor revision: " + commit;
-        }
-
+    /**
+     * Creates the default message based on the given revision, branch and timestamp, partition and
+     * uploaded formats.
+     */
+    public static String createDefaultMessage(String revisionOrBranchTimestamp, String partition, Collection<String> formats) {
         String formatList = formats.stream().map(String::toUpperCase).collect(Collectors.joining(", "));
 
         return partition + " external analysis results uploaded at " + DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now()) +
                 "\n\nuploaded from " + guessHostName() +
-                revisionPart +
+                "\nfor revision: " + revisionOrBranchTimestamp +
                 "\nincludes data in the following formats: " + formatList;
     }
 

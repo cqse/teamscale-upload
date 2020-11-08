@@ -248,26 +248,7 @@ public class TeamscaleUpload {
                 .addPathSegments("external-analysis/session")
                 .addQueryParameter("partition", input.partition);
 
-        // We track revision or branch:timestamp for the session as it should be the same for all uploads
-        String revision;
-        if (input.commit != null) {
-            builder.addQueryParameter("revision", input.commit);
-            revision = input.commit;
-        } else if (input.timestamp != null) {
-            builder.addQueryParameter("t", input.timestamp);
-            revision = input.timestamp;
-        } else if (input.autoDetectCommit) {
-            String commit = detectCommit();
-            if (commit == null) {
-                fail("Failed to automatically detect the commit. Please specify it manually via --commit or --timestamp");
-            }
-            builder.addQueryParameter("revision", commit);
-            revision = commit;
-        } else {
-            builder.addQueryParameter("t", "HEAD");
-            revision = "HEAD";
-        }
-
+        String revision = handleRevisionAndBranchTimestamp(input, builder);
         builder.addQueryParameter("message", MessageUtils.createDefaultMessage(revision, input.partition, formats));
 
         HttpUrl url = builder.build();
@@ -285,6 +266,33 @@ public class TeamscaleUpload {
         }
         System.out.println("Session ID: " + sessionId);
         return sessionId;
+    }
+
+    /**
+     * Adds either a revision or t parameter to the given builder, based on the input.
+     * <p>
+     * We track revision or branch:timestamp for the session as it should be the same for all uploads.
+     *
+     * @return the revision or branch:timestamp coordinate used.
+     */
+    private static String handleRevisionAndBranchTimestamp(Input input, HttpUrl.Builder builder) {
+        if (input.commit != null) {
+            builder.addQueryParameter("revision", input.commit);
+            return input.commit;
+        } else if (input.timestamp != null) {
+            builder.addQueryParameter("t", input.timestamp);
+            return input.timestamp;
+        } else if (input.autoDetectCommit) {
+            String commit = detectCommit();
+            if (commit == null) {
+                fail("Failed to automatically detect the commit. Please specify it manually via --commit or --timestamp");
+            }
+            builder.addQueryParameter("revision", commit);
+            return commit;
+        } else {
+            builder.addQueryParameter("t", "HEAD");
+            return "HEAD";
+        }
     }
 
     private static void closeSession(OkHttpClient client, Input input, String sessionId) throws IOException {
