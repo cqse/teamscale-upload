@@ -246,7 +246,7 @@ public class TeamscaleUpload {
         } else if (input.autoDetectedCommit) {
             String commit = detectCommit();
             if (commit == null) {
-                fail("Failed to automatically detect the commit. Please specify it manually via --commit or --timestamp");
+                fail("Failed to automatically detect the commit. Please specify it manually via --commit or --branch-and-timestamp");
             }
             builder.addQueryParameter("revision", commit);
         } else {
