@@ -5,6 +5,7 @@ import java.net.UnknownHostException;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 public class MessageUtils {
 
@@ -14,12 +15,12 @@ public class MessageUtils {
             revisionPart = "\nfor revision: " + commit;
         }
 
+        String formatList = formats.stream().map(String::toUpperCase).collect(Collectors.joining(", "));
 
-        return partition + " external analysis results uploaded at " +
-                DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now()) + "\n\n" +
-                "uploaded from " + guessHostName() +
+        return partition + " external analysis results uploaded at " + DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now()) +
+                "\n\nuploaded from " + guessHostName() +
                 revisionPart +
-                "Includes data in the following formats: " + String.join(", ", formats);
+                "\nincludes data in the following formats: " + formatList;
     }
 
     /**

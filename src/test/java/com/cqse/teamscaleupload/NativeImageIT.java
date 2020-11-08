@@ -1,6 +1,8 @@
 package com.cqse.teamscaleupload;
 
 import com.cqse.teamscaleupload.autodetect_revision.ProcessUtils;
+import com.cqse.teamscaleupload.test_utils.TeamscaleMockServer;
+
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 
@@ -104,6 +106,26 @@ public class NativeImageIT {
         assertThat(result.exitCode)
                 .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
                 .isZero();
+    }
+
+    @Test
+    public void testDefaultMessage() throws Exception {
+        int mockTeamscalePort = 24398;
+        TeamscaleMockServer server = new TeamscaleMockServer(mockTeamscalePort);
+        ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("http://localhost:" + mockTeamscalePort));
+        assertThat(result.exitCode)
+                .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+                .isZero();
+        assertThat(server.sessions).hasSize(1).first().extracting(this::extractNormalizedMessage)
+                .isEqualTo("NativeImageIT external analysis results uploaded at DATE" +
+                        "\n\nuploaded from HOSTNAME" +
+                        "\nfor revision: HEAD" +
+                        "\nincludes data in the following formats: SIMPLE");
+    }
+
+    private String extractNormalizedMessage(TeamscaleMockServer.Session session) {
+        return session.message.replaceAll("uploaded from .*", "uploaded from HOSTNAME")
+                .replaceAll("uploaded at .*", "uploaded at DATE");
     }
 
     private static String getAccessKeyFromCi() {
