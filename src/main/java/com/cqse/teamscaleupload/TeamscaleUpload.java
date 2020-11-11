@@ -165,9 +165,10 @@ public class TeamscaleUpload {
                 .help("The branch and Unix Epoch timestamp for which you obtained the report files." +
                         " E.g. if you obtained a test coverage report in your CI pipeline, then this" +
                         " is the branch and the commit timestamp of the commit that the CI pipeline built before running the tests." +
-                        " The timestamp must be milliseconds since 00:00:00 UTC Thursday, 1 January 1970." +
+                        " The timestamp must be milliseconds since 00:00:00 UTC Thursday, 1 January 1970 or the string 'HEAD' to upload to the latest revision on that branch." +
                         "\nFormat: BRANCH:TIMESTAMP" +
-                        "\nExample: master:1597845930000");
+                        "\nExample: master:1597845930000" +
+                        "\nExample: develop:HEAD");
         parser.addArgument("--message").type(String.class).metavar("MESSAGE").required(false)
                 .help("The message for the commit created in Teamscale for this upload. Will be" +
                         " visible in the Activity perspective. Defaults to a message containing" +
@@ -253,6 +254,7 @@ public class TeamscaleUpload {
         String message = input.message;
         if (message == null) {
             message = MessageUtils.createDefaultMessage(revision, input.partition, formats);
+
         }
         builder.addQueryParameter("message", message);
 
@@ -290,7 +292,7 @@ public class TeamscaleUpload {
         } else if (input.autoDetectCommit) {
             String commit = detectCommit();
             if (commit == null) {
-                fail("Failed to automatically detect the commit. Please specify it manually via --commit or --timestamp");
+                fail("Failed to automatically detect the commit. Please specify it manually via --commit or --branch-and-timestamp");
             }
             builder.addQueryParameter("revision", commit);
             return commit;
