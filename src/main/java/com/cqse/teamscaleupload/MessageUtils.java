@@ -26,16 +26,17 @@ public class MessageUtils {
     }
 
     /**
+     * We do not include the IP address in the message as one host may have
+     * - multiple network interfaces
+     * - each with multiple IP addresses
+     * - in either IPv4 or IPv6 format
+     * - and it is unclear which of those is "the right one" or even just which is useful (e.g. loopback or virtual
+     * adapters are not useful and might even confuse readers)
+     * <p>
      * Package-visible for testing.
      */
     /*package*/
     static String guessHostName() {
-        // we do not include the IP address here as one host may have
-        // - multiple network interfaces
-        // - each with multiple IP addresses
-        // - in either IPv4 or IPv6 format
-        // - and it is unclear which of those is "the right one" or even just which is useful (e.g. loopback or virtual
-        // adapters are not useful and might even confuse readers)
         try {
             return "hostname: " + InetAddress.getLocalHost().getHostName();
         } catch (UnknownHostException e) {

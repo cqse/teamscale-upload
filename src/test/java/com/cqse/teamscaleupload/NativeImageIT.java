@@ -109,7 +109,7 @@ public class NativeImageIT {
     }
 
     @Test
-    public void testDefaultMessage() throws Exception {
+    public void testDefaultMessage() {
         int mockTeamscalePort = 24398;
         TeamscaleMockServer server = new TeamscaleMockServer(mockTeamscalePort);
         ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("http://localhost:" + mockTeamscalePort));

@@ -249,7 +249,12 @@ public class TeamscaleUpload {
                 .addQueryParameter("partition", input.partition);
 
         String revision = handleRevisionAndBranchTimestamp(input, builder);
-        builder.addQueryParameter("message", MessageUtils.createDefaultMessage(revision, input.partition, formats));
+
+        String message = input.message;
+        if (message == null) {
+            message = MessageUtils.createDefaultMessage(revision, input.partition, formats);
+        }
+        builder.addQueryParameter("message", message);
 
         HttpUrl url = builder.build();
 
