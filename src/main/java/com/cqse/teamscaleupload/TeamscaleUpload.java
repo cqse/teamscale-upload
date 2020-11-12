@@ -3,11 +3,24 @@ package com.cqse.teamscaleupload;
 import com.cqse.teamscaleupload.autodetect_revision.EnvironmentVariableChecker;
 import com.cqse.teamscaleupload.autodetect_revision.GitChecker;
 import com.cqse.teamscaleupload.autodetect_revision.SvnChecker;
+
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.UnknownHostException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import okhttp3.Credentials;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
@@ -17,16 +30,6 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.ConnectException;
-import java.net.UnknownHostException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Main class of the teamscale-upload project.
@@ -42,12 +45,13 @@ public class TeamscaleUpload {
         private final String partition;
         private final String format;
         private final String commit;
-        private final boolean autoDetectedCommit;
+        private final boolean autoDetectCommit;
         private final String timestamp;
         private final HttpUrl url;
         private final List<String> files;
         private final Path inputFile;
         private final Boolean validateSsl;
+        private final String message;
 
         private Input(Namespace namespace) {
             this.project = namespace.getString("project");
@@ -55,11 +59,12 @@ public class TeamscaleUpload {
             this.accessKey = namespace.getString("accesskey");
             this.partition = namespace.getString("partition");
             this.commit = namespace.getString("commit");
-            this.autoDetectedCommit = namespace.getBoolean("detect_commit");
+            this.autoDetectCommit = namespace.getBoolean("detect_commit");
             this.timestamp = namespace.getString("branch_and_timestamp");
             this.files = namespace.getList("files");
             this.url = HttpUrl.parse(namespace.getString("server"));
             this.validateSsl = namespace.getBoolean("validate_ssl");
+            this.message = namespace.getString("message");
 
             String inputFilePath = namespace.getString("input");
             if (inputFilePath != null) {
@@ -107,10 +112,10 @@ public class TeamscaleUpload {
             if (commit != null && timestamp != null) {
                 return true;
             }
-            if (commit != null && autoDetectedCommit) {
+            if (commit != null && autoDetectCommit) {
                 return true;
             }
-            return timestamp != null && autoDetectedCommit;
+            return timestamp != null && autoDetectCommit;
         }
     }
 
@@ -164,6 +169,10 @@ public class TeamscaleUpload {
                         "\nFormat: BRANCH:TIMESTAMP" +
                         "\nExample: master:1597845930000" +
                         "\nExample: develop:HEAD");
+        parser.addArgument("--message").type(String.class).metavar("MESSAGE").required(false)
+                .help("The message for the commit created in Teamscale for this upload. Will be" +
+                        " visible in the Activity perspective. Defaults to a message containing" +
+                        " useful meta-information about the upload and the machine performing it.");
         parser.addArgument("-i", "--input").type(String.class).metavar("INPUT").required(false)
                 .help("A file which contains additional report file patterns. See INPUTFILE for a detailed description of the file format.");
         parser.addArgument("--detect-commit").action(Arguments.storeTrue()).required(false)
@@ -204,7 +213,9 @@ public class TeamscaleUpload {
 
     }
 
-    /** This method serves as entry point to the teamscale-upload application. */
+    /**
+     * This method serves as entry point to the teamscale-upload application.
+     */
     public static void main(String[] args) throws Exception {
         Input input = parseArguments(args);
 
@@ -224,7 +235,7 @@ public class TeamscaleUpload {
 
     private static void performUpload(OkHttpClient client, Map<String, Set<File>> formatToFiles, Input input)
             throws IOException {
-        String sessionId = openSession(client, input);
+        String sessionId = openSession(client, input, formatToFiles.keySet());
         for (String format : formatToFiles.keySet()) {
             Set<File> filesFormFormat = formatToFiles.get(format);
             sendRequestForFormat(client, input, format, filesFormFormat, sessionId);
@@ -232,26 +243,20 @@ public class TeamscaleUpload {
         closeSession(client, input, sessionId);
     }
 
-    private static String openSession(OkHttpClient client, Input input) throws IOException {
+    private static String openSession(OkHttpClient client, Input input, Collection<String> formats) throws IOException {
         HttpUrl.Builder builder = input.url.newBuilder()
                 .addPathSegments("api/projects").addPathSegment(input.project)
                 .addPathSegments("external-analysis/session")
                 .addQueryParameter("partition", input.partition);
 
-        // We track revision or branch:timestamp for the session as it should be the same for all uploads
-        if (input.commit != null) {
-            builder.addQueryParameter("revision", input.commit);
-        } else if (input.timestamp != null) {
-            builder.addQueryParameter("t", input.timestamp);
-        } else if (input.autoDetectedCommit) {
-            String commit = detectCommit();
-            if (commit == null) {
-                fail("Failed to automatically detect the commit. Please specify it manually via --commit or --branch-and-timestamp");
-            }
-            builder.addQueryParameter("revision", commit);
-        } else {
-            builder.addQueryParameter("t", "HEAD");
+        String revision = handleRevisionAndBranchTimestamp(input, builder);
+
+        String message = input.message;
+        if (message == null) {
+            message = MessageUtils.createDefaultMessage(revision, input.partition, formats);
+
         }
+        builder.addQueryParameter("message", message);
 
         HttpUrl url = builder.build();
 
@@ -268,6 +273,33 @@ public class TeamscaleUpload {
         }
         System.out.println("Session ID: " + sessionId);
         return sessionId;
+    }
+
+    /**
+     * Adds either a revision or t parameter to the given builder, based on the input.
+     * <p>
+     * We track revision or branch:timestamp for the session as it should be the same for all uploads.
+     *
+     * @return the revision or branch:timestamp coordinate used.
+     */
+    private static String handleRevisionAndBranchTimestamp(Input input, HttpUrl.Builder builder) {
+        if (input.commit != null) {
+            builder.addQueryParameter("revision", input.commit);
+            return input.commit;
+        } else if (input.timestamp != null) {
+            builder.addQueryParameter("t", input.timestamp);
+            return input.timestamp;
+        } else if (input.autoDetectCommit) {
+            String commit = detectCommit();
+            if (commit == null) {
+                fail("Failed to automatically detect the commit. Please specify it manually via --commit or --branch-and-timestamp");
+            }
+            builder.addQueryParameter("revision", commit);
+            return commit;
+        } else {
+            builder.addQueryParameter("t", "HEAD");
+            return "HEAD";
+        }
     }
 
     private static void closeSession(OkHttpClient client, Input input, String sessionId) throws IOException {
@@ -387,13 +419,17 @@ public class TeamscaleUpload {
         }
     }
 
-    /** Print error message and server response, then exit program */
+    /**
+     * Print error message and server response, then exit program
+     */
     public static void fail(String message, Response response) {
         fail("Upload to Teamscale failed:\n\n" + message + "\n\nTeamscale's response:\n" +
                 response.toString() + "\n" + readBodySafe(response));
     }
 
-    /** Print error message and exit the program */
+    /**
+     * Print error message and exit the program
+     */
     public static void fail(String message) {
         System.err.println(message);
         System.exit(1);
