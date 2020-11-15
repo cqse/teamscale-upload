@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.net.ssl.SSLHandshakeException;
+
 import okhttp3.Credentials;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
@@ -225,11 +227,33 @@ public class TeamscaleUpload {
         OkHttpClient client = OkHttpClientUtils.createClient(input.validateSsl);
         try {
             performUpload(client, formatToFiles, input);
+        } catch (SSLHandshakeException e) {
+            handleSslFailure(input, e);
         } finally {
             // we must shut down OkHttp as otherwise it will leave threads running and
             // prevent JVM shutdown
             client.dispatcher().executorService().shutdownNow();
             client.connectionPool().evictAll();
+        }
+    }
+
+    private static void handleSslFailure(Input input, SSLHandshakeException e) {
+        e.printStackTrace();
+        if (input.validateSsl) {
+            fail("Failed to connect via HTTPS to " + input.url + ": " + e.getMessage() +
+                    "\nYou enabled certificate validation. Most likely, your certificate" +
+                    " is either self-signed or your root CA's certificate is not known to" +
+                    " teamscale-upload. Please provide the path to a keystore that contains" +
+                    " the necessary public certificates that should be trusted by" +
+                    " teamscale-upload via --trusted-keystore. You can create a Java keystore" +
+                    " with your certificates as described here:" +
+                    " https://docs.teamscale.com/howto/connecting-via-https/#using-self-signed-certificates");
+            // TODO (FS) handle when keystore was provided but cert still not resolved correctly
+        } else {
+            fail("Failed to connect via HTTPS to " + input.url + ": " + e.getMessage() +
+                    "\nPlease ensure that your Teamscale instance is reachable under " + input.url +
+                    " and that it is configured for HTTPS, not HTTP. E.g. open that URL in your" +
+                    " browser and verify that you can connect successfully.");
         }
     }
 

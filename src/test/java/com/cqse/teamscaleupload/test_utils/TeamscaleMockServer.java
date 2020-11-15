@@ -1,10 +1,13 @@
 package com.cqse.teamscaleupload.test_utils;
 
+import java.io.File;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
 import spark.Request;
 import spark.Response;
+import spark.Spark;
 
 import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 import static spark.Spark.awaitInitialization;
@@ -38,6 +41,18 @@ public class TeamscaleMockServer {
     public final List<Session> sessions = new ArrayList<>();
 
     public TeamscaleMockServer(int port) {
+        this(port, false);
+    }
+
+    public TeamscaleMockServer(int port, boolean useSelfSignedCertificate) {
+        if (useSelfSignedCertificate) {
+            try {
+                String keyStorePath = new File(getClass().getResource("selfsigned.jks").toURI()).getAbsolutePath();
+                Spark.secure(keyStorePath, "password", null, null);
+            } catch (URISyntaxException e) {
+                throw new AssertionError("Failed to find selfsigned.jks file", e);
+            }
+        }
         port(port);
         post("/api/projects/:projectName/external-analysis/session", this::openSession);
         post("/api/projects/:projectName/external-analysis/session/:session", this::noOpHandler);

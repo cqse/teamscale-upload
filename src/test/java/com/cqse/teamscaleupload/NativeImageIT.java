@@ -123,6 +123,29 @@ public class NativeImageIT {
                         "\nincludes data in the following formats: SIMPLE");
     }
 
+    @Test
+    public void selfSignedCertificateShouldBeAcceptedByDefault() {
+        int mockTeamscalePort = 24398;
+        new TeamscaleMockServer(mockTeamscalePort, true);
+        ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("https://localhost:" + mockTeamscalePort));
+        assertThat(result.exitCode)
+                .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+                .isZero();
+    }
+
+    @Test
+    public void selfSignedCertificateShouldNotBeAcceptedWhenValidationIsEnabled() {
+        int mockTeamscalePort = 24398;
+        new TeamscaleMockServer(mockTeamscalePort, true);
+        ProcessUtils.ProcessResult result = runUploader(new Arguments()
+                .withUrl("https://localhost:" + mockTeamscalePort)
+                .withSslValidation());
+        assertThat(result.exitCode)
+                .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+                .isNotZero();
+        assertThat(result.stdoutAndStdErr).contains("self-signed");
+    }
+
     private String extractNormalizedMessage(TeamscaleMockServer.Session session) {
         return session.message.replaceAll("uploaded from .*", "uploaded from HOSTNAME")
                 .replaceAll("uploaded at .*", "uploaded at DATE");
@@ -145,9 +168,15 @@ public class NativeImageIT {
         private final String partition = "NativeImageIT";
         private String pattern = "coverage_files\\*.simple";
         private String input = null;
+        private boolean validateSsl = false;
 
         private Arguments withPattern(String pattern) {
             this.pattern = pattern;
+            return this;
+        }
+
+        private Arguments withSslValidation() {
+            this.validateSsl = true;
             return this;
         }
 
@@ -184,6 +213,9 @@ public class NativeImageIT {
                 arguments.add(input);
             }
             arguments.add(pattern);
+            if (validateSsl) {
+                arguments.add("--validate-ssl");
+            }
 
             return arguments.toArray(new String[arguments.size()]);
         }
