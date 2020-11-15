@@ -20,6 +20,18 @@ import static spark.Spark.post;
  */
 public class TeamscaleMockServer {
 
+    public static final File KEYSTORE;
+    public static final File TRUSTSTORE;
+
+    static {
+        try {
+            KEYSTORE = new File(TeamscaleMockServer.class.getResource("keystore.jks").toURI());
+            TRUSTSTORE = new File(TeamscaleMockServer.class.getResource("truststore.jks").toURI());
+        } catch (URISyntaxException e) {
+            throw new AssertionError("Failed to get keystore from resources", e);
+        }
+    }
+
     /**
      * An opened upload session.
      */
@@ -46,12 +58,7 @@ public class TeamscaleMockServer {
 
     public TeamscaleMockServer(int port, boolean useSelfSignedCertificate) {
         if (useSelfSignedCertificate) {
-            try {
-                String keyStorePath = new File(getClass().getResource("selfsigned.jks").toURI()).getAbsolutePath();
-                Spark.secure(keyStorePath, "password", null, null);
-            } catch (URISyntaxException e) {
-                throw new AssertionError("Failed to find selfsigned.jks file", e);
-            }
+            Spark.secure(KEYSTORE.getAbsolutePath(), "password", null, null);
         }
         port(port);
         post("/api/projects/:projectName/external-analysis/session", this::openSession);

@@ -146,6 +146,18 @@ public class NativeImageIT {
         assertThat(result.stdoutAndStdErr).contains("self-signed");
     }
 
+    @Test
+    public void selfSignedCertificateShouldBeAcceptedWhenKeystoreIsUsed() {
+        int mockTeamscalePort = 24398;
+        new TeamscaleMockServer(mockTeamscalePort, true);
+        ProcessUtils.ProcessResult result = runUploader(new Arguments()
+                .withUrl("https://localhost:" + mockTeamscalePort)
+                .withSslValidation().withKeystore());
+        assertThat(result.exitCode)
+                .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+                .isZero();
+    }
+
     private String extractNormalizedMessage(TeamscaleMockServer.Session session) {
         return session.message.replaceAll("uploaded from .*", "uploaded from HOSTNAME")
                 .replaceAll("uploaded at .*", "uploaded at DATE");
@@ -169,6 +181,7 @@ public class NativeImageIT {
         private String pattern = "coverage_files\\*.simple";
         private String input = null;
         private boolean validateSsl = false;
+        private boolean useKeystore = false;
 
         private Arguments withPattern(String pattern) {
             this.pattern = pattern;
@@ -177,6 +190,11 @@ public class NativeImageIT {
 
         private Arguments withSslValidation() {
             this.validateSsl = true;
+            return this;
+        }
+
+        private Arguments withKeystore() {
+            this.useKeystore = true;
             return this;
         }
 
@@ -215,6 +233,10 @@ public class NativeImageIT {
             arguments.add(pattern);
             if (validateSsl) {
                 arguments.add("--validate-ssl");
+            }
+            if (useKeystore) {
+                arguments.add("--trusted-keystore");
+                arguments.add(TeamscaleMockServer.TRUSTSTORE.getAbsolutePath() + ":password");
             }
 
             return arguments.toArray(new String[arguments.size()]);

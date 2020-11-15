@@ -54,6 +54,7 @@ public class TeamscaleUpload {
         private final Path inputFile;
         private final Boolean validateSsl;
         private final String message;
+        private String keystorePathAndPassword = null;
 
         private Input(Namespace namespace) {
             this.project = namespace.getString("project");
@@ -65,8 +66,9 @@ public class TeamscaleUpload {
             this.timestamp = namespace.getString("branch_and_timestamp");
             this.files = namespace.getList("files");
             this.url = HttpUrl.parse(namespace.getString("server"));
-            this.validateSsl = namespace.getBoolean("validate_ssl");
             this.message = namespace.getString("message");
+            this.keystorePathAndPassword = namespace.getString("trusted_keystore");
+            this.validateSsl = namespace.getBoolean("validate_ssl") || keystorePathAndPassword != null;
 
             String inputFilePath = namespace.getString("input");
             if (inputFilePath != null) {
@@ -83,6 +85,20 @@ public class TeamscaleUpload {
             }
         }
 
+        public String getKeyStorePath() {
+            if (keystorePathAndPassword == null) {
+                return null;
+            }
+            return keystorePathAndPassword.split(":", 2)[0];
+        }
+
+        public String getKeyStorePassword() {
+            if (keystorePathAndPassword == null) {
+                return null;
+            }
+            return keystorePathAndPassword.split(":", 2)[1];
+        }
+
         /**
          * Checks the validity of the command line arguments and throws an exception if any
          * invalid configuration is detected.
@@ -90,6 +106,11 @@ public class TeamscaleUpload {
         public void validate(ArgumentParser parser) throws ArgumentParserException {
             if (url == null) {
                 throw new ArgumentParserException("You provided an invalid URL in the --server option", parser);
+            }
+
+            if (keystorePathAndPassword != null && !keystorePathAndPassword.contains(":")) {
+                throw new ArgumentParserException("You forgot to add the password for the --trust-keystore file " + keystorePathAndPassword + "." +
+                        " You must add it to the end of the path, separated by a colon, e.g: --trust-keystore " + keystorePathAndPassword + ":PASSWORD", parser);
             }
 
             if (hasMoreThanOneCommitOptionSet()) {
@@ -184,6 +205,12 @@ public class TeamscaleUpload {
         parser.addArgument("--validate-ssl").action(Arguments.storeTrue()).required(false)
                 .help("By default, SSL certificates are accepted without validation, which makes using this tool with self-signed" +
                         " certificates easier. This flag enables validation.");
+        parser.addArgument("--trusted-keystore").required(false)
+                .help("A Java keystore file and its corresponding password." +
+                        " The keystore contains additional certificates that should be trusted when performing SSL requests." +
+                        " Separate the path from the password with a colon, e.g: /path/to/keystore.jks:PASSWORD" +
+                        "\nThe path to the keystore must not contain a colon." +
+                        " When this option is used, --validate-ssl will automatically be enabled as well.");
         parser.addArgument("files").metavar("FILES").type(String.class).nargs("*").
                 help("Path(s) or pattern(s) of the report files to upload. Alternatively, you may provide input files via -i or --input");
 
@@ -224,11 +251,11 @@ public class TeamscaleUpload {
         Map<String, Set<File>> formatToFiles =
                 ReportPatternUtils.resolveInputFilePatterns(input.inputFile, input.files, input.format);
 
-        OkHttpClient client = OkHttpClientUtils.createClient(input.validateSsl);
+        OkHttpClient client = OkHttpClientUtils.createClient(input.validateSsl, input.getKeyStorePath(), input.getKeyStorePassword());
         try {
             performUpload(client, formatToFiles, input);
         } catch (SSLHandshakeException e) {
-            handleSslFailure(input, e);
+            handleSslConnectionFailure(input, e);
         } finally {
             // we must shut down OkHttp as otherwise it will leave threads running and
             // prevent JVM shutdown
@@ -237,9 +264,18 @@ public class TeamscaleUpload {
         }
     }
 
-    private static void handleSslFailure(Input input, SSLHandshakeException e) {
+    private static void handleSslConnectionFailure(Input input, SSLHandshakeException e) {
         e.printStackTrace();
-        if (input.validateSsl) {
+        if (input.getKeyStorePath() != null) {
+            fail("Failed to connect via HTTPS to " + input.url + ": " + e.getMessage() +
+                    "\nYou enabled certificate validation and provided a keystore with certificates" +
+                    " that should be considered valid. Still, the connection failed." +
+                    " Most likely, you did not provide the correct certificates in the keystore" +
+                    " or some certificates are missing from it." +
+                    "\nPlease also ensure that your Teamscale instance is reachable under " + input.url +
+                    " and that it is configured for HTTPS, not HTTP. E.g. open that URL in your" +
+                    " browser and verify that you can connect successfully.");
+        } else if (input.validateSsl) {
             fail("Failed to connect via HTTPS to " + input.url + ": " + e.getMessage() +
                     "\nYou enabled certificate validation. Most likely, your certificate" +
                     " is either self-signed or your root CA's certificate is not known to" +
@@ -247,8 +283,10 @@ public class TeamscaleUpload {
                     " the necessary public certificates that should be trusted by" +
                     " teamscale-upload via --trusted-keystore. You can create a Java keystore" +
                     " with your certificates as described here:" +
-                    " https://docs.teamscale.com/howto/connecting-via-https/#using-self-signed-certificates");
-            // TODO (FS) handle when keystore was provided but cert still not resolved correctly
+                    " https://docs.teamscale.com/howto/connecting-via-https/#using-self-signed-certificates" +
+                    "\nPlease also ensure that your Teamscale instance is reachable under " + input.url +
+                    " and that it is configured for HTTPS, not HTTP. E.g. open that URL in your" +
+                    " browser and verify that you can connect successfully.");
         } else {
             fail("Failed to connect via HTTPS to " + input.url + ": " + e.getMessage() +
                     "\nPlease ensure that your Teamscale instance is reachable under " + input.url +
