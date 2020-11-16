@@ -245,7 +245,7 @@ public class NativeImageIT {
                 arguments.add(TeamscaleMockServer.TRUSTSTORE.getAbsolutePath() + ";password");
             }
 
-            return arguments.toArray(new String[arguments.size()]);
+            return arguments.toArray(new String[0]);
         }
     }
 
