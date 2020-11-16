@@ -17,6 +17,7 @@ import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -62,11 +63,11 @@ public class TeamscaleUpload {
             this.commit = namespace.getString("commit");
             this.autoDetectCommit = namespace.getBoolean("detect_commit");
             this.timestamp = namespace.getString("branch_and_timestamp");
-            this.files = namespace.getList("files");
+            this.files = getListSafe(namespace, "files");
             this.url = HttpUrl.parse(namespace.getString("server"));
             this.validateSsl = namespace.getBoolean("validate_ssl");
             this.message = namespace.getString("message");
-            this.additionalMessageLines = namespace.getList("append_to_message");
+            this.additionalMessageLines = getListSafe(namespace, "append_to_message");
 
             String inputFilePath = namespace.getString("input");
             if (inputFilePath != null) {
@@ -81,6 +82,14 @@ public class TeamscaleUpload {
             } else {
                 this.format = null;
             }
+        }
+
+        private static List<String> getListSafe(Namespace namespace, String key) {
+            List<String> list = namespace.getList(key);
+            if (list == null) {
+                return Collections.emptyList();
+            }
+            return list;
         }
 
         /**
@@ -262,7 +271,7 @@ public class TeamscaleUpload {
 
         }
         for (String additionalLine: input.additionalMessageLines) {
-            message += "\n" + additionalLine.trim();
+            message ü+= "\n" + additionalLine.trim();
         }
         builder.addQueryParameter("message", message);
 
