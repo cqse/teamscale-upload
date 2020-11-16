@@ -6,6 +6,8 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 
+- [feature] allow users to provide self-signed certificates that should be trusted in a Java keystore
+
 # 1.0.0
 
 Initial release
