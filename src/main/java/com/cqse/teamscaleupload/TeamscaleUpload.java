@@ -271,7 +271,7 @@ public class TeamscaleUpload {
 
         }
         for (String additionalLine: input.additionalMessageLines) {
-            message ü+= "\n" + additionalLine.trim();
+            message += "\n" + additionalLine.trim();
         }
         builder.addQueryParameter("message", message);
 

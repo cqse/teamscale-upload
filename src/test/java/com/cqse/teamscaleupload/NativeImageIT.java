@@ -112,7 +112,9 @@ public class NativeImageIT {
     public void testDefaultMessage() {
         int mockTeamscalePort = 24398;
         TeamscaleMockServer server = new TeamscaleMockServer(mockTeamscalePort);
-        ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("http://localhost:" + mockTeamscalePort));
+        ProcessUtils.ProcessResult result = runUploader(new Arguments()
+                .withUrl("http://localhost:" + mockTeamscalePort)
+                .withAdditionalMessageLine("Build ID: 1234"));
         assertThat(result.exitCode)
                 .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
                 .isZero();
@@ -120,7 +122,8 @@ public class NativeImageIT {
                 .isEqualTo("NativeImageIT external analysis results uploaded at DATE" +
                         "\n\nuploaded from HOSTNAME" +
                         "\nfor revision: HEAD" +
-                        "\nincludes data in the following formats: SIMPLE");
+                        "\nincludes data in the following formats: SIMPLE" +
+                        "\nBuild ID: 1234");
     }
 
     private String extractNormalizedMessage(TeamscaleMockServer.Session session) {
@@ -145,9 +148,15 @@ public class NativeImageIT {
         private final String partition = "NativeImageIT";
         private String pattern = "coverage_files\\*.simple";
         private String input = null;
+        private String additionalMessageLine = null;
 
         private Arguments withPattern(String pattern) {
             this.pattern = pattern;
+            return this;
+        }
+
+        private Arguments withAdditionalMessageLine(String line) {
+            this.additionalMessageLine = line;
             return this;
         }
 
@@ -184,6 +193,10 @@ public class NativeImageIT {
                 arguments.add(input);
             }
             arguments.add(pattern);
+            if (additionalMessageLine != null) {
+                arguments.add("--append-to-message");
+                arguments.add(additionalMessageLine);
+            }
 
             return arguments.toArray(new String[arguments.size()]);
         }
