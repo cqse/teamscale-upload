@@ -92,7 +92,7 @@ public class TeamscaleUpload {
             if (keystorePathAndPassword == null) {
                 return null;
             }
-            return keystorePathAndPassword.split(":", 2)[0];
+            return keystorePathAndPassword.split(";", 2)[0];
         }
 
         /**
@@ -102,7 +102,7 @@ public class TeamscaleUpload {
             if (keystorePathAndPassword == null) {
                 return null;
             }
-            return keystorePathAndPassword.split(":", 2)[1];
+            return keystorePathAndPassword.split(";", 2)[1];
         }
 
         /**
@@ -116,7 +116,7 @@ public class TeamscaleUpload {
 
             if (keystorePathAndPassword != null && !keystorePathAndPassword.contains(":")) {
                 throw new ArgumentParserException("You forgot to add the password for the --trust-keystore file " + keystorePathAndPassword + "." +
-                        " You must add it to the end of the path, separated by a colon, e.g: --trust-keystore " + keystorePathAndPassword + ":PASSWORD", parser);
+                        " You must add it to the end of the path, separated by a semicolon, e.g: --trust-keystore " + keystorePathAndPassword + ";PASSWORD", parser);
             }
 
             if (hasMoreThanOneCommitOptionSet()) {
@@ -214,8 +214,8 @@ public class TeamscaleUpload {
         parser.addArgument("--trusted-keystore").required(false)
                 .help("A Java keystore file and its corresponding password." +
                         " The keystore contains additional certificates that should be trusted when performing SSL requests." +
-                        " Separate the path from the password with a colon, e.g: /path/to/keystore.jks:PASSWORD" +
-                        "\nThe path to the keystore must not contain a colon." +
+                        " Separate the path from the password with a semicolon, e.g: /path/to/keystore.jks;PASSWORD" +
+                        "\nThe path to the keystore must not contain a semicolon." +
                         " When this option is used, --validate-ssl will automatically be enabled as well.");
         parser.addArgument("files").metavar("FILES").type(String.class).nargs("*").
                 help("Path(s) or pattern(s) of the report files to upload. Alternatively, you may provide input files via -i or --input");

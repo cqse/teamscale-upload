@@ -242,7 +242,7 @@ public class NativeImageIT {
             }
             if (useKeystore) {
                 arguments.add("--trusted-keystore");
-                arguments.add(TeamscaleMockServer.TRUSTSTORE.getAbsolutePath() + ":password");
+                arguments.add(TeamscaleMockServer.TRUSTSTORE.getAbsolutePath() + ";password");
             }
 
             return arguments.toArray(new String[arguments.size()]);
