@@ -114,7 +114,7 @@ public class TeamscaleUpload {
                 throw new ArgumentParserException("You provided an invalid URL in the --server option", parser);
             }
 
-            if (keystorePathAndPassword != null && !keystorePathAndPassword.contains(":")) {
+            if (keystorePathAndPassword != null && !keystorePathAndPassword.contains(";")) {
                 throw new ArgumentParserException("You forgot to add the password for the --trust-keystore file " + keystorePathAndPassword + "." +
                         " You must add it to the end of the path, separated by a semicolon, e.g: --trust-keystore " + keystorePathAndPassword + ";PASSWORD", parser);
             }
