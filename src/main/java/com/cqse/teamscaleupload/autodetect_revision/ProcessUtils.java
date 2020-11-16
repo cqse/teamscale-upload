@@ -67,7 +67,7 @@ public class ProcessUtils {
 
     public static ProcessResult run(String command, String... arguments) {
         CommandLine commandLine = new CommandLine(command);
-        commandLine.addArguments(arguments);
+        commandLine.addArguments(arguments, false);
         DefaultExecutor executor = new DefaultExecutor();
         CaptureStreamHandler handler = new CaptureStreamHandler();
         executor.setStreamHandler(handler);
