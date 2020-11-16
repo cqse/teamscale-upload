@@ -111,51 +111,57 @@ public class NativeImageIT {
     @Test
     public void testDefaultMessage() {
         int mockTeamscalePort = 24398;
-        TeamscaleMockServer server = new TeamscaleMockServer(mockTeamscalePort);
-        ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("http://localhost:" + mockTeamscalePort));
-        assertThat(result.exitCode)
-                .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
-                .isZero();
-        assertThat(server.sessions).hasSize(1).first().extracting(this::extractNormalizedMessage)
-                .isEqualTo("NativeImageIT external analysis results uploaded at DATE" +
-                        "\n\nuploaded from HOSTNAME" +
-                        "\nfor revision: HEAD" +
-                        "\nincludes data in the following formats: SIMPLE");
+        try (TeamscaleMockServer server = new TeamscaleMockServer(mockTeamscalePort)) {
+            ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("http://localhost:" + mockTeamscalePort));
+            assertThat(result.exitCode)
+                    .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+                    .isZero();
+            assertThat(server.sessions).hasSize(1).first().extracting(this::extractNormalizedMessage)
+                    .isEqualTo("NativeImageIT external analysis results uploaded at DATE" +
+                            "\n\nuploaded from HOSTNAME" +
+                            "\nfor revision: HEAD" +
+                            "\nincludes data in the following formats: SIMPLE");
+        }
     }
 
     @Test
     public void selfSignedCertificateShouldBeAcceptedByDefault() {
         int mockTeamscalePort = 24398;
-        new TeamscaleMockServer(mockTeamscalePort, true);
-        ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("https://localhost:" + mockTeamscalePort));
-        assertThat(result.exitCode)
-                .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
-                .isZero();
+        try (TeamscaleMockServer server = new TeamscaleMockServer(mockTeamscalePort, true)) {
+            ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("https://localhost:" + mockTeamscalePort));
+            assertThat(result.exitCode)
+                    .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+                    .isZero();
+            assertThat(server.sessions).hasSize(1);
+        }
     }
 
     @Test
     public void selfSignedCertificateShouldNotBeAcceptedWhenValidationIsEnabled() {
         int mockTeamscalePort = 24398;
-        new TeamscaleMockServer(mockTeamscalePort, true);
-        ProcessUtils.ProcessResult result = runUploader(new Arguments()
-                .withUrl("https://localhost:" + mockTeamscalePort)
-                .withSslValidation());
-        assertThat(result.exitCode)
-                .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
-                .isNotZero();
-        assertThat(result.stdoutAndStdErr).contains("self-signed");
+        try (TeamscaleMockServer ignored = new TeamscaleMockServer(mockTeamscalePort, true)) {
+            ProcessUtils.ProcessResult result = runUploader(new Arguments()
+                    .withUrl("https://localhost:" + mockTeamscalePort)
+                    .withSslValidation());
+            assertThat(result.exitCode)
+                    .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+                    .isNotZero();
+            assertThat(result.stdoutAndStdErr).contains("self-signed");
+        }
     }
 
     @Test
     public void selfSignedCertificateShouldBeAcceptedWhenKeystoreIsUsed() {
         int mockTeamscalePort = 24398;
-        new TeamscaleMockServer(mockTeamscalePort, true);
-        ProcessUtils.ProcessResult result = runUploader(new Arguments()
-                .withUrl("https://localhost:" + mockTeamscalePort)
-                .withSslValidation().withKeystore());
-        assertThat(result.exitCode)
-                .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
-                .isZero();
+        try (TeamscaleMockServer server = new TeamscaleMockServer(mockTeamscalePort, true)) {
+            ProcessUtils.ProcessResult result = runUploader(new Arguments()
+                    .withUrl("https://localhost:" + mockTeamscalePort)
+                    .withSslValidation().withKeystore());
+            assertThat(result.exitCode)
+                    .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+                    .isZero();
+            assertThat(server.sessions).hasSize(1);
+        }
     }
 
     private String extractNormalizedMessage(TeamscaleMockServer.Session session) {
