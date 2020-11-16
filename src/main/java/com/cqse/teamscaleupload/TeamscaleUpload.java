@@ -85,6 +85,9 @@ public class TeamscaleUpload {
             }
         }
 
+        /**
+         * Returns the path to the keystore to use for self-signed certificates or null if none was configured.
+         */
         public String getKeyStorePath() {
             if (keystorePathAndPassword == null) {
                 return null;
@@ -92,6 +95,9 @@ public class TeamscaleUpload {
             return keystorePathAndPassword.split(":", 2)[0];
         }
 
+        /**
+         * Returns the password for the keystore to use for self-signed certificates or null if none was configured.
+         */
         public String getKeyStorePassword() {
             if (keystorePathAndPassword == null) {
                 return null;

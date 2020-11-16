@@ -16,7 +16,11 @@ import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
  */
 public class TeamscaleMockServer implements AutoCloseable {
 
-    public static final File KEYSTORE;
+    private static final File KEYSTORE;
+
+    /**
+     * Trust store pre-filled with the self-signed certificate used by the {@link TeamscaleMockServer}.
+     */
     public static final File TRUSTSTORE;
 
     static {
