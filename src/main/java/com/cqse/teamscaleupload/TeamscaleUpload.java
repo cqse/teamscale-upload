@@ -496,6 +496,15 @@ public class TeamscaleUpload {
     }
 
     /**
+     * Print the stack trace of the throwable as debug info, then print the error message and exit
+     * the program.
+     */
+    public static void failWithStackTrace(String message, Throwable throwable) {
+        throwable.printStackTrace();
+        fail(message);
+    }
+
+    /**
      * Print error message and exit the program
      */
     public static void fail(String message) {

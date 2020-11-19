@@ -63,26 +63,26 @@ public class OkHttpClientUtils {
                 TeamscaleUpload.fail("No trust managers found. This is a bug. Please report it to CQSE.");
             }
 
-            try {
-                X509TrustManager x509TrustManager = (X509TrustManager) trustManagerFactory.getTrustManagers()[0];
-                builder.sslSocketFactory(sslContext.getSocketFactory(), x509TrustManager);
-            } catch (ClassCastException e) {
-                e.printStackTrace();
-                TeamscaleUpload.fail("Trust manager is not of X509 format: " + e.getMessage() +
-                        "\nThis is a bug. Please report it to CQSE.");
-            }
+            applySslContextAndTrustManager(builder, sslContext, trustManagerFactory);
         } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-            TeamscaleUpload.fail("Failed to instantiate an SSLContext or TrustManagerFactory: " + e.getMessage() +
-                    "\nThis is a bug. Please report it to CQSE.");
+            TeamscaleUpload.failWithStackTrace("Failed to instantiate an SSLContext or TrustManagerFactory: " + e.getMessage() +
+                    "\nThis is a bug. Please report it to CQSE.", e);
         } catch (KeyStoreException e) {
-            e.printStackTrace();
-            TeamscaleUpload.fail("Failed to initialize the TrustManagerFactory with the keystore: " + e.getMessage() +
-                    "\nThis is a bug. Please report it to CQSE.");
+            TeamscaleUpload.failWithStackTrace("Failed to initialize the TrustManagerFactory with the keystore: " + e.getMessage() +
+                    "\nThis is a bug. Please report it to CQSE.", e);
         } catch (KeyManagementException e) {
-            e.printStackTrace();
-            TeamscaleUpload.fail("Failed to initialize the SSLContext with the trust managers: " + e.getMessage() +
-                    "\nThis is a bug. Please report it to CQSE.");
+            TeamscaleUpload.failWithStackTrace("Failed to initialize the SSLContext with the trust managers: " + e.getMessage() +
+                    "\nThis is a bug. Please report it to CQSE.", e);
+        }
+    }
+
+    private static void applySslContextAndTrustManager(OkHttpClient.Builder builder, SSLContext sslContext, TrustManagerFactory trustManagerFactory) {
+        try {
+            X509TrustManager x509TrustManager = (X509TrustManager) trustManagerFactory.getTrustManagers()[0];
+            builder.sslSocketFactory(sslContext.getSocketFactory(), x509TrustManager);
+        } catch (ClassCastException e) {
+            TeamscaleUpload.failWithStackTrace("Trust manager is not of X509 format: " + e.getMessage() +
+                    "\nThis is a bug. Please report it to CQSE.", e);
         }
     }
 
@@ -105,9 +105,8 @@ public class OkHttpClientUtils {
                     " because it uses an unsupported hashing algorithm: " + e.getMessage() +
                     "\nPlease change the keystore so it uses a supported algorithm (e.g. the default used by `keytool` is supported).");
         } catch (KeyStoreException e) {
-            e.printStackTrace();
-            TeamscaleUpload.fail("Failed to instantiate an in-memory keystore: " + e.getMessage() +
-                    "\nThis is a bug. Please report it to CQSE.");
+            TeamscaleUpload.failWithStackTrace("Failed to instantiate an in-memory keystore: " + e.getMessage() +
+                    "\nThis is a bug. Please report it to CQSE.", e);
         }
 
         return null;

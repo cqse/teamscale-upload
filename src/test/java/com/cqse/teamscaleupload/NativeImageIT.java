@@ -19,6 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class NativeImageIT {
 
+    private final int MOCK_TEAMSCALE_PORT = 24398;
+
     @Test
     public void wrongAccessKey() {
         ProcessUtils.ProcessResult result = runUploader(new Arguments().withAccessKey("wrong-accesskey_"));
@@ -110,9 +112,8 @@ public class NativeImageIT {
 
     @Test
     public void testDefaultMessage() {
-        int mockTeamscalePort = 24398;
-        try (TeamscaleMockServer server = new TeamscaleMockServer(mockTeamscalePort)) {
-            ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("http://localhost:" + mockTeamscalePort));
+        try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
+            ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT));
             assertThat(result.exitCode)
                     .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
                     .isZero();
@@ -126,9 +127,8 @@ public class NativeImageIT {
 
     @Test
     public void selfSignedCertificateShouldBeAcceptedByDefault() {
-        int mockTeamscalePort = 24398;
-        try (TeamscaleMockServer server = new TeamscaleMockServer(mockTeamscalePort, true)) {
-            ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("https://localhost:" + mockTeamscalePort));
+        try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
+            ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT));
             assertThat(result.exitCode)
                     .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
                     .isZero();
@@ -138,10 +138,9 @@ public class NativeImageIT {
 
     @Test
     public void selfSignedCertificateShouldNotBeAcceptedWhenValidationIsEnabled() {
-        int mockTeamscalePort = 24398;
-        try (TeamscaleMockServer ignored = new TeamscaleMockServer(mockTeamscalePort, true)) {
+        try (TeamscaleMockServer ignored = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
             ProcessUtils.ProcessResult result = runUploader(new Arguments()
-                    .withUrl("https://localhost:" + mockTeamscalePort)
+                    .withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT)
                     .withSslValidation());
             assertThat(result.exitCode)
                     .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
@@ -152,10 +151,9 @@ public class NativeImageIT {
 
     @Test
     public void selfSignedCertificateShouldBeAcceptedWhenKeystoreIsUsed() {
-        int mockTeamscalePort = 24398;
-        try (TeamscaleMockServer server = new TeamscaleMockServer(mockTeamscalePort, true)) {
+        try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
             ProcessUtils.ProcessResult result = runUploader(new Arguments()
-                    .withUrl("https://localhost:" + mockTeamscalePort)
+                    .withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT)
                     .withSslValidation().withKeystore());
             assertThat(result.exitCode)
                     .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
