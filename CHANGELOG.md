@@ -6,6 +6,8 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 
+- [feature] allow users to append lines to the default message
+
 # 1.0.0
 
 Initial release
