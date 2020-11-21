@@ -166,8 +166,7 @@ public class TeamscaleUpload {
                         " and one for JaCoCo coverage).");
         parser.addArgument("-f", "--format").type(String.class).metavar("FORMAT").required(false)
                 .help("The file format of the reports which are specified as command line arguments." +
-                        " See https://docs.teamscale.com/reference/upload-formats-and-samples/#supported-formats-for-upload" +
-                        " for a full list of supported file formats.");
+                        "\nSee http://cqse.eu/upload-formats for a full list of supported file formats.");
         parser.addArgument("-c", "--commit").type(String.class).metavar("REVISION").required(false)
                 .help("The version control commit for which you obtained the report files." +
                         " E.g. if you obtained a test coverage report in your CI pipeline, then this" +
@@ -208,7 +207,10 @@ public class TeamscaleUpload {
                 .help("Path(s) or pattern(s) of the report files to upload. Alternatively, you may" +
                         " provide input files via -i or --input");
 
-        parser.epilog("INPUTFILE" +
+        parser.epilog("For general usage help and alternative upload methods, please check our online" +
+                " documentation at:" +
+                "\nhttp://cqse.eu/tsu-docs" +
+                "\n\nINPUTFILE" +
                 "\n\nThe input file allows to upload multiple report files for different formats in one" +
                 " upload session. Each section of reports must start with a specification of the" +
                 " report format. The report file patterns have the same format as used on the command" +
