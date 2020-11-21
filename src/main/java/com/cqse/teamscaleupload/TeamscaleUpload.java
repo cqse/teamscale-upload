@@ -149,30 +149,30 @@ public class TeamscaleUpload {
                 .defaultHelp(true)
                 .description("Upload coverage, findings, ... to Teamscale.");
 
-        parser.addArgument("-s", "--server").type(String.class).metavar("URL").required(true)
+        parser.addArgument("-s", "--server").metavar("URL").required(true)
                 .help("The url under which the Teamscale server can be reached.");
-        parser.addArgument("-p", "--project").type(String.class).metavar("PROJECT").required(true)
+        parser.addArgument("-p", "--project").metavar("PROJECT").required(true)
                 .help("The project ID or alias (NOT the project name!) to which to upload the data.");
-        parser.addArgument("-u", "--user").type(String.class).metavar("USER").required(true)
+        parser.addArgument("-u", "--user").metavar("USER").required(true)
                 .help("The username used to perform the upload. Must have the" +
                         " 'Perform External Uploads' permission for the given Teamscale project.");
-        parser.addArgument("-a", "--accesskey").type(String.class).metavar("ACCESSKEY").required(true)
+        parser.addArgument("-a", "--accesskey").metavar("ACCESSKEY").required(true)
                 .help("The IDE access key of the given user. Can be retrieved in Teamscale under Admin > Users.");
-        parser.addArgument("-t", "--partition").type(String.class).metavar("PARTITION").required(true)
+        parser.addArgument("-t", "--partition").metavar("PARTITION").required(true)
                 .help("The partition into which the data is inserted in Teamscale." +
                         " Successive uploads into the same partition will overwrite the data" +
                         " previously inserted there, so use different partitions if you'd instead" +
                         " like to merge data from different sources (e.g. one for Findbugs findings" +
                         " and one for JaCoCo coverage).");
-        parser.addArgument("-f", "--format").type(String.class).metavar("FORMAT").required(false)
+        parser.addArgument("-f", "--format").metavar("FORMAT").required(false)
                 .help("The file format of the reports which are specified as command line arguments." +
                         "\nSee http://cqse.eu/upload-formats for a full list of supported file formats.");
-        parser.addArgument("-c", "--commit").type(String.class).metavar("REVISION").required(false)
+        parser.addArgument("-c", "--commit").metavar("REVISION").required(false)
                 .help("The version control commit for which you obtained the report files." +
                         " E.g. if you obtained a test coverage report in your CI pipeline, then this" +
                         " is the commit the CI pipeline built before running the tests." +
                         " Can be either a Git SHA1, a SVN revision number or an Team Foundation changeset ID.");
-        parser.addArgument("-b", "--branch-and-timestamp").type(String.class).metavar("BRANCH_AND_TIMESTAMP").required(false)
+        parser.addArgument("-b", "--branch-and-timestamp").metavar("BRANCH_AND_TIMESTAMP").required(false)
                 .help("The branch and Unix Epoch timestamp for which you obtained the report files." +
                         " E.g. if you obtained a test coverage report in your CI pipeline, then this" +
                         " is the branch and the commit timestamp of the commit that the CI pipeline" +
@@ -182,11 +182,11 @@ public class TeamscaleUpload {
                         "\nFormat: BRANCH:TIMESTAMP" +
                         "\nExample: master:1597845930000" +
                         "\nExample: develop:HEAD");
-        parser.addArgument("--message").type(String.class).metavar("MESSAGE").required(false)
+        parser.addArgument("--message").metavar("MESSAGE").required(false)
                 .help("The message for the commit created in Teamscale for this upload. Will be" +
                         " visible in the Activity perspective. Defaults to a message containing" +
                         " useful meta-information about the upload and the machine performing it.");
-        parser.addArgument("-i", "--input").type(String.class).metavar("INPUT").required(false)
+        parser.addArgument("-i", "--input").metavar("INPUT").required(false)
                 .help("A file which contains additional report file patterns. See INPUTFILE for a" +
                         " detailed description of the file format.");
         parser.addArgument("--detect-commit").action(Arguments.storeTrue()).required(false)
@@ -198,12 +198,12 @@ public class TeamscaleUpload {
                 .help("By default, SSL certificates are accepted without validation, which makes" +
                         " using this tool with self-signed certificates easier. This flag enables" +
                         " validation.");
-        parser.addArgument("--append-to-message").metavar("LINE").type(String.class)
+        parser.addArgument("--append-to-message").metavar("LINE")
                 .action(Arguments.append()).required(false)
                 .help("Appends the given line to the message. Use this to augment the autogenerated" +
                         " message instead of replacing it. You may specify this parameter multiple" +
                         " times to append several lines to the message.");
-        parser.addArgument("files").metavar("FILES").type(String.class).nargs("*")
+        parser.addArgument("files").metavar("FILES").nargs("*")
                 .help("Path(s) or pattern(s) of the report files to upload. Alternatively, you may" +
                         " provide input files via -i or --input");
 
