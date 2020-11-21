@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class NativeImageIT {
 
-    private final int MOCK_TEAMSCALE_PORT = 24398;
+    private static final int MOCK_TEAMSCALE_PORT = 24398;
 
     @Test
     public void wrongAccessKey() {
@@ -112,17 +112,19 @@ public class NativeImageIT {
 
     @Test
     public void testDefaultMessage() {
-        try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
-            ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT));
-            assertThat(result.exitCode)
-                    .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
-                    .isZero();
-            assertThat(server.sessions).hasSize(1).first().extracting(this::extractNormalizedMessage)
-                    .isEqualTo("NativeImageIT external analysis results uploaded at DATE" +
-                            "\n\nuploaded from HOSTNAME" +
-                            "\nfor revision: HEAD" +
-                            "\nincludes data in the following formats: SIMPLE");
-        }
+        TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT);
+        ProcessUtils.ProcessResult result = runUploader(new Arguments()
+                .withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT)
+                .withAdditionalMessageLine("Build ID: 1234"));
+        assertThat(result.exitCode)
+                .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+                .isZero();
+        assertThat(server.sessions).hasSize(1).first().extracting(this::extractNormalizedMessage)
+                .isEqualTo("NativeImageIT external analysis results uploaded at DATE" +
+                        "\n\nuploaded from HOSTNAME" +
+                        "\nfor revision: HEAD" +
+                        "\nincludes data in the following formats: SIMPLE" +
+                        "\nBuild ID: 1234");
     }
 
     @Test
@@ -186,6 +188,7 @@ public class NativeImageIT {
         private String input = null;
         private boolean validateSsl = false;
         private boolean useKeystore = false;
+        private String additionalMessageLine = null;
 
         private Arguments withPattern(String pattern) {
             this.pattern = pattern;
@@ -199,6 +202,11 @@ public class NativeImageIT {
 
         private Arguments withKeystore() {
             this.useKeystore = true;
+            return this;
+        }
+
+        private Arguments withAdditionalMessageLine(String line) {
+            this.additionalMessageLine = line;
             return this;
         }
 
@@ -241,6 +249,10 @@ public class NativeImageIT {
             if (useKeystore) {
                 arguments.add("--trusted-keystore");
                 arguments.add(TeamscaleMockServer.TRUSTSTORE.getAbsolutePath() + ";password");
+            }
+            if (additionalMessageLine != null) {
+                arguments.add("--append-to-message");
+                arguments.add(additionalMessageLine);
             }
 
             return arguments.toArray(new String[0]);

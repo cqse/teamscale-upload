@@ -7,6 +7,7 @@ We use [semantic versioning](http://semver.org/):
 # Next Release
 
 - [feature] allow users to provide self-signed certificates that should be trusted in a Java keystore
+- [feature] allow users to append lines to the default message
 
 # 1.0.0
 
