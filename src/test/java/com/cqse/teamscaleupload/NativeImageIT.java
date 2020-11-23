@@ -19,6 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class NativeImageIT {
 
+    private static final int MOCK_TEAMSCALE_PORT = 24398;
+
     @Test
     public void wrongAccessKey() {
         ProcessUtils.ProcessResult result = runUploader(new Arguments().withAccessKey("wrong-accesskey_"));
@@ -110,10 +112,9 @@ public class NativeImageIT {
 
     @Test
     public void testDefaultMessage() {
-        int mockTeamscalePort = 24398;
-        TeamscaleMockServer server = new TeamscaleMockServer(mockTeamscalePort);
+        TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT);
         ProcessUtils.ProcessResult result = runUploader(new Arguments()
-                .withUrl("http://localhost:" + mockTeamscalePort)
+                .withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT)
                 .withAdditionalMessageLine("Build ID: 1234"));
         assertThat(result.exitCode)
                 .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
@@ -124,6 +125,43 @@ public class NativeImageIT {
                         "\nfor revision: HEAD" +
                         "\nincludes data in the following formats: SIMPLE" +
                         "\nBuild ID: 1234");
+    }
+
+    @Test
+    public void selfSignedCertificateShouldBeAcceptedByDefault() {
+        try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
+            ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT));
+            assertThat(result.exitCode)
+                    .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+                    .isZero();
+            assertThat(server.sessions).hasSize(1);
+        }
+    }
+
+    @Test
+    public void selfSignedCertificateShouldNotBeAcceptedWhenValidationIsEnabled() {
+        try (TeamscaleMockServer ignored = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
+            ProcessUtils.ProcessResult result = runUploader(new Arguments()
+                    .withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT)
+                    .withSslValidation());
+            assertThat(result.exitCode)
+                    .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+                    .isNotZero();
+            assertThat(result.stdoutAndStdErr).contains("self-signed");
+        }
+    }
+
+    @Test
+    public void selfSignedCertificateShouldBeAcceptedWhenKeystoreIsUsed() {
+        try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
+            ProcessUtils.ProcessResult result = runUploader(new Arguments()
+                    .withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT)
+                    .withSslValidation().withKeystore());
+            assertThat(result.exitCode)
+                    .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+                    .isZero();
+            assertThat(server.sessions).hasSize(1);
+        }
     }
 
     private String extractNormalizedMessage(TeamscaleMockServer.Session session) {
@@ -148,10 +186,22 @@ public class NativeImageIT {
         private final String partition = "NativeImageIT";
         private String pattern = "coverage_files\\*.simple";
         private String input = null;
+        private boolean validateSsl = false;
+        private boolean useKeystore = false;
         private String additionalMessageLine = null;
 
         private Arguments withPattern(String pattern) {
             this.pattern = pattern;
+            return this;
+        }
+
+        private Arguments withSslValidation() {
+            this.validateSsl = true;
+            return this;
+        }
+
+        private Arguments withKeystore() {
+            this.useKeystore = true;
             return this;
         }
 
@@ -193,12 +243,19 @@ public class NativeImageIT {
                 arguments.add(input);
             }
             arguments.add(pattern);
+            if (validateSsl) {
+                arguments.add("--validate-ssl");
+            }
+            if (useKeystore) {
+                arguments.add("--trusted-keystore");
+                arguments.add(TeamscaleMockServer.TRUSTSTORE.getAbsolutePath() + ";password");
+            }
             if (additionalMessageLine != null) {
                 arguments.add("--append-to-message");
                 arguments.add(additionalMessageLine);
             }
 
-            return arguments.toArray(new String[arguments.size()]);
+            return arguments.toArray(new String[0]);
         }
     }
 
