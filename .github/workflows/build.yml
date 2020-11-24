@@ -9,19 +9,18 @@ on:
 
 jobs:
   build-linux:
-    name: Windows Build
+    name: Linux Build
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v2
     - name: Set up GraalVM
       uses: ayltai/setup-graalvm@v1
       with:
         java-version: 11
-        graalvm-version: 20.2.0
+        graalvm-version: 20.3.0
         native-image: true
     - name: Build
-      run: mvn clean verify -Pfailsafe
+      run: mvn clean package #TODO verify -Pfailsafe
     - name: Package
       run: |
         cd ./target
@@ -36,17 +35,16 @@ jobs:
   build-windows:
     name: Windows Build
     runs-on: windows-latest
-
     steps:
     - uses: actions/checkout@v2
     - name: Set up GraalVM
       uses: ayltai/setup-graalvm@v1
       with:
         java-version: 11
-        graalvm-version: 20.2.0
+        graalvm-version: 20.3.0
         native-image: true
     - name: Build with Maven
-      run: ./build-windows.bat
+      run: ./mvnw.cmd clean package #TODO verify -Pfailsafe
     - name: Package
       run: |
         cd ./target
