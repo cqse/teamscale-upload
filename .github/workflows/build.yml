@@ -20,7 +20,9 @@ jobs:
         graalvm-version: 20.3.0
         native-image: true
     - name: Build
-      run: mvn clean package #TODO verify -Pfailsafe
+      env:
+        ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
+      run: mvn clean verify -Pfailsafe
     - name: 'Upload Artifact'
       uses: actions/upload-artifact@v2
       with:
@@ -39,8 +41,10 @@ jobs:
         java-version: 11
         graalvm-version: 20.3.0
         native-image: true
-    - name: Build with Maven
-      run: ./mvnw.cmd clean package #TODO verify -Pfailsafe
+    - name: Build
+      env:
+        ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
+      run: ./mvnw.cmd clean verify -Pfailsafe
     - name: 'Upload Artifact'
       uses: actions/upload-artifact@v2
       with:
