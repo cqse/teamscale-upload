@@ -8,7 +8,7 @@ name: Create Release
 
 jobs:
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
+    # if: startsWith(github.ref, 'refs/tags/v')
     name: Create Release
     runs-on: ubuntu-latest
     steps:
@@ -16,9 +16,9 @@ jobs:
         uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
       - name: Display structure of downloaded files
-        run:
-          - ls -R
-          - echo ${{steps.download.outputs.download-path}}
+        run: |
+          ls -R
+          echo ${{steps.download.outputs.download-path}}
       - name: Package
         run: |
           (cd ./target-linux && zip ../teamscale-upload-linux.zip ./teamscale-upload)
