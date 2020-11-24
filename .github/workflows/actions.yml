@@ -2,10 +2,10 @@ name: Build
 
 on:
   push:
-    branches: [ master ]
-    tags: [ 'v*' ]
+    branches: '*'
+    tags: 'v*'
   pull_request:
-    branches: [ master ]
+    branches: '*'
 
 jobs:
   build-linux:
@@ -33,7 +33,7 @@ jobs:
 
   build-windows:
     name: Windows Build
-    runs-on: windows-latest
+    runs-on: windows-2019
     steps:
     - uses: actions/checkout@v2
     - name: Set up GraalVM
@@ -42,8 +42,6 @@ jobs:
         java-version: 11
         graalvm-version: 20.3.0
         native-image: true
-    - name: Install VS tools
-      run: choco install visualstudio2017-workload-vctools
     - name: Build
       env:
         ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
@@ -64,8 +62,6 @@ jobs:
     name: Create Release
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
       - name: Package
         run: |
