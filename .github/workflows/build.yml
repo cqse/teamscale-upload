@@ -45,8 +45,7 @@ jobs:
     - name: Build
       env:
         ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
-      shell: bash
-      run: ./mvnw.cmd clean verify -Pfailsafe
+      run: ./build-windows.bat
     - name: 'Upload Artifact'
       if: ${{ always() }}
       uses: actions/upload-artifact@v2
