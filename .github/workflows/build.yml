@@ -24,6 +24,7 @@ jobs:
         ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
       run: mvn clean verify -Pfailsafe
     - name: 'Upload Artifact'
+      if: ${{ always() }}
       uses: actions/upload-artifact@v2
       with:
         name: target-linux
@@ -33,6 +34,7 @@ jobs:
   build-windows:
     name: Windows Build
     runs-on: windows-latest
+    shell: bash
     steps:
     - uses: actions/checkout@v2
     - name: Set up GraalVM
@@ -46,6 +48,7 @@ jobs:
         ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
       run: ./mvnw.cmd clean verify -Pfailsafe
     - name: 'Upload Artifact'
+      if: ${{ always() }}
       uses: actions/upload-artifact@v2
       with:
         name: target-windows
