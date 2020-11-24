@@ -58,50 +58,25 @@ jobs:
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    # needs: 
-    #   - build-windows
-    #   - build-linux
+    needs: 
+      - build-windows
+      - build-linux
     name: Create Release
     runs-on: ubuntu-latest
     steps:
-      # - name: Checkout code
-      #   uses: actions/checkout@v2
-      # - uses: actions/download-artifact@v2
-      # - name: Package
-      #   run: |
-      #     (cd ./target-linux && zip ../teamscale-upload-linux.zip ./teamscale-upload)
-      #     (cd ./target-windows && zip ../teamscale-upload-windows.zip ./teamscale-upload.exe)
-      - name: Get the version
-        id: get_version
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
-      - name: Create Release
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+      - name: Package
+        run: |
+          (cd ./target-linux && zip ../teamscale-upload-linux.zip ./teamscale-upload)
+          (cd ./target-windows && zip ../teamscale-upload-windows.zip ./teamscale-upload.exe)
+      - name: Upload Release Assets
         id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: svenstaro/upload-release-action@v2
         with:
-          tag_name: ${{ steps.get_version.outputs.VERSION }}
-          release_name: ${{ steps.get_version.outputs.VERSION }}
-          draft: false
-          prerelease: false
-      - name: Get the version
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: echo ${{ steps.create_release.outputs.upload_url }}
-      - name: Upload Windows Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./teamscale-upload-windows.zip
-          asset_name: teamscale-upload-windows.zip
-          asset_content_type: application/zip
-      - name: Upload Linux Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./teamscale-upload-linux.zip
-          asset_name: teamscale-upload-linux.zip
-          asset_content_type: application/zip
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          file: teamscale-upload-*.zip
+          file_glob: true
+          overwrite: true
