@@ -71,14 +71,17 @@ jobs:
         run: |
           (cd ./target-linux && zip ../teamscale-upload-linux.zip ./teamscale-upload)
           (cd ./target-windows && zip ../teamscale-upload-windows.zip ./teamscale-upload.exe)
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${GITHUB_REF#refs/tags/}
-          release_name: ${GITHUB_REF#refs/tags/}
+          tag_name: ${{ steps.get_version.outputs.VERSION }}
+          release_name: ${{ steps.get_version.outputs.VERSION }}
           draft: false
           prerelease: false
       - name: Upload Windows Release Asset
