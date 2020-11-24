@@ -1,0 +1,78 @@
+name: Build
+
+on:
+  push:
+    branches: '*'
+    tags: 'v*'
+  pull_request:
+    branches: '*'
+
+jobs:
+  build-linux:
+    name: Linux Build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up GraalVM
+      uses: ayltai/setup-graalvm@v1
+      with:
+        java-version: 11
+        graalvm-version: 20.3.0
+        native-image: true
+    - name: Build
+      env:
+        ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
+      run: mvn clean verify -Pfailsafe
+    - name: 'Upload Artifact'
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: target-linux
+        path: ./target
+        retention-days: 5
+
+  build-windows:
+    name: Windows Build
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up GraalVM
+      uses: ayltai/setup-graalvm@v1
+      with:
+        java-version: 11
+        graalvm-version: 20.3.0
+        native-image: true
+    - name: Build
+      env:
+        ACCESS_KEY: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
+      run: ./build-windows.bat
+    - name: 'Upload Artifact'
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: target-windows
+        path: ./target
+        retention-days: 5
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: 
+      - build-windows
+      - build-linux
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v2
+      - name: Package
+        run: |
+          (cd ./target-linux && zip ../teamscale-upload-linux.zip ./teamscale-upload)
+          (cd ./target-windows && zip ../teamscale-upload-windows.zip ./teamscale-upload.exe)
+      - name: Upload Release Assets
+        id: create_release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          file: teamscale-upload-*.zip
+          file_glob: true
+          overwrite: true
