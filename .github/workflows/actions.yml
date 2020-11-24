@@ -42,8 +42,6 @@ jobs:
         java-version: 11
         graalvm-version: 20.3.0
         native-image: true
-    - name: Install VS tools
-      run: choco install visualstudio2017-workload-vctools
     - name: Build
       env:
         ACCESS_KEY: ${{ secrets.TEAMSCALE_ACCESS_KEY }}

@@ -31,7 +31,7 @@ The executable is always created under `./target/`.
 On Windows, you must install the Visual Studio compiler tooling, e.g. via [Chocolatey](https://chocolatey.org/):
 
 ```batch
-choco install visualstudio2017-workload-vctools
+choco install visualstudio2019-workload-vctools
 ```
 
 To create a native executable, run
