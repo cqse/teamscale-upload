@@ -21,15 +21,11 @@ jobs:
         native-image: true
     - name: Build
       run: mvn clean package #TODO verify -Pfailsafe
-    - name: Package
-      run: |
-        cd ./target
-        zip teamscale-upload-linux.zip ./teamscale-upload
     - name: 'Upload Artifact'
       uses: actions/upload-artifact@v2
       with:
-        name: teamscale-upload-linux
-        path: ./target/teamscale-upload-linux.zip
+        name: target-linux
+        path: ./target
         retention-days: 5
 
   build-windows:
@@ -45,13 +41,9 @@ jobs:
         native-image: true
     - name: Build with Maven
       run: ./mvnw.cmd clean package #TODO verify -Pfailsafe
-    - name: Package
-      run: |
-        cd ./target
-        zip teamscale-upload-windows.zip ./teamscale-upload.exe
     - name: 'Upload Artifact'
       uses: actions/upload-artifact@v2
       with:
-        name: teamscale-upload-windows
-        path: ./target/teamscale-upload-windows.zip
+        name: target-windows
+        path: ./target
         retention-days: 5

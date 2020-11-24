@@ -18,6 +18,10 @@ jobs:
         run:
           - ls -R
           - echo ${{steps.download.outputs.download-path}}
+      - name: Package
+        run: |
+          (cd ./target-linux && zip ../teamscale-upload-linux.zip ./teamscale-upload)
+          (cd ./target-windows && zip ../teamscale-upload-windows.zip ./teamscale-upload.exe)
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -34,7 +38,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{steps.download.outputs.download-path}}/teamscale-upload-windows.zip
+          asset_path: ./teamscale-upload-windows.zip
           asset_name: teamscale-upload-windows.zip
           asset_content_type: application/zip
       - name: Upload Linux Release Asset
@@ -43,6 +47,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{steps.download.outputs.download-path}}/teamscale-upload-linux.zip
-          asset_name: teamscale-upload-linux.zip
+          asset_path: ./teamscale-upload-linux.zip
+          asset_name: ./teamscale-upload-linux.zip
           asset_content_type: application/zip
