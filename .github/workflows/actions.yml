@@ -44,7 +44,7 @@ jobs:
         native-image: true
     - name: Build
       env:
-        ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
+        ACCESS_KEY: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
       run: ./build-windows.bat
     - name: 'Upload Artifact'
       if: ${{ always() }}
