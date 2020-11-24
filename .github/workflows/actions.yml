@@ -64,13 +64,13 @@ jobs:
     name: Create Release
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
-      - name: Package
-        run: |
-          (cd ./target-linux && zip ../teamscale-upload-linux.zip ./teamscale-upload)
-          (cd ./target-windows && zip ../teamscale-upload-windows.zip ./teamscale-upload.exe)
+      # - name: Checkout code
+      #   uses: actions/checkout@v2
+      # - uses: actions/download-artifact@v2
+      # - name: Package
+      #   run: |
+      #     (cd ./target-linux && zip ../teamscale-upload-linux.zip ./teamscale-upload)
+      #     (cd ./target-windows && zip ../teamscale-upload-windows.zip ./teamscale-upload.exe)
       - name: Get the version
         id: get_version
         run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
