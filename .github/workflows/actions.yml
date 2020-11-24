@@ -43,7 +43,7 @@ jobs:
         graalvm-version: 20.3.0
         native-image: true
     - name: Install VS tools
-      run: choco install visualstudio2019-workload-vctools
+      run: choco install visualstudio2019buildtools
     - name: Build
       env:
         ACCESS_KEY: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
