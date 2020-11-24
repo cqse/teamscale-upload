@@ -66,5 +66,5 @@ You must manually invoke `./mvnw package`.
 Please update the CHANGELOG and consider semantic versioning when choosing the version number for your release.
 
 Then simply create a release in GitHub and paste the release notes from the CHANGELOG into the release description.
-Travis will automatically create and attach the binaries.
+GitHub Actions will automatically create and attach the binaries.
 

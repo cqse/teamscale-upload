@@ -1,0 +1,59 @@
+name: Build
+
+on:
+  push:
+    branches: [ master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-linux:
+    name: Windows Build
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up GraalVM
+      uses: ayltai/setup-graalvm@v1
+      with:
+        java-version: 11
+        graalvm-version: 20.2.0
+        native-image: true
+    - name: Build
+      run: mvn clean verify -Pfailsafe
+    - name: Package
+      run: |
+        cd ./target
+        zip teamscale-upload-linux.zip ./teamscale-upload
+    - name: 'Upload Artifact'
+      uses: actions/upload-artifact@v2
+      with:
+        name: teamscale-upload-linux
+        path: ./target/teamscale-upload-linux.zip
+        retention-days: 5
+
+  build-windows:
+    name: Windows Build
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up GraalVM
+      uses: ayltai/setup-graalvm@v1
+      with:
+        java-version: 11
+        graalvm-version: 20.2.0
+        native-image: true
+    - name: Build with Maven
+      run: ./build-windows.bat
+    - name: Package
+      run: |
+        cd ./target
+        zip teamscale-upload-windows.zip ./teamscale-upload.exe
+    - name: 'Upload Artifact'
+      uses: actions/upload-artifact@v2
+      with:
+        name: teamscale-upload-windows
+        path: ./target/teamscale-upload-windows.zip
+        retention-days: 5

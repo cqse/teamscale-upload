@@ -1,0 +1,48 @@
+on:
+  workflow_run:
+    workflows: [ 'Build' ]
+    tags: [ 'v*' ]
+    types: [ completed ]
+
+name: Create Release
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+      - name: Display structure of downloaded files
+        run:
+          - ls -R
+          - echo ${{steps.download.outputs.download-path}}
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          draft: false
+          prerelease: false
+      - name: Upload Windows Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{steps.download.outputs.download-path}}/teamscale-upload-windows.zip
+          asset_name: teamscale-upload-windows.zip
+          asset_content_type: application/zip
+      - name: Upload Linux Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{steps.download.outputs.download-path}}/teamscale-upload-linux.zip
+          asset_name: teamscale-upload-linux.zip
+          asset_content_type: application/zip
