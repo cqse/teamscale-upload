@@ -16,6 +16,9 @@ import java.net.ConnectException;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -141,15 +144,51 @@ public class TeamscaleUpload {
             }
 
             if (!files.isEmpty() && format == null) {
-                throw new ArgumentParserException("Please specify a report format with --format " +
-                        "if you pass report patterns as command line arguments", parser);
+                throw new ArgumentParserException("Please specify a report format with --format" +
+                        " if you pass report patterns as command line arguments", parser);
             }
 
-            if (timestamp != null && !timestamp.contains(":")) {
+            validateTimestamp(parser);
+        }
+
+        private void validateTimestamp(ArgumentParser parser) throws ArgumentParserException {
+            if (timestamp == null) {
+                return;
+            }
+
+            String[] parts = timestamp.split(":", 2);
+            if (parts.length == 1) {
                 throw new ArgumentParserException("You specified an invalid branch and timestamp" +
-                        "with --branch-and-timestamp: " + timestamp + "\nYou must  use the" +
+                        " with --branch-and-timestamp: " + timestamp + "\nYou must  use the" +
                         " format BRANCH:TIMESTAMP, where TIMESTAMP is a Unix timestamp in milliseconds" +
                         " or the string 'HEAD' (to upload to the latest commit on that branch).", parser);
+            }
+
+
+            String timestampPart = parts[1];
+            if (timestampPart.equalsIgnoreCase("HEAD")) {
+                return;
+            }
+
+            try {
+                long unixTimestamp = Long.parseLong(timestampPart);
+                if (unixTimestamp < 10000000000L) {
+                    String millisecondDate = DateTimeFormatter.RFC_1123_DATE_TIME.format(
+                            Instant.ofEpochMilli(unixTimestamp).atZone(ZoneOffset.UTC));
+                    String secondDate = DateTimeFormatter.RFC_1123_DATE_TIME.format(
+                            Instant.ofEpochSecond(unixTimestamp).atZone(ZoneOffset.UTC));
+                    throw new ArgumentParserException("You specified an invalid timestamp with" +
+                            " --branch-and-timestamp. The timestamp '" + timestampPart + "'" +
+                            " is equal to " + millisecondDate + ". This is probably not what" +
+                            " you intended. Most likely you specified the timestamp in seconds," +
+                            " instead of milliseconds. If you use " + timestampPart + "000" +
+                            " instead, it will mean " + secondDate, parser);
+                }
+            } catch (NumberFormatException e) {
+                throw new ArgumentParserException("You specified an invalid timestamp with" +
+                        " --branch-and-timestamp. Expected either 'HEAD' or a unix timestamp" +
+                        " in milliseconds since 00:00:00 UTC Thursday, 1 January 1970, e.g." +
+                        " master:1606743774000\nInstead you used: " + timestampPart, parser);
             }
         }
 

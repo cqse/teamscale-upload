@@ -128,6 +128,17 @@ public class NativeImageIT {
     }
 
     @Test
+    public void mustRejectTimestampPassedInSeconds() {
+        ProcessUtils.ProcessResult result = runUploader(new Arguments()
+                .withTimestamp("master:1606764633"));
+        assertThat(result.exitCode)
+                .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+                .isNotZero();
+        assertThat(result.stdoutAndStdErr).contains("seconds").contains("milliseconds")
+                .contains("1970").contains("2020");
+    }
+
+    @Test
     public void selfSignedCertificateShouldBeAcceptedByDefault() {
         try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
             ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT));
@@ -202,10 +213,16 @@ public class NativeImageIT {
         private boolean validateSsl = false;
         private boolean useKeystore = false;
         private boolean autoDetectCommit = false;
+        private String timestamp = "master:HEAD";
         private String additionalMessageLine = null;
 
         private Arguments withPattern(String pattern) {
             this.pattern = pattern;
+            return this;
+        }
+
+        private Arguments withTimestamp(String timestamp) {
+            this.timestamp = timestamp;
             return this;
         }
 
@@ -275,7 +292,7 @@ public class NativeImageIT {
             }
             if (!autoDetectCommit) {
                 arguments.add("--branch-and-timestamp");
-                arguments.add("master:HEAD");
+                arguments.add(timestamp);
             }
 
             return arguments.toArray(new String[0]);
