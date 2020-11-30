@@ -48,7 +48,6 @@ public class TeamscaleUpload {
         private final String partition;
         private final String format;
         private final String commit;
-        private final boolean autoDetectCommit;
         private final String timestamp;
         private final HttpUrl url;
         private final List<String> files;
@@ -64,7 +63,6 @@ public class TeamscaleUpload {
             this.accessKey = namespace.getString("accesskey");
             this.partition = namespace.getString("partition");
             this.commit = namespace.getString("commit");
-            this.autoDetectCommit = namespace.getBoolean("detect_commit");
             this.timestamp = namespace.getString("branch_and_timestamp");
             this.files = getListSafe(namespace, "files");
             this.url = HttpUrl.parse(namespace.getString("server"));
@@ -131,7 +129,7 @@ public class TeamscaleUpload {
             }
 
             if (hasMoreThanOneCommitOptionSet()) {
-                throw new ArgumentParserException("You used more than one of --detect-commit, --commit and --timestamp." +
+                throw new ArgumentParserException("You used more than one of --detect-commit, --commit and --branch-and-timestamp." +
                         " You must choose one of these three options to specify the commit for which you would like to" +
                         " upload data to Teamscale", parser);
             }
@@ -146,16 +144,17 @@ public class TeamscaleUpload {
                 throw new ArgumentParserException("Please specify a report format with --format " +
                         "if you pass report patterns as command line arguments", parser);
             }
+
+            if (timestamp != null && !timestamp.contains(":")) {
+                throw new ArgumentParserException("You specified an invalid branch and timestamp" +
+                        "with --branch-and-timestamp: " + timestamp + "\nYou must  use the" +
+                        " format BRANCH:TIMESTAMP, where TIMESTAMP is a Unix timestamp in milliseconds" +
+                        " or the string 'HEAD' (to upload to the latest commit on that branch).", parser);
+            }
         }
 
         private boolean hasMoreThanOneCommitOptionSet() {
-            if (commit != null && timestamp != null) {
-                return true;
-            }
-            if (commit != null && autoDetectCommit) {
-                return true;
-            }
-            return timestamp != null && autoDetectCommit;
+            return commit != null && timestamp != null;
         }
     }
 
@@ -218,11 +217,6 @@ public class TeamscaleUpload {
         parser.addArgument("-i", "--input").metavar("INPUT").required(false)
                 .help("A file which contains additional report file patterns. See INPUTFILE for a" +
                         " detailed description of the file format.");
-        parser.addArgument("--detect-commit").action(Arguments.storeTrue()).required(false)
-                .help("Tries to automatically detect the code commit to which to upload from" +
-                        " environment variables or a Git or SVN checkout in the current working" +
-                        " directory. If guessing fails, the upload will fail. This feature supports" +
-                        " many common CI tools like Jenkins, GitLab, GitHub Actions, Travis CI etc.");
         parser.addArgument("--validate-ssl").action(Arguments.storeTrue()).required(false)
                 .help("By default, SSL certificates are accepted without validation, which makes" +
                         " using this tool with self-signed certificates easier. This flag enables" +
@@ -246,6 +240,14 @@ public class TeamscaleUpload {
         parser.epilog("For general usage help and alternative upload methods, please check our online" +
                 " documentation at:" +
                 "\nhttp://cqse.eu/tsu-docs" +
+                "\n\nTARGET COMMIT" +
+                "\n\nBy default, teamscale-upload tries to automatically detect the code commit" +
+                " to which to upload from environment variables or a Git or SVN checkout in the" +
+                " current working directory. If guessing fails, the upload will fail. This feature" +
+                " supports many common CI tools like Jenkins, GitLab, GitHub Actions, Travis CI etc." +
+                " If automatic detection fails, you can manually specify either a commit via --commit," +
+                " a branch and timestamp via --branch-and-timestamp or you can upload to the latest" +
+                " commit on a branch via --branch-and-timestamp my-branch:HEAD." +
                 "\n\nINPUTFILE" +
                 "\n\nThe input file allows to upload multiple report files for different formats in one" +
                 " upload session. Each section of reports must start with a specification of the" +
@@ -385,16 +387,14 @@ public class TeamscaleUpload {
         } else if (input.timestamp != null) {
             builder.addQueryParameter("t", input.timestamp);
             return input.timestamp;
-        } else if (input.autoDetectCommit) {
+        } else {
+            // auto-detect if neither option is given
             String commit = detectCommit();
             if (commit == null) {
                 fail("Failed to automatically detect the commit. Please specify it manually via --commit or --branch-and-timestamp");
             }
             builder.addQueryParameter("revision", commit);
             return commit;
-        } else {
-            builder.addQueryParameter("t", "HEAD");
-            return "HEAD";
         }
     }
 
