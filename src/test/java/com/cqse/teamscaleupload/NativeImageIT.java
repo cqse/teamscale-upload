@@ -147,7 +147,7 @@ public class NativeImageIT {
             assertThat(result.exitCode)
                     .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
                     .isNotZero();
-            assertThat(result.stdoutAndStdErr).contains("self-signed");
+            assertThat(result.stdoutAndStdErr).contains("self-signed").contains("--insecure");
         }
     }
 

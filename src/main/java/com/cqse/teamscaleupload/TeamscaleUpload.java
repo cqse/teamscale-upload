@@ -303,7 +303,9 @@ public class TeamscaleUpload {
                     " or some certificates are missing from it." +
                     "\nPlease also ensure that your Teamscale instance is reachable under " + input.url +
                     " and that it is configured for HTTPS, not HTTP. E.g. open that URL in your" +
-                    " browser and verify that you can connect successfully.");
+                    " browser and verify that you can connect successfully." +
+                    "\n\nIf you want to accept self-signed or broken certificates without an error" +
+                    " you can use --insecure.");
         } else if (input.validateSsl) {
             fail("Failed to connect via HTTPS to " + input.url + ": " + e.getMessage() +
                     "\nYou enabled certificate validation. Most likely, your certificate" +
@@ -315,12 +317,16 @@ public class TeamscaleUpload {
                     " https://docs.teamscale.com/howto/connecting-via-https/#using-self-signed-certificates" +
                     "\nPlease also ensure that your Teamscale instance is reachable under " + input.url +
                     " and that it is configured for HTTPS, not HTTP. E.g. open that URL in your" +
-                    " browser and verify that you can connect successfully.");
+                    " browser and verify that you can connect successfully." +
+                    "\n\nIf you want to accept self-signed or broken certificates without an error" +
+                    " you can use --insecure.");
         } else {
             fail("Failed to connect via HTTPS to " + input.url + ": " + e.getMessage() +
                     "\nPlease ensure that your Teamscale instance is reachable under " + input.url +
                     " and that it is configured for HTTPS, not HTTP. E.g. open that URL in your" +
-                    " browser and verify that you can connect successfully.");
+                    " browser and verify that you can connect successfully." +
+                    "\n\nIf you want to accept self-signed or broken certificates without an error" +
+                    " you can use --insecure.");
         }
     }
 
