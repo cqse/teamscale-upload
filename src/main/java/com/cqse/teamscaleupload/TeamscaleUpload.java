@@ -148,10 +148,10 @@ public class TeamscaleUpload {
                         " if you pass report patterns as command line arguments", parser);
             }
 
-            validateTimestamp(parser);
+            validateBranchAndTimestamp(parser);
         }
 
-        private void validateTimestamp(ArgumentParser parser) throws ArgumentParserException {
+        private void validateBranchAndTimestamp(ArgumentParser parser) throws ArgumentParserException {
             if (timestamp == null) {
                 return;
             }
@@ -170,6 +170,10 @@ public class TeamscaleUpload {
                 return;
             }
 
+            validateTimestamp(parser, timestampPart);
+        }
+
+        private void validateTimestamp(ArgumentParser parser, String timestampPart) throws ArgumentParserException {
             try {
                 long unixTimestamp = Long.parseLong(timestampPart);
                 if (unixTimestamp < 10000000000L) {
