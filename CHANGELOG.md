@@ -6,6 +6,7 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 
+- [breaking change] certificates are now validated by default. Use `--insecure` to disable validation
 - [feature] allow users to provide self-signed certificates that should be trusted in a Java keystore
 - [feature] allow users to append lines to the default message
 
