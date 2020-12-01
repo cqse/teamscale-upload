@@ -70,7 +70,7 @@ public class TeamscaleUpload {
             this.url = HttpUrl.parse(namespace.getString("server"));
             this.message = namespace.getString("message");
             this.keystorePathAndPassword = namespace.getString("trusted_keystore");
-            this.validateSsl = namespace.getBoolean("validate_ssl") || keystorePathAndPassword != null;
+            this.validateSsl = !namespace.getBoolean("insecure") || keystorePathAndPassword != null;
             this.additionalMessageLines = getListSafe(namespace, "append_to_message");
 
             String inputFilePath = namespace.getString("input");
@@ -223,10 +223,9 @@ public class TeamscaleUpload {
                         " environment variables or a Git or SVN checkout in the current working" +
                         " directory. If guessing fails, the upload will fail. This feature supports" +
                         " many common CI tools like Jenkins, GitLab, GitHub Actions, Travis CI etc.");
-        parser.addArgument("--validate-ssl").action(Arguments.storeTrue()).required(false)
-                .help("By default, SSL certificates are accepted without validation, which makes" +
-                        " using this tool with self-signed certificates easier. This flag enables" +
-                        " validation.");
+        parser.addArgument("-k", "--insecure").action(Arguments.storeTrue()).required(false)
+                .help("Causes SSL certificates to be accepted without validation, which makes" +
+                        " using this tool with self-signed or invalid certificates easier.");
         parser.addArgument("--trusted-keystore").required(false)
                 .help("A Java keystore file and its corresponding password. The keystore contains" +
                         " additional certificates that should be trusted when performing SSL requests." +
