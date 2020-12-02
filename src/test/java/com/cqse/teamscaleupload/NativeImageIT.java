@@ -122,9 +122,20 @@ public class NativeImageIT {
         assertThat(server.sessions).hasSize(1).first().extracting(this::extractNormalizedMessage)
                 .isEqualTo("NativeImageIT external analysis results uploaded at DATE" +
                         "\n\nuploaded from HOSTNAME" +
-                        "\nfor revision: HEAD" +
+                        "\nfor revision: master:HEAD" +
                         "\nincludes data in the following formats: SIMPLE" +
                         "\nBuild ID: 1234");
+    }
+
+    @Test
+    public void mustRejectTimestampPassedInSeconds() {
+        ProcessUtils.ProcessResult result = runUploader(new Arguments()
+                .withTimestamp("master:1606764633"));
+        assertThat(result.exitCode)
+                .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+                .isNotZero();
+        assertThat(result.stdoutAndStdErr).contains("seconds").contains("milliseconds")
+                .contains("1970").contains("2020");
     }
 
     @Test
@@ -164,6 +175,19 @@ public class NativeImageIT {
         }
     }
 
+    @Test
+    public void mustGuessRevision() {
+        try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
+            ProcessUtils.ProcessResult result = runUploader(new Arguments()
+                    .withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withAutoDetectCommit());
+            assertThat(result.exitCode)
+                    .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+                    .isZero();
+            assertThat(server.sessions).hasSize(1);
+            assertThat(server.sessions.get(0).revisionOrTimestamp).hasSize(40); // size of a git SHA1
+        }
+    }
+
     private String extractNormalizedMessage(TeamscaleMockServer.Session session) {
         return session.message.replaceAll("uploaded from .*", "uploaded from HOSTNAME")
                 .replaceAll("uploaded at .*", "uploaded at DATE");
@@ -188,6 +212,8 @@ public class NativeImageIT {
         private String input = null;
         private boolean validateSsl = false;
         private boolean useKeystore = false;
+        private boolean autoDetectCommit = false;
+        private String timestamp = "master:HEAD";
         private String additionalMessageLine = null;
 
         private Arguments withPattern(String pattern) {
@@ -195,8 +221,18 @@ public class NativeImageIT {
             return this;
         }
 
+        private Arguments withTimestamp(String timestamp) {
+            this.timestamp = timestamp;
+            return this;
+        }
+
         private Arguments withSslValidation() {
             this.validateSsl = true;
+            return this;
+        }
+
+        private Arguments withAutoDetectCommit() {
+            this.autoDetectCommit = true;
             return this;
         }
 
@@ -253,6 +289,10 @@ public class NativeImageIT {
             if (additionalMessageLine != null) {
                 arguments.add("--append-to-message");
                 arguments.add(additionalMessageLine);
+            }
+            if (!autoDetectCommit) {
+                arguments.add("--branch-and-timestamp");
+                arguments.add(timestamp);
             }
 
             return arguments.toArray(new String[0]);

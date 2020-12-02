@@ -42,8 +42,14 @@ public class TeamscaleMockServer implements AutoCloseable {
          */
         public final String message;
 
-        public Session(String message) {
+        /**
+         * The revision or timestamp used during the upload.
+         */
+        public final String revisionOrTimestamp;
+
+        public Session(String message, String revisionOrTimestamp) {
             this.message = message;
+            this.revisionOrTimestamp = revisionOrTimestamp;
         }
     }
 
@@ -76,7 +82,11 @@ public class TeamscaleMockServer implements AutoCloseable {
 
     private String openSession(Request request, Response response) {
         String message = request.queryParams("message");
-        sessions.add(new Session(message));
+        String revisionOrTimestamp = request.queryParams("revision");
+        if (revisionOrTimestamp == null) {
+            revisionOrTimestamp = request.queryParams("t");
+        }
+        sessions.add(new Session(message, revisionOrTimestamp));
         return "fake-session-id";
     }
 
