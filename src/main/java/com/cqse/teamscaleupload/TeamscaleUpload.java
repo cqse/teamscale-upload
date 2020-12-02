@@ -132,8 +132,8 @@ public class TeamscaleUpload {
             }
 
             if (hasMoreThanOneCommitOptionSet()) {
-                throw new ArgumentParserException("You used more than one of --detect-commit, --commit and --branch-and-timestamp." +
-                        " You must choose one of these three options to specify the commit for which you would like to" +
+                throw new ArgumentParserException("You used more than one of --commit and --branch-and-timestamp." +
+                        " You must choose one of these options to specify the commit for which you would like to" +
                         " upload data to Teamscale", parser);
             }
 
