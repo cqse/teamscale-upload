@@ -125,16 +125,7 @@ public class TeamscaleUpload {
                 throw new ArgumentParserException("You provided an invalid URL in the --server option", parser);
             }
 
-            if (!validateSsl && keystorePathAndPassword != null) {
-                warn("You specified a trusted keystore via --trust-keystore but also disabled SSL" +
-                        " validation via --insecure. SSL validation is now disabled and your keystore" +
-                        " will not be used.");
-            }
-
-            if (keystorePathAndPassword != null && !keystorePathAndPassword.contains(";")) {
-                throw new ArgumentParserException("You forgot to add the password for the --trust-keystore file " + keystorePathAndPassword + "." +
-                        " You must add it to the end of the path, separated by a semicolon, e.g: --trust-keystore " + keystorePathAndPassword + ";PASSWORD", parser);
-            }
+            validateKeystoreSettings(parser);
 
             if (hasMoreThanOneCommitOptionSet()) {
                 throw new ArgumentParserException("You used more than one of --detect-commit, --commit and --timestamp." +
@@ -151,6 +142,19 @@ public class TeamscaleUpload {
             if (!files.isEmpty() && format == null) {
                 throw new ArgumentParserException("Please specify a report format with --format " +
                         "if you pass report patterns as command line arguments", parser);
+            }
+        }
+
+        private void validateKeystoreSettings(ArgumentParser parser) throws ArgumentParserException {
+            if (!validateSsl && keystorePathAndPassword != null) {
+                warn("You specified a trusted keystore via --trust-keystore but also disabled SSL" +
+                        " validation via --insecure. SSL validation is now disabled and your keystore" +
+                        " will not be used.");
+            }
+
+            if (keystorePathAndPassword != null && !keystorePathAndPassword.contains(";")) {
+                throw new ArgumentParserException("You forgot to add the password for the --trust-keystore file " + keystorePathAndPassword + "." +
+                        " You must add it to the end of the path, separated by a semicolon, e.g: --trust-keystore " + keystorePathAndPassword + ";PASSWORD", parser);
             }
         }
 
@@ -551,7 +555,7 @@ public class TeamscaleUpload {
         System.exit(1);
     }
 
-    public static void warn(String message) {
+    private static void warn(String message) {
         System.err.println("WARNING: " + message);
     }
 
