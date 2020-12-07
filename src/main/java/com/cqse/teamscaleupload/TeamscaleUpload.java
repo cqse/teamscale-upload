@@ -70,7 +70,7 @@ public class TeamscaleUpload {
             this.url = HttpUrl.parse(namespace.getString("server"));
             this.message = namespace.getString("message");
             this.keystorePathAndPassword = namespace.getString("trusted_keystore");
-            this.validateSsl = !namespace.getBoolean("insecure") || keystorePathAndPassword != null;
+            this.validateSsl = !namespace.getBoolean("insecure");
             this.additionalMessageLines = getListSafe(namespace, "append_to_message");
 
             String inputFilePath = namespace.getString("input");
@@ -123,6 +123,12 @@ public class TeamscaleUpload {
         public void validate(ArgumentParser parser) throws ArgumentParserException {
             if (url == null) {
                 throw new ArgumentParserException("You provided an invalid URL in the --server option", parser);
+            }
+
+            if (!validateSsl && keystorePathAndPassword != null) {
+                warn("You specified a trusted keystore via --trust-keystore but also disabled SSL" +
+                        " validation via --insecure. SSL validation is now disabled and your keystore" +
+                        " will not be used.");
             }
 
             if (keystorePathAndPassword != null && !keystorePathAndPassword.contains(";")) {
@@ -543,6 +549,10 @@ public class TeamscaleUpload {
     public static void fail(String message) {
         System.err.println(message);
         System.exit(1);
+    }
+
+    public static void warn(String message) {
+        System.err.println("WARNING: " + message);
     }
 
     private static String readBodySafe(Response response) {
