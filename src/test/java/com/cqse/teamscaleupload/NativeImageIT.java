@@ -141,7 +141,8 @@ public class NativeImageIT {
     @Test
     public void selfSignedCertificateShouldBeAcceptedByDefault() {
         try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
-            ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT));
+            ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT)
+                    .withInsecure());
             assertThat(result.exitCode)
                     .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
                     .isZero();
@@ -153,12 +154,11 @@ public class NativeImageIT {
     public void selfSignedCertificateShouldNotBeAcceptedWhenValidationIsEnabled() {
         try (TeamscaleMockServer ignored = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
             ProcessUtils.ProcessResult result = runUploader(new Arguments()
-                    .withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT)
-                    .withSslValidation());
+                    .withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT));
             assertThat(result.exitCode)
                     .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
                     .isNotZero();
-            assertThat(result.stdoutAndStdErr).contains("self-signed");
+            assertThat(result.stdoutAndStdErr).contains("self-signed").contains("--insecure");
         }
     }
 
@@ -166,8 +166,7 @@ public class NativeImageIT {
     public void selfSignedCertificateShouldBeAcceptedWhenKeystoreIsUsed() {
         try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
             ProcessUtils.ProcessResult result = runUploader(new Arguments()
-                    .withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT)
-                    .withSslValidation().withKeystore());
+                    .withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT).withKeystore());
             assertThat(result.exitCode)
                     .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
                     .isZero();
@@ -210,7 +209,7 @@ public class NativeImageIT {
         private final String partition = "NativeImageIT";
         private String pattern = "coverage_files\\*.simple";
         private String input = null;
-        private boolean validateSsl = false;
+        private boolean insecure = false;
         private boolean useKeystore = false;
         private boolean autoDetectCommit = false;
         private String timestamp = "master:HEAD";
@@ -221,13 +220,13 @@ public class NativeImageIT {
             return this;
         }
 
-        private Arguments withTimestamp(String timestamp) {
-            this.timestamp = timestamp;
+        private Arguments withInsecure() {
+            this.insecure = true;
             return this;
         }
 
-        private Arguments withSslValidation() {
-            this.validateSsl = true;
+        private Arguments withTimestamp(String timestamp) {
+            this.timestamp = timestamp;
             return this;
         }
 
@@ -279,8 +278,8 @@ public class NativeImageIT {
                 arguments.add(input);
             }
             arguments.add(pattern);
-            if (validateSsl) {
-                arguments.add("--validate-ssl");
+            if (insecure) {
+                arguments.add("--insecure");
             }
             if (useKeystore) {
                 arguments.add("--trusted-keystore");

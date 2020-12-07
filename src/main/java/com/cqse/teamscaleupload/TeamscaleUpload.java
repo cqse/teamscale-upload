@@ -71,7 +71,7 @@ public class TeamscaleUpload {
             this.url = HttpUrl.parse(namespace.getString("server"));
             this.message = namespace.getString("message");
             this.keystorePathAndPassword = namespace.getString("trusted_keystore");
-            this.validateSsl = namespace.getBoolean("validate_ssl") || keystorePathAndPassword != null;
+            this.validateSsl = !namespace.getBoolean("insecure");
             this.additionalMessageLines = getListSafe(namespace, "append_to_message");
 
             String inputFilePath = namespace.getString("input");
@@ -126,10 +126,7 @@ public class TeamscaleUpload {
                 throw new ArgumentParserException("You provided an invalid URL in the --server option", parser);
             }
 
-            if (keystorePathAndPassword != null && !keystorePathAndPassword.contains(";")) {
-                throw new ArgumentParserException("You forgot to add the password for the --trust-keystore file " + keystorePathAndPassword + "." +
-                        " You must add it to the end of the path, separated by a semicolon, e.g: --trust-keystore " + keystorePathAndPassword + ";PASSWORD", parser);
-            }
+            validateKeystoreSettings(parser);
 
             if (hasMoreThanOneCommitOptionSet()) {
                 throw new ArgumentParserException("You used more than one of --commit and --branch-and-timestamp." +
@@ -151,6 +148,19 @@ public class TeamscaleUpload {
             validateBranchAndTimestamp(parser);
         }
 
+        private void validateKeystoreSettings(ArgumentParser parser) throws ArgumentParserException {
+            if (!validateSsl && keystorePathAndPassword != null) {
+                warn("You specified a trusted keystore via --trust-keystore but also disabled SSL" +
+                        " validation via --insecure. SSL validation is now disabled and your keystore" +
+                        " will not be used.");
+            }
+
+            if (keystorePathAndPassword != null && !keystorePathAndPassword.contains(";")) {
+                throw new ArgumentParserException("You forgot to add the password for the --trust-keystore file " + keystorePathAndPassword + "." +
+                        " You must add it to the end of the path, separated by a semicolon, e.g: --trust-keystore " + keystorePathAndPassword + ";PASSWORD", parser);
+            }
+        }
+
         private void validateBranchAndTimestamp(ArgumentParser parser) throws ArgumentParserException {
             if (timestamp == null) {
                 return;
@@ -163,7 +173,6 @@ public class TeamscaleUpload {
                         " format BRANCH:TIMESTAMP, where TIMESTAMP is a Unix timestamp in milliseconds" +
                         " or the string 'HEAD' (to upload to the latest commit on that branch).", parser);
             }
-
 
             String timestampPart = parts[1];
             if (timestampPart.equalsIgnoreCase("HEAD")) {
@@ -260,10 +269,9 @@ public class TeamscaleUpload {
         parser.addArgument("-i", "--input").metavar("INPUT").required(false)
                 .help("A file which contains additional report file patterns. See INPUTFILE for a" +
                         " detailed description of the file format.");
-        parser.addArgument("--validate-ssl").action(Arguments.storeTrue()).required(false)
-                .help("By default, SSL certificates are accepted without validation, which makes" +
-                        " using this tool with self-signed certificates easier. This flag enables" +
-                        " validation.");
+        parser.addArgument("-k", "--insecure").action(Arguments.storeTrue()).required(false)
+                .help("Causes SSL certificates to be accepted without validation, which makes" +
+                        " using this tool with self-signed or invalid certificates easier.");
         parser.addArgument("--trusted-keystore").required(false)
                 .help("A Java keystore file and its corresponding password. The keystore contains" +
                         " additional certificates that should be trusted when performing SSL requests." +
@@ -349,7 +357,9 @@ public class TeamscaleUpload {
                     " or some certificates are missing from it." +
                     "\nPlease also ensure that your Teamscale instance is reachable under " + input.url +
                     " and that it is configured for HTTPS, not HTTP. E.g. open that URL in your" +
-                    " browser and verify that you can connect successfully.");
+                    " browser and verify that you can connect successfully." +
+                    "\n\nIf you want to accept self-signed or broken certificates without an error" +
+                    " you can use --insecure.");
         } else if (input.validateSsl) {
             fail("Failed to connect via HTTPS to " + input.url + ": " + e.getMessage() +
                     "\nYou enabled certificate validation. Most likely, your certificate" +
@@ -361,12 +371,16 @@ public class TeamscaleUpload {
                     " https://docs.teamscale.com/howto/connecting-via-https/#using-self-signed-certificates" +
                     "\nPlease also ensure that your Teamscale instance is reachable under " + input.url +
                     " and that it is configured for HTTPS, not HTTP. E.g. open that URL in your" +
-                    " browser and verify that you can connect successfully.");
+                    " browser and verify that you can connect successfully." +
+                    "\n\nIf you want to accept self-signed or broken certificates without an error" +
+                    " you can use --insecure.");
         } else {
             fail("Failed to connect via HTTPS to " + input.url + ": " + e.getMessage() +
                     "\nPlease ensure that your Teamscale instance is reachable under " + input.url +
                     " and that it is configured for HTTPS, not HTTP. E.g. open that URL in your" +
-                    " browser and verify that you can connect successfully.");
+                    " browser and verify that you can connect successfully." +
+                    "\n\nIf you want to accept self-signed or broken certificates without an error" +
+                    " you can use --insecure.");
         }
     }
 
@@ -581,6 +595,10 @@ public class TeamscaleUpload {
     public static void fail(String message) {
         System.err.println(message);
         System.exit(1);
+    }
+
+    private static void warn(String message) {
+        System.err.println("WARNING: " + message);
     }
 
     private static String readBodySafe(Response response) {
