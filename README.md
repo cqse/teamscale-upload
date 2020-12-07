@@ -1,4 +1,10 @@
-# Teamscale Upload
+# Teamscale Upload ![Build](https://github.com/cqse/teamscale-upload/workflows/Build/badge.svg)
+
+[Download](https://github.com/cqse/teamscale-upload/releases/latest) • [Documentation](https://docs.teamscale.com/howto/uploading-external-results/#upload-via-command-line) • [Changelog](https://github.com/cqse/teamscale-upload/blob/master/CHANGELOG.md)
+
+**Command-line tool to upload external analysis results (coverage, findings, ...) to Teamscale.**
+
+Run `teamscale-upload --help` to see all available options.
 
 ## Developing
 
