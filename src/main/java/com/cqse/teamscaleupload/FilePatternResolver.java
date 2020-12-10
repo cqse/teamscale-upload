@@ -1,7 +1,6 @@
 package com.cqse.teamscaleupload;
 
 import org.conqat.lib.commons.collections.CollectionUtils;
-import org.conqat.lib.commons.collections.Pair;
 import org.conqat.lib.commons.filesystem.AntPatternUtils;
 import org.conqat.lib.commons.filesystem.FileSystemUtils;
 
@@ -16,28 +15,22 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
-/** Helper class to support resolving file paths which may contain Ant patterns. */
+/**
+ * Helper class to support resolving file paths which may contain Ant patterns.
+ */
 public class FilePatternResolver {
 
-    /** Stand-in for the question mark operator. */
+    /**
+     * Stand-in for the question mark operator.
+     */
     private static final String QUESTION_REPLACEMENT = "!@";
 
-    /** Stand-in for the asterisk operator. */
-    private static final String ASTERISK_REPLACEMENT = "#@";
-
     /**
-     * Interprets the given pattern as an Ant pattern and resolves it to one existing {@link Path}. If the given path is
-     * relative, it is resolved relative to the current working directory. If more than one file matches the pattern,
-     * one of the matching files is used without any guarantees as to which. The selection is, however, guaranteed to be
-     * deterministic, i.e. if you run the pattern twice and get the same set of files, the same file will be picked each
-     * time.
+     * Stand-in for the asterisk operator.
      */
-    public Path parsePath(String optionName, String pattern) throws AgentOptionParseException {
-        return parsePath(optionName, pattern, new File("."));
-    }
+    private static final String ASTERISK_REPLACEMENT = "#@";
 
     /**
      * Interprets the given pattern as an Ant pattern and resolves it to one or multiple existing {@link File}s. If the
@@ -68,32 +61,17 @@ public class FilePatternResolver {
     }
 
     /**
-     * Interprets the given pattern as an Ant pattern and resolves it to one existing {@link Path}. If the given path is
-     * relative, it is resolved relative to the given working directory. If more than one file matches the pattern, one
-     * of the matching files is used without any guarantees as to which. The selection is, however, guaranteed to be
-     * deterministic, i.e. if you run the pattern twice and get the same set of files, the same file will be picked each
-     * time.
+     * Parses the pattern as a Ant pattern to one or multiple files or directories.
      */
-    /* package */ Path parsePath(String optionName, String pattern,
-                                 File workingDirectory) throws AgentOptionParseException {
-        if (isPathWithPattern(pattern)) {
-            return parseFileFromPattern(optionName, pattern, workingDirectory).getSinglePath();
-        }
-        try {
-            return workingDirectory.toPath().resolve(Paths.get(pattern));
-        } catch (InvalidPathException e) {
-            throw new AgentOptionParseException("Invalid path given for option " + optionName + ": " + pattern, e);
-        }
-    }
-
-    /** Parses the pattern as a Ant pattern to one or multiple files or directories. */
     private FilePatternResolverRun parseFileFromPattern(String optionName,
                                                         String pattern,
                                                         File workingDirectory) throws AgentOptionParseException {
         return new FilePatternResolverRun(optionName, pattern, workingDirectory).resolve();
     }
 
-    /** Returns whether the given path contains Ant pattern characters (?,*). */
+    /**
+     * Returns whether the given path contains Ant pattern characters (?,*).
+     */
     private static boolean isPathWithPattern(String path) {
         return path.contains("?") || path.contains("*");
     }
@@ -122,8 +100,7 @@ public class FilePatternResolver {
         }
 
         /**
-         * Resolves the pattern. The results can be retrieved via {@link #getSinglePath()} or {@link
-         * #getAllMatchingPaths()}.
+         * Resolves the pattern. The results can be retrieved via {@link #getAllMatchingPaths()}.
          */
         private FilePatternResolverRun resolve() throws AgentOptionParseException {
             Pattern pathRegex = AntPatternUtils.convertPattern(suffixPattern, false);
@@ -158,34 +135,14 @@ public class FilePatternResolver {
                     return;
                 }
             }
-            String pattern = baseDir.relativize(pathWithPattern).toString().replace(QUESTION_REPLACEMENT, "?")
+            suffixPattern = baseDir.relativize(pathWithPattern).toString().replace(QUESTION_REPLACEMENT, "?")
                     .replace(ASTERISK_REPLACEMENT, "*");
-            Pair<String, String> baseDirAndPattern = new Pair<>(baseDir.toString(), pattern);
-
-            suffixPattern = baseDirAndPattern.getSecond();
             basePath = workingDirectory.toPath().resolve(baseDir).normalize().toAbsolutePath();
         }
 
-        /** Returns the result of a resolution as a single Path and warns when multiple paths match. */
-        private Path getSinglePath() throws AgentOptionParseException {
-            if (this.matchingPaths.isEmpty()) {
-                throw new AgentOptionParseException(
-                        "Invalid path given for option " + optionName + ": " + this.pattern + ". The pattern " + this.suffixPattern +
-                                " did not match any files in " + this.basePath.toAbsolutePath());
-            } else if (this.matchingPaths.size() > 1) {
-                System.err.println(
-                        "Multiple files match the pattern " + this.suffixPattern + " in " + this.basePath
-                                .toString() + " for option " + optionName + "! " +
-                                "The first one is used, but consider to adjust the " +
-                                "pattern to match only one file. Candidates are: " + this.matchingPaths.stream()
-                                .map(this.basePath::relativize).map(Path::toString).collect(joining(", ")));
-            }
-            Path path = this.matchingPaths.get(0).normalize();
-            System.out.println("Using file " + path + " for option " + optionName);
-            return path;
-        }
-
-        /** Returns all matched paths after the resolution. */
+        /**
+         * Returns all matched paths after the resolution.
+         */
         private List<Path> getAllMatchingPaths() {
             if (this.matchingPaths.isEmpty()) {
                 System.err.println(
