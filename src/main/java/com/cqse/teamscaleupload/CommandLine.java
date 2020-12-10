@@ -16,23 +16,67 @@ import java.util.List;
 
 import okhttp3.HttpUrl;
 
-/** Parses and validates the command line arguments. */
+/**
+ * Parses and validates the command line arguments.
+ */
 public class CommandLine {
 
+    /**
+     * The Teamscale project ID or alias.
+     */
     public final String project;
+    /**
+     * The Teamscale username.
+     */
     public final String username;
+    /**
+     * The Teamscale access key.
+     */
     public final String accessKey;
+    /**
+     * The Teamscale partition.
+     */
     public final String partition;
+    /**
+     * The uploaded data's report format.
+     */
     public final String format;
+    /**
+     * The commit to which to upload. May be null.
+     */
     public final String commit;
+    /**
+     * The branch:timestamp to which to upload. May be null.
+     */
     public final String timestamp;
+    /**
+     * The Teamscale server URL.
+     */
     public final HttpUrl url;
+    /**
+     * The files to upload given on the command-line directly
+     */
     public final List<String> files;
+    /**
+     * The input file to use or null if none is given.
+     */
     public final Path inputFile;
+    /**
+     * Whether to validate SSL certificates and hostnames.
+     */
     public final Boolean validateSsl;
+    /**
+     * The message given by the user or null if none was explicitly given
+     * (default message should be used in this case).
+     */
     public final String message;
-    private final String keystorePathAndPassword;
+    /**
+     * Additional lines to append to the end of the message.
+     * Does not include line-terminators at the end of each entry.
+     */
     public final List<String> additionalMessageLines;
+
+    private final String keystorePathAndPassword;
 
     private CommandLine(Namespace namespace) {
         this.project = namespace.getString("project");
@@ -71,7 +115,9 @@ public class CommandLine {
         return list;
     }
 
-    /** Parses the given command line arguments and validates them. */
+    /**
+     * Parses the given command line arguments and validates them.
+     */
     public static CommandLine parseArguments(String[] args) {
         ArgumentParser parser = ArgumentParsers.newFor("teamscale-upload").build()
                 .defaultHelp(true)
@@ -197,7 +243,7 @@ public class CommandLine {
      * Checks the validity of the command line arguments and throws an exception if any
      * invalid configuration is detected.
      */
-    public void validate(ArgumentParser parser) throws ArgumentParserException {
+    private void validate(ArgumentParser parser) throws ArgumentParserException {
         if (url == null) {
             throw new ArgumentParserException("You provided an invalid URL in the --server option", parser);
         }
