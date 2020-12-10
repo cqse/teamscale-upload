@@ -1,4 +1,6 @@
-package com.cqse.teamscaleupload;
+package com.cqse.teamscaleupload.resolve;
+
+import com.cqse.teamscaleupload.LogUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,7 +36,7 @@ public class ReportPatternUtils {
      */
     public static Map<String, Set<File>> resolveInputFilePatterns(Path inputFile, List<String> commandLineFilePatterns,
                                                                   String commandLineFormat)
-            throws IOException, AgentOptionParseException {
+            throws IOException, FilePatternResolutionException {
         Map<String, Set<String>> formatToFilePatterns = new HashMap<>();
 
         if (inputFile != null) {
@@ -47,7 +49,7 @@ public class ReportPatternUtils {
 
     /** Resolve all file patterns to the actual files for all given formats. */
     private static Map<String, Set<File>> resolveFilePatternsToFiles(Map<String, Set<String>> formatToFilePatterns)
-            throws AgentOptionParseException {
+            throws FilePatternResolutionException {
         Map<String, Set<File>> formatToFiles = new HashMap<>();
         for (String format : formatToFilePatterns.keySet()) {
             Set<String> patternsForFormat = formatToFilePatterns.get(format);
@@ -121,7 +123,7 @@ public class ReportPatternUtils {
      * Resolves the given patterns to actual files. The program is terminated with an error message
      * if a pattern cannot be resolved to any actual files.
      */
-    private static Set<File> resolveFilesForPatterns(Set<String> patterns) throws AgentOptionParseException {
+    private static Set<File> resolveFilesForPatterns(Set<String> patterns) throws FilePatternResolutionException {
         FilePatternResolver resolver = new FilePatternResolver();
 
         Set<File> fileList = new HashSet<>();

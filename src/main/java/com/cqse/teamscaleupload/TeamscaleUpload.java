@@ -1,6 +1,7 @@
 package com.cqse.teamscaleupload;
 
 import com.cqse.teamscaleupload.autodetect_revision.AutodetectCommitUtils;
+import com.cqse.teamscaleupload.resolve.ReportPatternUtils;
 
 import java.io.File;
 import java.io.IOException;

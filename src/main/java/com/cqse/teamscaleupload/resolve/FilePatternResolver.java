@@ -1,4 +1,4 @@
-package com.cqse.teamscaleupload;
+package com.cqse.teamscaleupload.resolve;
 
 import org.conqat.lib.commons.collections.CollectionUtils;
 import org.conqat.lib.commons.filesystem.AntPatternUtils;
@@ -36,7 +36,7 @@ public class FilePatternResolver {
      * Interprets the given pattern as an Ant pattern and resolves it to one or multiple existing {@link File}s. If the
      * given path is relative, it is resolved relative to the current working directory.
      */
-    public List<File> resolveToMultipleFiles(String optionName, String pattern) throws AgentOptionParseException {
+    public List<File> resolveToMultipleFiles(String optionName, String pattern) throws FilePatternResolutionException {
         return resolveToMultipleFiles(optionName, pattern, new File("."));
     }
 
@@ -47,7 +47,7 @@ public class FilePatternResolver {
      * Visible for testing only.
      */
     /* package */ List<File> resolveToMultipleFiles(String optionName, String pattern,
-                                                    File workingDirectory) throws AgentOptionParseException {
+                                                    File workingDirectory) throws FilePatternResolutionException {
         if (isPathWithPattern(pattern)) {
             return CollectionUtils
                     .map(parseFileFromPattern(optionName, pattern, workingDirectory).getAllMatchingPaths(),
@@ -56,7 +56,7 @@ public class FilePatternResolver {
         try {
             return Collections.singletonList(workingDirectory.toPath().resolve(Paths.get(pattern)).toFile());
         } catch (InvalidPathException e) {
-            throw new AgentOptionParseException("Invalid path given for option " + optionName + ": " + pattern, e);
+            throw new FilePatternResolutionException("Invalid path given for option " + optionName + ": " + pattern, e);
         }
     }
 
@@ -65,7 +65,7 @@ public class FilePatternResolver {
      */
     private FilePatternResolverRun parseFileFromPattern(String optionName,
                                                         String pattern,
-                                                        File workingDirectory) throws AgentOptionParseException {
+                                                        File workingDirectory) throws FilePatternResolutionException {
         return new FilePatternResolverRun(optionName, pattern, workingDirectory).resolve();
     }
 
@@ -102,7 +102,7 @@ public class FilePatternResolver {
         /**
          * Resolves the pattern. The results can be retrieved via {@link #getAllMatchingPaths()}.
          */
-        private FilePatternResolverRun resolve() throws AgentOptionParseException {
+        private FilePatternResolverRun resolve() throws FilePatternResolutionException {
             Pattern pathRegex = AntPatternUtils.convertPattern(suffixPattern, false);
             Predicate<Path> filter = path -> pathRegex
                     .matcher(FileSystemUtils.normalizeSeparators(basePath.relativize(path).toString())).matches();
@@ -110,7 +110,7 @@ public class FilePatternResolver {
             try {
                 matchingPaths = Files.walk(basePath).filter(filter).sorted().collect(toList());
             } catch (IOException e) {
-                throw new AgentOptionParseException(
+                throw new FilePatternResolutionException(
                         "Could not recursively list files in directory " + basePath + " in order to resolve pattern " + suffixPattern + " given for option " + optionName,
                         e);
             }
