@@ -24,17 +24,19 @@ import java.util.regex.PatternSyntaxException;
 /**
  * Utility methods for dealing with Ant pattern as defined at
  * http://ant.apache.org/manual/dirtasks.html#patterns
- *
+ * <p>
  * We implement a special version where a trailing '.' can be used to only match
  * files without file extension (i.e. file names without dot).
- *
+ * <p>
  * This class is copied in AntPatternUtils.js and adapted to JavaScript. If any
  * of the code/logic in this class is changed, please make sure to change it in
  * the JS code as well.
  */
 public class AntPatternUtils {
 
-    /** Converts an ANT pattern to a regex pattern. */
+    /**
+     * Converts an ANT pattern to a regex pattern.
+     */
     public static Pattern convertPattern(String antPattern, boolean caseSensitive) throws PatternSyntaxException {
 
         antPattern = normalizePattern(antPattern);
@@ -59,9 +61,12 @@ public class AntPatternUtils {
         return compileRegex(patternBuilder.toString(), antPattern, caseSensitive);
     }
 
-    /** Compiles the given regex. */
+    /**
+     * Compiles the given regex.
+     */
     private static Pattern compileRegex(String regex, String antPattern, boolean caseSensitive) {
         try {
+            //noinspection MagicConstant
             return Pattern.compile(regex, determineRegexFlags(caseSensitive));
         } catch (PatternSyntaxException e) {
             // make pattern syntax exception more understandable
@@ -71,7 +76,9 @@ public class AntPatternUtils {
         }
     }
 
-    /** Returns the flags to be used for the regular expression. */
+    /**
+     * Returns the flags to be used for the regular expression.
+     */
     private static int determineRegexFlags(boolean caseSensitive) {
         // Use DOTALL flag, as on Unix the file names can contain line breaks
         int flags = Pattern.DOTALL;
@@ -157,6 +164,7 @@ public class AntPatternUtils {
      * character, and the given character is either at the end or right before a
      * slash.
      */
+    @SuppressWarnings("SameParameterValue")
     private static boolean isCharAtBeforeSlashOrEnd(String s, int position, char character) {
         return isCharAt(s, position, character) && (position + 1 == s.length() || isCharAt(s, position + 1, '/'));
     }
@@ -169,15 +177,4 @@ public class AntPatternUtils {
         return position < s.length() && s.charAt(position) == character;
     }
 
-    /**
-     * Converts an ANT pattern to a regex pattern. This catches a potential pattern
-     * syntax exception and wraps it into a {@link RuntimeException}.
-     */
-    public static Pattern convertPatternSafe(String antPattern, boolean caseSensitive) throws RuntimeException {
-        try {
-            return convertPattern(antPattern, caseSensitive);
-        } catch (PatternSyntaxException e) {
-            throw new RuntimeException(e.getMessage(), e);
-        }
-    }
 }
