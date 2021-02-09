@@ -23,6 +23,11 @@ jobs:
       env:
         ACCESS_KEY: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
       run: mvn clean verify -Pfailsafe
+    - name: Reduce Image Size
+      uses: crazy-max/ghaction-upx@v1
+      with:
+        version: latest
+        file: ./target/teamscale-upload
     - name: 'Upload Artifact'
       if: ${{ always() }}
       uses: actions/upload-artifact@v2
@@ -46,6 +51,11 @@ jobs:
       env:
         ACCESS_KEY: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
       run: ./build-windows.bat
+    - name: Reduce Image Size
+      uses: crazy-max/ghaction-upx@v1
+      with:
+        version: latest
+        file: ./target/teamscale-upload.exe
     - name: 'Upload Artifact'
       if: ${{ always() }}
       uses: actions/upload-artifact@v2
