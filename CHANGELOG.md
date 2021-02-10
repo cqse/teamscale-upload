@@ -6,6 +6,10 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 
+# 2.0.1
+
+- reduce size of binaries by compressing them. No functional changes
+
 # 2.0.0
 
 - [breaking change] certificates are now validated by default. Use `--insecure` to disable validation
