@@ -1,4 +1,4 @@
-package com.cqse.teamscaleupload.autodetect_revision;
+package com.teamscale.upload.autodetect_revision;
 
 /**
  * Utilities for automatically detecting the commit to which to upload data.

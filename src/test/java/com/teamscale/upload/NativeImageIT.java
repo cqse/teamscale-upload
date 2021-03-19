@@ -1,7 +1,7 @@
-package com.cqse.teamscaleupload;
+package com.teamscale.upload;
 
-import com.cqse.teamscaleupload.autodetect_revision.ProcessUtils;
-import com.cqse.teamscaleupload.test_utils.TeamscaleMockServer;
+import com.teamscale.upload.autodetect_revision.ProcessUtils;
+import com.teamscale.upload.test_utils.TeamscaleMockServer;
 
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;

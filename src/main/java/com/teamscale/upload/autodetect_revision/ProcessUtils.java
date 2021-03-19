@@ -1,4 +1,4 @@
-package com.cqse.teamscaleupload.autodetect_revision;
+package com.teamscale.upload.autodetect_revision;
 
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;

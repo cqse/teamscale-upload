@@ -1,4 +1,4 @@
-package com.cqse.teamscaleupload.resolve;
+package com.teamscale.upload.resolve;
 
 import org.conqat.lib.commons.collections.CollectionUtils;
 import org.conqat.lib.commons.filesystem.AntPatternUtils;

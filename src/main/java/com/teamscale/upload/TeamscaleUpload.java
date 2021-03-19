@@ -1,7 +1,7 @@
-package com.cqse.teamscaleupload;
+package com.teamscale.upload;
 
-import com.cqse.teamscaleupload.autodetect_revision.AutodetectCommitUtils;
-import com.cqse.teamscaleupload.resolve.ReportPatternUtils;
+import com.teamscale.upload.autodetect_revision.AutodetectCommitUtils;
+import com.teamscale.upload.resolve.ReportPatternUtils;
 
 import java.io.File;
 import java.io.IOException;

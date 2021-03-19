@@ -1,4 +1,4 @@
-package com.cqse.teamscaleupload.resolve;
+package com.teamscale.upload.resolve;
 
 /**
  * Thrown if resolving file patterns fails.

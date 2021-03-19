@@ -1,4 +1,4 @@
-package com.cqse.teamscaleupload.test_utils;
+package com.teamscale.upload.test_utils;
 
 import java.io.File;
 import java.net.URISyntaxException;

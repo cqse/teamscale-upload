@@ -1,4 +1,4 @@
-package com.cqse.teamscaleupload;
+package com.teamscale.upload;
 
 import okhttp3.Response;
 

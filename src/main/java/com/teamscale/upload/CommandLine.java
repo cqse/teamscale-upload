@@ -1,4 +1,4 @@
-package com.cqse.teamscaleupload;
+package com.teamscale.upload;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;

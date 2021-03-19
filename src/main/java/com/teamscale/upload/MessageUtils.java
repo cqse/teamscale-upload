@@ -1,4 +1,4 @@
-package com.cqse.teamscaleupload;
+package com.teamscale.upload;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
