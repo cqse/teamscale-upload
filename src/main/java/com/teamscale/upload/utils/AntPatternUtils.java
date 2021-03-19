@@ -14,9 +14,7 @@
 | See the License for the specific language governing permissions and      |
 | limitations under the License.                                           |
 +-------------------------------------------------------------------------*/
-package org.conqat.lib.commons.filesystem;
-
-import org.conqat.lib.commons.string.StringUtils;
+package com.teamscale.upload.utils;
 
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;

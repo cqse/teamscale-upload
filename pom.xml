@@ -7,9 +7,9 @@
     <groupId>com.teamscale.upload</groupId>
     <artifactId>teamscale-upload</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <packaging>jar</packaging>
 
-    <name>teamscale-upload</name>
+    <name>Teamscale Upload</name>
+    <description>Command-line tool to upload external analysis results (coverage, findings, ...) to Teamscale.</description>
     <organization>
         <name>CQSE GmbH</name>
         <url>https://www.cqse.eu/</url>
@@ -57,15 +57,15 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <version>3.17.1</version>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>3.1.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.squareup.moshi</groupId>
-            <artifactId>moshi</artifactId>
-            <version>1.11.0</version>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>3.17.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -156,39 +156,4 @@
             </plugin>
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>toolchains</id>
-            <activation>
-                <file>
-                    <exists>${user.home}/.m2/toolchains.xml</exists>
-                </file>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-toolchains-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>toolchain</id>
-                                <goals>
-                                    <goal>toolchain</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                        <configuration>
-                            <toolchains>
-                                <jdk>
-                                    <version>${maven.compiler.target}</version>
-                                    <graalVmVersion>${graalvm.version}</graalVmVersion>
-                                </jdk>
-                            </toolchains>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>

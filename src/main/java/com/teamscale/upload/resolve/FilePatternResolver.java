@@ -1,8 +1,8 @@
 package com.teamscale.upload.resolve;
 
-import org.conqat.lib.commons.collections.CollectionUtils;
-import org.conqat.lib.commons.filesystem.AntPatternUtils;
-import org.conqat.lib.commons.filesystem.FileSystemUtils;
+import com.teamscale.upload.utils.CollectionUtils;
+import com.teamscale.upload.utils.AntPatternUtils;
+import com.teamscale.upload.utils.FileSystemUtils;
 
 import java.io.File;
 import java.io.IOException;

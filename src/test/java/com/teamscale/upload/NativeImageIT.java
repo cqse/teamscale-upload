@@ -5,6 +5,7 @@ import com.teamscale.upload.test_utils.TeamscaleMockServer;
 
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,7 +17,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Runs the Maven-generated native image in different scenarios.
  * To run this test locally, you must provide the `build` user's access key for
  * https://demo.teamscale.com in the environment variable `ACCESS_KEY`.
+ * Otherwise this test will be skipped silently.
  */
+@EnabledIfEnvironmentVariable(named = "ACCESS_KEY", matches = ".*")
 public class NativeImageIT {
 
     private static final int MOCK_TEAMSCALE_PORT = 24398;
