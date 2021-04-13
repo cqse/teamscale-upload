@@ -10,6 +10,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -27,74 +28,77 @@ public class NativeImageIT {
     @Test
     public void wrongAccessKey() {
         ProcessUtils.ProcessResult result = runUploader(new Arguments().withAccessKey("wrong-accesskey_"));
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(result.exitCode).isNotZero();
-        softly.assertThat(result.stdoutAndStdErr).contains("You provided incorrect credentials");
-        softly.assertAll();
+        assertSoftlyThat(softly -> {
+            softly.assertThat(result.exitCode).isNotZero();
+            softly.assertThat(result.stdoutAndStdErr).contains("You provided incorrect credentials");
+        });
     }
 
     @Test
     public void incorrectUrl() {
         ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("no-protocol:9999"));
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(result.exitCode).isNotZero();
-        softly.assertThat(result.stdoutAndStdErr).contains("You  provided  an  invalid  URL");
-        softly.assertAll();
+        assertSoftlyThat(softly -> {
+            softly.assertThat(result.exitCode).isNotZero();
+            // the command line library we use adjusts the word spacing based on the terminal width
+            // so on different machines the output my contain a different number of spaces
+            // this behaviour can unfortunately not be disabled
+            softly.assertThat(result.stdoutAndStdErr).matches("You +provided +an +invalid +URL");
+        });
     }
 
     @Test
     public void unresolvableUrl() {
-        ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("http://does-not-existt:9999"));
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(result.exitCode).isNotZero();
-        softly.assertThat(result.stdoutAndStdErr).contains("could not be resolved");
-        softly.assertAll();
+        ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("http://domain.invalid:9999"));
+        assertSoftlyThat(softly -> {
+            softly.assertThat(result.exitCode).isNotZero();
+            softly.assertThat(result.stdoutAndStdErr).contains("could not be resolved");
+        });
     }
 
     @Test
     public void unreachableUrl() {
         ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("http://localhost:9999"));
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(result.exitCode).isNotZero();
-        softly.assertThat(result.stdoutAndStdErr).contains("refused a connection");
-        softly.assertAll();
+        assertSoftlyThat(softly -> {
+            softly.assertThat(result.exitCode).isNotZero();
+            softly.assertThat(result.stdoutAndStdErr).contains("refused a connection");
+        });
     }
 
     @Test
     public void wrongUser() {
         ProcessUtils.ProcessResult result = runUploader(new Arguments().withUser("wrong-user_"));
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(result.exitCode).isNotZero();
-        softly.assertThat(result.stdoutAndStdErr).contains("You provided incorrect credentials");
-        softly.assertAll();
+        assertSoftlyThat(softly -> {
+            softly.assertThat(result.exitCode).isNotZero();
+            softly.assertThat(result.stdoutAndStdErr).contains("You provided incorrect credentials");
+        });
     }
 
     @Test
     public void wrongProject() {
         ProcessUtils.ProcessResult result = runUploader(new Arguments().withProject("wrong-project_"));
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(result.exitCode).isNotZero();
-        softly.assertThat(result.stdoutAndStdErr).contains("The project").contains("does not seem to exist in Teamscale");
-        softly.assertAll();
+        assertSoftlyThat(softly -> {
+            softly.assertThat(result.exitCode).isNotZero();
+            softly.assertThat(result.stdoutAndStdErr).contains("The project").contains("does not seem to exist in Teamscale");
+        });
     }
 
     @Test
     public void patternMatchesNothing() {
         ProcessUtils.ProcessResult result = runUploader(new Arguments().withPattern("**/matches.nothing"));
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(result.exitCode).isNotZero();
-        softly.assertThat(result.stdoutAndStdErr).contains("The pattern").contains("could not be resolved to any files");
-        softly.assertAll();
+        assertSoftlyThat(softly -> {
+            softly.assertThat(result.exitCode).isNotZero();
+            softly.assertThat(result.stdoutAndStdErr).contains("The pattern").contains("could not be resolved to any files");
+        });
     }
 
     @Test
     public void insufficientPermissions() {
         ProcessUtils.ProcessResult result = runUploader(new Arguments()
                 .withUser("has-no-permissions").withAccessKey("SU2nfdkpcsoOXK2zDVf2DLEQiDaMD8fM"));
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(result.exitCode).isNotZero();
-        softly.assertThat(result.stdoutAndStdErr).contains("is not allowed to upload data to the Teamscale project");
-        softly.assertAll();
+        assertSoftlyThat(softly -> {
+            softly.assertThat(result.exitCode).isNotZero();
+            softly.assertThat(result.stdoutAndStdErr).contains("is not allowed to upload data to the Teamscale project");
+        });
     }
 
     @Test
@@ -134,11 +138,13 @@ public class NativeImageIT {
     public void mustRejectTimestampPassedInSeconds() {
         ProcessUtils.ProcessResult result = runUploader(new Arguments()
                 .withTimestamp("master:1606764633"));
-        assertThat(result.exitCode)
-                .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
-                .isNotZero();
-        assertThat(result.stdoutAndStdErr).contains("seconds").contains("milliseconds")
-                .contains("1970").contains("2020");
+        assertSoftlyThat(softly -> {
+            softly.assertThat(result.exitCode)
+                    .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+                    .isNotZero();
+            softly.assertThat(result.stdoutAndStdErr).contains("seconds").contains("milliseconds")
+                    .contains("1970").contains("2020");
+        });
     }
 
     @Test
@@ -158,10 +164,12 @@ public class NativeImageIT {
         try (TeamscaleMockServer ignored = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
             ProcessUtils.ProcessResult result = runUploader(new Arguments()
                     .withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT));
-            assertThat(result.exitCode)
-                    .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
-                    .isNotZero();
-            assertThat(result.stdoutAndStdErr).contains("self-signed").contains("--insecure");
+            assertSoftlyThat(softly -> {
+                softly.assertThat(result.exitCode)
+                        .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+                        .isNotZero();
+                softly.assertThat(result.stdoutAndStdErr).contains("self-signed").contains("--insecure");
+            });
         }
     }
 
@@ -188,6 +196,12 @@ public class NativeImageIT {
             assertThat(server.sessions).hasSize(1);
             assertThat(server.sessions.get(0).revisionOrTimestamp).hasSize(40); // size of a git SHA1
         }
+    }
+
+    private void assertSoftlyThat(Consumer<SoftAssertions> verifier) {
+        SoftAssertions softly = new SoftAssertions();
+        verifier.accept(softly);
+        softly.assertAll();
     }
 
     private String extractNormalizedMessage(TeamscaleMockServer.Session session) {

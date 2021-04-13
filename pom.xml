@@ -124,7 +124,7 @@
                 <artifactId>native-image-maven-plugin</artifactId>
                 <configuration>
                     <mainClass>com.teamscale.upload.TeamscaleUpload</mainClass>
-                    <imageName>teamscale-upload</imageName>
+                    <imageName>${project.artifactId}</imageName>
                     <buildArgs>
                         -H:+AddAllCharsets
                         --no-fallback
