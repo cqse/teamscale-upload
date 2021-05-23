@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -42,7 +43,8 @@ public class NativeImageIT {
             // the command line library we use adjusts the word spacing based on the terminal width
             // so on different machines the output my contain a different number of spaces
             // this behaviour can unfortunately not be disabled
-            softly.assertThat(result.stdoutAndStdErr).matches("You +provided +an +invalid +URL");
+            softly.assertThat(result.stdoutAndStdErr).matches(
+                    Pattern.compile(".*You +provided +an +invalid +URL.*", Pattern.DOTALL));
         });
     }
 
