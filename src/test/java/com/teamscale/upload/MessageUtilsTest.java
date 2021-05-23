@@ -16,7 +16,7 @@ class MessageUtilsTest {
      */
     @Test
     void ensureHostnameCanBeRetrieved() {
-        assertThat(MessageUtils.guessHostName()).startsWith("hostname: ");
+        assertThat(MessageUtils.formatHostName()).startsWith("hostname: ");
     }
 
 }

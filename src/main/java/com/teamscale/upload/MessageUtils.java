@@ -2,9 +2,11 @@ package com.teamscale.upload;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.text.MessageFormat;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -19,10 +21,11 @@ public class MessageUtils {
     public static String createDefaultMessage(String revisionOrBranchTimestamp, String partition, Collection<String> formats) {
         String formatList = formats.stream().map(String::toUpperCase).collect(Collectors.joining(", "));
 
-        return partition + " external analysis results uploaded at " + DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now()) +
-                "\n\nuploaded from " + guessHostName() +
-                "\nfor revision: " + revisionOrBranchTimestamp +
-                "\nincludes data in the following formats: " + formatList;
+        return MessageFormat.format("{0} external analysis results uploaded at {1}" +
+                        "\n\nuploaded from {2}\nfor revision: {3}" +
+                        "\nincludes data in the following formats: {4}",
+                partition, DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now()),
+                formatHostName(), revisionOrBranchTimestamp, formatList);
     }
 
     /**
@@ -36,11 +39,16 @@ public class MessageUtils {
      * Package-visible for testing.
      */
     /*package*/
-    static String guessHostName() {
+    static String formatHostName() {
+        return guessHostName().map(hostname -> "hostname: " + hostname)
+                .orElse("a computer without a hostname");
+    }
+
+    private static Optional<String> guessHostName() {
         try {
-            return "hostname: " + InetAddress.getLocalHost().getHostName();
+            return Optional.ofNullable(InetAddress.getLocalHost().getHostName());
         } catch (UnknownHostException e) {
-            return "a computer without a hostname";
+            return Optional.empty();
         }
     }
 
