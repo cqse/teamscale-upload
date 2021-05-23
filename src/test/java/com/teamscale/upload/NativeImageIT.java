@@ -113,7 +113,7 @@ public class NativeImageIT {
 
     @Test
     public void successfulMultiFormatUpload() {
-        ProcessUtils.ProcessResult result = runUploader(new Arguments().withInput("coverage_files/input_file"));
+        ProcessUtils.ProcessResult result = runUploader(new Arguments().withInput("src/test/resources/coverage_files/input_file"));
         assertThat(result.exitCode)
                 .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
                 .isZero();
@@ -226,7 +226,7 @@ public class NativeImageIT {
         private String project = "teamscale-upload";
         private final String format = "simple";
         private final String partition = "NativeImageIT";
-        private String pattern = "coverage_files\\*.simple";
+        private String pattern = "src/test/resources/coverage_files\\*.simple";
         private String input = null;
         private boolean insecure = false;
         private boolean useKeystore = false;

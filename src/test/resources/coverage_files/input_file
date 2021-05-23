@@ -1,0 +1,7 @@
+
+
+[jacoco]
+src\test\resources\coverage_files\test*.simple
+
+[simple]
+src/test/resources/coverage_files/coverage.simple
