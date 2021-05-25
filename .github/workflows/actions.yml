@@ -22,7 +22,7 @@ jobs:
     - name: Build
       env:
         ACCESS_KEY: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
-      run: mvn clean verify -Pfailsafe
+      run: mvn clean verify
     - name: Reduce Image Size
       uses: crazy-max/ghaction-upx@v1
       with:
