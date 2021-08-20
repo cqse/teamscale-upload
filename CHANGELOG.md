@@ -6,6 +6,8 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 
+- [feature] suppress unnecessary stack traces in error messages
+
 # 2.0.1
 
 - reduce size of binaries by compressing them. No functional changes
