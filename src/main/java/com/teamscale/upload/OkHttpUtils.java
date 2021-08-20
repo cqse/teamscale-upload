@@ -28,7 +28,9 @@ import okhttp3.ResponseBody;
  */
 public class OkHttpUtils {
 
-    /** An empty request body that can be reused. */
+    /**
+     * An empty request body that can be reused.
+     */
     public static final RequestBody EMPTY_BODY = RequestBody.create(null, new byte[0]);
 
     /**
@@ -71,13 +73,13 @@ public class OkHttpUtils {
 
             applySslContextAndTrustManager(builder, sslContext, trustManagerFactory);
         } catch (NoSuchAlgorithmException e) {
-            LogUtils.failWithStackTrace("Failed to instantiate an SSLContext or TrustManagerFactory: " + e.getMessage() +
+            LogUtils.failWithStackTrace("Failed to instantiate an SSLContext or TrustManagerFactory." +
                     "\nThis is a bug. Please report it to CQSE.", e);
         } catch (KeyStoreException e) {
-            LogUtils.failWithStackTrace("Failed to initialize the TrustManagerFactory with the keystore: " + e.getMessage() +
+            LogUtils.failWithStackTrace("Failed to initialize the TrustManagerFactory with the keystore." +
                     "\nThis is a bug. Please report it to CQSE.", e);
         } catch (KeyManagementException e) {
-            LogUtils.failWithStackTrace("Failed to initialize the SSLContext with the trust managers: " + e.getMessage() +
+            LogUtils.failWithStackTrace("Failed to initialize the SSLContext with the trust managers." +
                     "\nThis is a bug. Please report it to CQSE.", e);
         }
     }
@@ -87,7 +89,7 @@ public class OkHttpUtils {
             X509TrustManager x509TrustManager = (X509TrustManager) trustManagerFactory.getTrustManagers()[0];
             builder.sslSocketFactory(sslContext.getSocketFactory(), x509TrustManager);
         } catch (ClassCastException e) {
-            LogUtils.failWithStackTrace("Trust manager is not of X509 format: " + e.getMessage() +
+            LogUtils.failWithStackTrace("Trust manager is not of X509 format." +
                     "\nThis is a bug. Please report it to CQSE.", e);
         }
     }
@@ -98,20 +100,20 @@ public class OkHttpUtils {
             keyStore.load(stream, keystorePassword.toCharArray());
             return keyStore;
         } catch (IOException e) {
-            LogUtils.fail("Failed to read keystore file " + keystorePath + ": " + e.getMessage() +
+            LogUtils.failWithoutStackTrace("Failed to read keystore file " + keystorePath +
                     "\nPlease make sure that file exists and is readable and that you provided the correct password." +
                     " Please also make sure that the keystore file is a valid Java keystore." +
                     " You can use the program `keytool` from your JVM installation to check this:" +
-                    "\nkeytool -list -keystore " + keystorePath);
+                    "\nkeytool -list -keystore " + keystorePath, e);
         } catch (CertificateException e) {
-            LogUtils.fail("Failed to load one of the certificates in the keystore file " + keystorePath + ": " + e.getMessage() +
-                    "\nPlease make sure that the certificate is stored correctly and the certificate version and encoding are supported.");
+            LogUtils.failWithoutStackTrace("Failed to load one of the certificates in the keystore file " + keystorePath +
+                    "\nPlease make sure that the certificate is stored correctly and the certificate version and encoding are supported.", e);
         } catch (NoSuchAlgorithmException e) {
-            LogUtils.fail("Failed to verify the integrity of the keystore file " + keystorePath +
-                    " because it uses an unsupported hashing algorithm: " + e.getMessage() +
-                    "\nPlease change the keystore so it uses a supported algorithm (e.g. the default used by `keytool` is supported).");
+            LogUtils.failWithoutStackTrace("Failed to verify the integrity of the keystore file " + keystorePath +
+                    " because it uses an unsupported hashing algorithm." +
+                    "\nPlease change the keystore so it uses a supported algorithm (e.g. the default used by `keytool` is supported).", e);
         } catch (KeyStoreException e) {
-            LogUtils.failWithStackTrace("Failed to instantiate an in-memory keystore: " + e.getMessage() +
+            LogUtils.failWithStackTrace("Failed to instantiate an in-memory keystore." +
                     "\nThis is a bug. Please report it to CQSE.", e);
         }
 
@@ -151,6 +153,7 @@ public class OkHttpUtils {
             }
             return body.string();
         } catch (IOException e) {
+            e.printStackTrace();
             return "Failed to read response body: " + e.getMessage();
         }
     }

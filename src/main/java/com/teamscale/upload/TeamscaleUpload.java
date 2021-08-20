@@ -33,6 +33,10 @@ public class TeamscaleUpload {
     public static void main(String[] args) throws Exception {
         CommandLine commandLine = CommandLine.parseArguments(args);
 
+        if (commandLine.printStackTrace) {
+            LogUtils.enableStackTracePrintingForKnownErrors();
+        }
+
         Map<String, Set<File>> formatToFiles =
                 ReportPatternUtils.resolveInputFilePatterns(commandLine.inputFile, commandLine.files, commandLine.format);
 
@@ -50,9 +54,8 @@ public class TeamscaleUpload {
     }
 
     private static void handleSslConnectionFailure(CommandLine commandLine, SSLHandshakeException e) {
-        e.printStackTrace();
         if (commandLine.getKeyStorePath() != null) {
-            LogUtils.fail("Failed to connect via HTTPS to " + commandLine.url + ": " + e.getMessage() +
+            LogUtils.failWithoutStackTrace("Failed to connect via HTTPS to " + commandLine.url +
                     "\nYou enabled certificate validation and provided a keystore with certificates" +
                     " that should be considered valid. Still, the connection failed." +
                     " Most likely, you did not provide the correct certificates in the keystore" +
@@ -61,9 +64,9 @@ public class TeamscaleUpload {
                     " and that it is configured for HTTPS, not HTTP. E.g. open that URL in your" +
                     " browser and verify that you can connect successfully." +
                     "\n\nIf you want to accept self-signed or broken certificates without an error" +
-                    " you can use --insecure.");
+                    " you can use --insecure.", e);
         } else if (commandLine.validateSsl) {
-            LogUtils.fail("Failed to connect via HTTPS to " + commandLine.url + ": " + e.getMessage() +
+            LogUtils.failWithoutStackTrace("Failed to connect via HTTPS to " + commandLine.url +
                     "\nYou enabled certificate validation. Most likely, your certificate" +
                     " is either self-signed or your root CA's certificate is not known to" +
                     " teamscale-upload. Please provide the path to a keystore that contains" +
@@ -75,14 +78,14 @@ public class TeamscaleUpload {
                     " and that it is configured for HTTPS, not HTTP. E.g. open that URL in your" +
                     " browser and verify that you can connect successfully." +
                     "\n\nIf you want to accept self-signed or broken certificates without an error" +
-                    " you can use --insecure.");
+                    " you can use --insecure.", e);
         } else {
-            LogUtils.fail("Failed to connect via HTTPS to " + commandLine.url + ": " + e.getMessage() +
+            LogUtils.failWithoutStackTrace("Failed to connect via HTTPS to " + commandLine.url +
                     "\nPlease ensure that your Teamscale instance is reachable under " + commandLine.url +
                     " and that it is configured for HTTPS, not HTTP. E.g. open that URL in your" +
                     " browser and verify that you can connect successfully." +
                     "\n\nIf you want to accept self-signed or broken certificates without an error" +
-                    " you can use --insecure.");
+                    " you can use --insecure.", e);
         }
     }
 
@@ -215,11 +218,11 @@ public class TeamscaleUpload {
             System.out.println("Successful");
             return OkHttpUtils.readBodySafe(response);
         } catch (UnknownHostException e) {
-            LogUtils.fail("The host " + url + " could not be resolved. Please ensure you have no typo and that" +
-                    " this host is reachable from this server. " + e.getMessage());
+            LogUtils.failWithoutStackTrace("The host " + url + " could not be resolved. Please ensure you have no typo and that" +
+                    " this host is reachable from this server.", e);
         } catch (ConnectException e) {
-            LogUtils.fail("The URL " + url + " refused a connection. Please ensure that you have no typo and that" +
-                    " this endpoint is reachable and not blocked by firewalls. " + e.getMessage());
+            LogUtils.failWithoutStackTrace("The URL " + url + " refused a connection. Please ensure that you have no typo and that" +
+                    " this endpoint is reachable and not blocked by firewalls.", e);
         }
 
         return null;
