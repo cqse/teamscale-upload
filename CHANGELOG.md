@@ -6,6 +6,8 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 
+# 2.1.0
+
 - [feature] suppress unnecessary stack traces in error messages
 
 # 2.0.1
