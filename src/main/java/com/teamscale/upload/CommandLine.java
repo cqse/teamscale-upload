@@ -75,6 +75,10 @@ public class CommandLine {
      * Does not include line-terminators at the end of each entry.
      */
     public final List<String> additionalMessageLines;
+    /**
+     * Whether to print stack traces for handled exceptions.
+     */
+    public final boolean printStackTrace;
 
     private final String keystorePathAndPassword;
 
@@ -91,6 +95,7 @@ public class CommandLine {
         this.keystorePathAndPassword = namespace.getString("trusted_keystore");
         this.validateSsl = !namespace.getBoolean("insecure");
         this.additionalMessageLines = getListSafe(namespace, "append_to_message");
+        this.printStackTrace = namespace.getBoolean("stacktrace");
 
         String inputFilePath = namespace.getString("input");
         if (inputFilePath != null) {
@@ -181,6 +186,9 @@ public class CommandLine {
         parser.addArgument("files").metavar("FILES").nargs("*")
                 .help("Path(s) or pattern(s) of the report files to upload. Alternatively, you may" +
                         " provide input files via -i or --input");
+        parser.addArgument("--stacktrace").action(Arguments.storeTrue()).required(false)
+                .help("Enables printing stack traces in all cases where errors occur." +
+                        " Used for debugging.");
 
         parser.epilog("For general usage help and alternative upload methods, please check our online" +
                 " documentation at:" +

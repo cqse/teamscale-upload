@@ -150,7 +150,7 @@ public class NativeImageIT {
     }
 
     @Test
-    public void selfSignedCertificateShouldBeAcceptedByDefault() {
+    public void selfSignedCertificateShouldBeAcceptedWithInsecureFlag() {
         try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
             ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT)
                     .withInsecure());
@@ -162,7 +162,7 @@ public class NativeImageIT {
     }
 
     @Test
-    public void selfSignedCertificateShouldNotBeAcceptedWhenValidationIsEnabled() {
+    public void selfSignedCertificateShouldNotBeAcceptedByDefault() {
         try (TeamscaleMockServer ignored = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
             ProcessUtils.ProcessResult result = runUploader(new Arguments()
                     .withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT));
@@ -171,6 +171,32 @@ public class NativeImageIT {
                         .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
                         .isNotZero();
                 softly.assertThat(result.stdoutAndStdErr).contains("self-signed").contains("--insecure");
+            });
+        }
+    }
+
+    @Test
+    public void printStackTraceForKnownErrorsOnlyWhenRequested() {
+        try (TeamscaleMockServer ignored = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
+            ProcessUtils.ProcessResult result = runUploader(new Arguments()
+                    .withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT));
+            assertSoftlyThat(softly -> {
+                softly.assertThat(result.exitCode)
+                        .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+                        .isNotZero();
+                softly.assertThat(result.stdoutAndStdErr).contains("--stacktrace");
+            });
+        }
+
+        try (TeamscaleMockServer ignored = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
+            ProcessUtils.ProcessResult result = runUploader(new Arguments()
+                    .withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT).withStackTrace());
+            assertSoftlyThat(softly -> {
+                softly.assertThat(result.exitCode)
+                        .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+                        .isNotZero();
+                softly.assertThat(result.stdoutAndStdErr).contains("\tat com.teamscale.upload.TeamscaleUpload")
+                        .doesNotContain("--stacktrace");
             });
         }
     }
@@ -233,6 +259,7 @@ public class NativeImageIT {
         private boolean autoDetectCommit = false;
         private String timestamp = "master:HEAD";
         private String additionalMessageLine = null;
+        private boolean stackTrace = false;
 
         private Arguments withPattern(String pattern) {
             this.pattern = pattern;
@@ -266,6 +293,11 @@ public class NativeImageIT {
 
         private Arguments withUrl(String url) {
             this.url = url;
+            return this;
+        }
+
+        private Arguments withStackTrace() {
+            this.stackTrace = true;
             return this;
         }
 
@@ -311,6 +343,9 @@ public class NativeImageIT {
             if (!autoDetectCommit) {
                 arguments.add("--branch-and-timestamp");
                 arguments.add(timestamp);
+            }
+            if (stackTrace) {
+                arguments.add("--stacktrace");
             }
 
             return arguments.toArray(new String[0]);
