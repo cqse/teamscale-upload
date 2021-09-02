@@ -2,6 +2,9 @@ package com.teamscale.upload;
 
 import com.teamscale.upload.autodetect_revision.AutodetectCommitUtils;
 import com.teamscale.upload.resolve.ReportPatternUtils;
+import com.teamscale.upload.utils.LogUtils;
+import com.teamscale.upload.utils.MessageUtils;
+import com.teamscale.upload.utils.OkHttpUtils;
 import com.teamscale.upload.utils.SafeResponse;
 
 import java.io.File;

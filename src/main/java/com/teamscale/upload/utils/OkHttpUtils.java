@@ -1,4 +1,4 @@
-package com.teamscale.upload;
+package com.teamscale.upload.utils;
 
 import java.io.FileInputStream;
 import java.io.IOException;
