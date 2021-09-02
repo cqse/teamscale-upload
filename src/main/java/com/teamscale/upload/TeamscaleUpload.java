@@ -269,28 +269,32 @@ public class TeamscaleUpload {
         }
 
         if (response.unsafeResponse.code() == 404) {
-            if (responseBodyIndicatesInvalidRevision(response)) {
-                LogUtils.fail("The revision '" + commandLine.commit + "' is not known to Teamscale or the version" +
-                                " control system(s) you configured in the Teamscale project '" + commandLine.project + "'." +
-                                " Please ensure that you used a valid version control revision:" +
-                                " (e.g. a Git SHA1, SVN revision number or TFS changeset ID) and" +
-                                " that the checked out revision is also present in your central" +
-                                " version control system and not just locally on this computer" +
-                                " (e.g. your Git commit has been pushed).",
-                        response);
-            }
-
-            HttpUrl projectPerspectiveUrl = commandLine.url.newBuilder().addPathSegments("project.html").build();
-            LogUtils.fail("The project with ID or alias '" + commandLine.project + "' does not seem to exist in Teamscale." +
-                            " Please ensure that you used the project ID or the project alias, NOT the project name." +
-                            " You can see the IDs of all projects at " + projectPerspectiveUrl +
-                            "\nPlease also ensure that the Teamscale URL is correct and no proxy is required to access it.",
-                    response);
+            handleError404(response, commandLine);
         }
 
         if (!response.unsafeResponse.isSuccessful()) {
             LogUtils.fail("Unexpected response from Teamscale", response);
         }
+    }
+
+    private static void handleError404(SafeResponse response, CommandLine commandLine) {
+        if (responseBodyIndicatesInvalidRevision(response)) {
+            LogUtils.fail("The revision '" + commandLine.commit + "' is not known to Teamscale or the version" +
+                            " control system(s) you configured in the Teamscale project '" + commandLine.project + "'." +
+                            " Please ensure that you used a valid version control revision:" +
+                            " (e.g. a Git SHA1, SVN revision number or TFS changeset ID) and" +
+                            " that the checked out revision is also present in your central" +
+                            " version control system and not just locally on this computer" +
+                            " (e.g. your Git commit has been pushed).",
+                    response);
+        }
+
+        HttpUrl projectPerspectiveUrl = commandLine.url.newBuilder().addPathSegments("project.html").build();
+        LogUtils.fail("The project with ID or alias '" + commandLine.project + "' does not seem to exist in Teamscale." +
+                        " Please ensure that you used the project ID or the project alias, NOT the project name." +
+                        " You can see the IDs of all projects at " + projectPerspectiveUrl +
+                        "\nPlease also ensure that the Teamscale URL is correct and no proxy is required to access it.",
+                response);
     }
 
     private static boolean responseBodyIndicatesInvalidRevision(SafeResponse response) {

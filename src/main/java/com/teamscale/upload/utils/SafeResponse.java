@@ -7,10 +7,17 @@ import okhttp3.ResponseBody;
 
 /**
  * Wraps a {@link okhttp3.Response} but makes it always safe to access the response body.
+ *
+ * OkHttp will not buffer the response body stream, so if you read it once, you cannot read
+ * it again. This makes it necessary for us to buffer the string ourselves so it can be read
+ * multiple times, e.g. by error-handling code.
  */
 public class SafeResponse {
 
+    /** The unsafe response. Use this for everything except accessing the {@link #body} */
     public final Response unsafeResponse;
+
+    /** A safe-to-use body string. This is never null. */
     public final String body;
 
     public SafeResponse(Response unsafeResponse) {
