@@ -6,6 +6,8 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 
+- [fix] change confusing error message when incorrect --commit parameter is given
+
 # 2.1.0
 
 - [feature] suppress unnecessary stack traces in error messages
