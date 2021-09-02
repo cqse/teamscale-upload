@@ -20,8 +20,6 @@ import javax.net.ssl.X509TrustManager;
 
 import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
 
 /**
  * Utilities for creating an {@link OkHttpClient}
@@ -140,22 +138,6 @@ public class OkHttpUtils {
         builder.connectTimeout(60L, TimeUnit.SECONDS);
         builder.readTimeout(60L, TimeUnit.SECONDS);
         builder.writeTimeout(60L, TimeUnit.SECONDS);
-    }
-
-    /**
-     * Either returns the body of the response or if that cannot be read, a safe fallback string.
-     */
-    public static String readBodySafe(Response response) {
-        try {
-            ResponseBody body = response.body();
-            if (body == null) {
-                return "<no response body>";
-            }
-            return body.string();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return "Failed to read response body: " + e.getMessage();
-        }
     }
 
     private static class TrustAllCertificatesManager implements X509TrustManager {
