@@ -1,6 +1,6 @@
 package com.teamscale.upload.resolve;
 
-import com.teamscale.upload.LogUtils;
+import com.teamscale.upload.utils.LogUtils;
 
 import java.io.File;
 import java.io.IOException;

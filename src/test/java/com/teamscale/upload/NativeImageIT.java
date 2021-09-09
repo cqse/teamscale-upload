@@ -84,6 +84,24 @@ public class NativeImageIT {
         });
     }
 
+    /**
+     * TS-28014: Sending an unknown revision also results in a 404 status code, which used to
+     * display a misleading error message saying "the project ID is not known". This test ensures
+     * that this scenario is handled better now.
+     */
+    @Test
+    public void unknownRevision() {
+        ProcessUtils.ProcessResult result = runUploader(new Arguments().withCommit("doesnt-exist"));
+        assertSoftlyThat(softly -> {
+            softly.assertThat(result.exitCode).isNotZero();
+            softly.assertThat(result.stdoutAndStdErr).doesNotContain("The project")
+                    .doesNotContain("does not seem to exist in Teamscale")
+                    .doesNotContain("project ID or the project alias")
+                    .contains("The revision")
+                    .contains("is not known to Teamscale or the version control system(s) you configured");
+        });
+    }
+
     @Test
     public void patternMatchesNothing() {
         ProcessUtils.ProcessResult result = runUploader(new Arguments().withPattern("**/matches.nothing"));
@@ -258,6 +276,7 @@ public class NativeImageIT {
         private boolean useKeystore = false;
         private boolean autoDetectCommit = false;
         private String timestamp = "master:HEAD";
+        private String commit = null;
         private String additionalMessageLine = null;
         private boolean stackTrace = false;
 
@@ -268,6 +287,11 @@ public class NativeImageIT {
 
         private Arguments withInsecure() {
             this.insecure = true;
+            return this;
+        }
+
+        private Arguments withCommit(String commit) {
+            this.commit = commit;
             return this;
         }
 
@@ -340,12 +364,16 @@ public class NativeImageIT {
                 arguments.add("--append-to-message");
                 arguments.add(additionalMessageLine);
             }
-            if (!autoDetectCommit) {
-                arguments.add("--branch-and-timestamp");
-                arguments.add(timestamp);
-            }
             if (stackTrace) {
                 arguments.add("--stacktrace");
+            }
+
+            if (commit != null) {
+                arguments.add("--commit");
+                arguments.add(commit);
+            } else if (!autoDetectCommit) {
+                arguments.add("--branch-and-timestamp");
+                arguments.add(timestamp);
             }
 
             return arguments.toArray(new String[0]);

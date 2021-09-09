@@ -1,5 +1,7 @@
 package com.teamscale.upload;
 
+import com.teamscale.upload.utils.LogUtils;
+
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;

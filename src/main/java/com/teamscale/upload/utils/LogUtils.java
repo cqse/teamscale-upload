@@ -1,6 +1,4 @@
-package com.teamscale.upload;
-
-import okhttp3.Response;
+package com.teamscale.upload.utils;
 
 /**
  * Utilities for interacting with stdout, stderr and terminating the program due to fatal errors.
@@ -20,9 +18,9 @@ public class LogUtils {
     /**
      * Print error message and server response, then exit program
      */
-    public static void fail(String message, Response response) {
+    public static void fail(String message, SafeResponse response) {
         fail("Upload to Teamscale failed:\n\n" + message + "\n\nTeamscale's response:\n" +
-                response.toString() + "\n" + OkHttpUtils.readBodySafe(response));
+                response.toString() + "\n" + response.body);
     }
 
     /**

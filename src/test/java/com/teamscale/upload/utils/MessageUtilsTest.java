@@ -1,4 +1,4 @@
-package com.teamscale.upload;
+package com.teamscale.upload.utils;
 
 import org.junit.jupiter.api.Test;
 

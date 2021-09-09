@@ -2,6 +2,10 @@ package com.teamscale.upload;
 
 import com.teamscale.upload.autodetect_revision.AutodetectCommitUtils;
 import com.teamscale.upload.resolve.ReportPatternUtils;
+import com.teamscale.upload.utils.LogUtils;
+import com.teamscale.upload.utils.MessageUtils;
+import com.teamscale.upload.utils.OkHttpUtils;
+import com.teamscale.upload.utils.SafeResponse;
 
 import java.io.File;
 import java.io.IOException;
@@ -214,9 +218,10 @@ public class TeamscaleUpload {
     private static String sendRequest(OkHttpClient client, CommandLine commandLine, HttpUrl url, Request request) throws IOException {
 
         try (Response response = client.newCall(request).execute()) {
-            handleErrors(response, commandLine);
+            SafeResponse safeResponse = new SafeResponse(response);
+            handleErrors(safeResponse, commandLine);
             System.out.println("Successful");
-            return OkHttpUtils.readBodySafe(response);
+            return safeResponse.body;
         } catch (UnknownHostException e) {
             LogUtils.failWithoutStackTrace("The host " + url + " could not be resolved. Please ensure you have no typo and that" +
                     " this host is reachable from this server.", e);
@@ -228,9 +233,9 @@ public class TeamscaleUpload {
         return null;
     }
 
-    private static void handleErrors(Response response, CommandLine commandLine) {
-        if (response.isRedirect()) {
-            String location = response.header("Location");
+    private static void handleErrors(SafeResponse response, CommandLine commandLine) {
+        if (response.unsafeResponse.isRedirect()) {
+            String location = response.unsafeResponse.header("Location");
             if (location == null) {
                 location = "<server did not provide a location header>";
             }
@@ -241,7 +246,7 @@ public class TeamscaleUpload {
                     response);
         }
 
-        if (response.code() == 401) {
+        if (response.unsafeResponse.code() == 401) {
             HttpUrl editUserUrl = commandLine.url.newBuilder().addPathSegments("admin.html#users").addQueryParameter("action", "edit")
                     .addQueryParameter("username", commandLine.username).build();
             LogUtils.fail("You provided incorrect credentials." +
@@ -253,7 +258,7 @@ public class TeamscaleUpload {
                     response);
         }
 
-        if (response.code() == 403) {
+        if (response.unsafeResponse.code() == 403) {
             // can't include a URL to the corresponding Teamscale screen since that page does not support aliases
             // and the user may have provided an alias, so we'd be directing them to a red error page in that case
             LogUtils.fail("The user user '" + commandLine.username + "' is not allowed to upload data to the Teamscale project '" + commandLine.project + "'." +
@@ -263,18 +268,38 @@ public class TeamscaleUpload {
                     response);
         }
 
-        if (response.code() == 404) {
-            HttpUrl projectPerspectiveUrl = commandLine.url.newBuilder().addPathSegments("project.html").build();
-            LogUtils.fail("The project with ID or alias '" + commandLine.project + "' does not seem to exist in Teamscale." +
-                            " Please ensure that you used the project ID or the project alias, NOT the project name." +
-                            " You can see the IDs of all projects at " + projectPerspectiveUrl +
-                            "\nPlease also ensure that the Teamscale URL is correct and no proxy is required to access it.",
+        if (response.unsafeResponse.code() == 404) {
+            handleError404(response, commandLine);
+        }
+
+        if (!response.unsafeResponse.isSuccessful()) {
+            LogUtils.fail("Unexpected response from Teamscale", response);
+        }
+    }
+
+    private static void handleError404(SafeResponse response, CommandLine commandLine) {
+        if (responseBodyIndicatesInvalidRevision(response)) {
+            LogUtils.fail("The revision '" + commandLine.commit + "' is not known to Teamscale or the version" +
+                            " control system(s) you configured in the Teamscale project '" + commandLine.project + "'." +
+                            " Please ensure that you used a valid version control revision:" +
+                            " (e.g. a Git SHA1, SVN revision number or TFS changeset ID) and" +
+                            " that the checked out revision is also present in your central" +
+                            " version control system and not just locally on this computer" +
+                            " (e.g. your Git commit has been pushed).",
                     response);
         }
 
-        if (!response.isSuccessful()) {
-            LogUtils.fail("Unexpected response from Teamscale", response);
-        }
+        HttpUrl projectPerspectiveUrl = commandLine.url.newBuilder().addPathSegments("project.html").build();
+        LogUtils.fail("The project with ID or alias '" + commandLine.project + "' does not seem to exist in Teamscale." +
+                        " Please ensure that you used the project ID or the project alias, NOT the project name." +
+                        " You can see the IDs of all projects at " + projectPerspectiveUrl +
+                        "\nPlease also ensure that the Teamscale URL is correct and no proxy is required to access it.",
+                response);
+    }
+
+    private static boolean responseBodyIndicatesInvalidRevision(SafeResponse response) {
+        return response.body.contains("Revision")
+                && response.body.contains("available VCS repositories");
     }
 
 }
