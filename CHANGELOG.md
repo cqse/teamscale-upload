@@ -6,6 +6,8 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 
+# 2.1.1
+
 - [fix] change confusing error message when incorrect --commit parameter is given
 
 # 2.1.0
