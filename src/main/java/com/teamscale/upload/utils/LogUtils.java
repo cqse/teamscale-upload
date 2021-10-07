@@ -55,7 +55,7 @@ public class LogUtils {
     }
 
     /**
-     * Print error message and exit the program
+     * Print error message and exit the program.
      */
     public static void fail(String message) {
         System.err.println();
@@ -68,5 +68,12 @@ public class LogUtils {
      */
     public static void warn(String message) {
         System.err.println("WARNING: " + message);
+    }
+
+    /**
+     * Print an info message to stdout.
+     */
+    public static void info(String message) {
+        System.out.println("INFO: " + message);
     }
 }

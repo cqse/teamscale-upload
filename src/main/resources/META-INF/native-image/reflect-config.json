@@ -1,6 +1,82 @@
 [
-{
-  "name":"java.lang.String",
-  "methods":[{"name":"<init>","parameterTypes":["java.lang.String"] }]
-}
+  {
+    "name": "java.lang.String",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "com.teamscale.upload.report.testwise_coverage.TestInfo",
+    "allDeclaredFields": true
+  },
+  {
+    "name": "com.teamscale.upload.report.testwise_coverage.TestwiseCoverageReport",
+    "allDeclaredFields": true
+  },
+  {
+    "name": "com.teamscale.upload.report.xcode.deserializers.WrappedArrayDeserializer",
+    "allDeclaredConstructors": true
+  },
+  {
+    "name": "com.teamscale.upload.report.xcode.deserializers.WrappedBooleanDeserializer",
+    "allDeclaredConstructors": true
+  },
+  {
+    "name": "com.teamscale.upload.report.xcode.deserializers.WrappedDoubleDeserializer",
+    "allDeclaredConstructors": true
+  },
+  {
+    "name": "com.teamscale.upload.report.xcode.deserializers.WrappedStringDeserializer",
+    "allDeclaredConstructors": true
+  },
+  {
+    "name": "com.teamscale.upload.report.xcode.ActionsInvocationRecord",
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "com.teamscale.upload.report.xcode.ActionRecord",
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "com.teamscale.upload.report.xcode.ActionResult",
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "com.teamscale.upload.report.xcode.CodeCoverageInfo",
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "com.teamscale.upload.report.xcode.Reference",
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "com.teamscale.upload.report.xcode.ActionTestPlanRunSummaries",
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "com.teamscale.upload.report.xcode.ActionTestPlanRunSummary",
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "com.teamscale.upload.report.xcode.ActionTestableSummary",
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "com.teamscale.upload.report.xcode.ActionTest",
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true
+  }
 ]

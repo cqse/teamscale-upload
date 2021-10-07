@@ -2,11 +2,14 @@ package com.teamscale.upload;
 
 import com.teamscale.upload.autodetect_revision.ProcessUtils;
 import com.teamscale.upload.test_utils.TeamscaleMockServer;
-
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
+import java.io.IOException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -80,7 +83,8 @@ public class NativeImageIT {
         ProcessUtils.ProcessResult result = runUploader(new Arguments().withProject("wrong-project_"));
         assertSoftlyThat(softly -> {
             softly.assertThat(result.exitCode).isNotZero();
-            softly.assertThat(result.stdoutAndStdErr).contains("The project").contains("does not seem to exist in Teamscale");
+            softly.assertThat(result.stdoutAndStdErr).contains("The project")
+                    .contains("does not seem to exist in Teamscale");
         });
     }
 
@@ -107,7 +111,8 @@ public class NativeImageIT {
         ProcessUtils.ProcessResult result = runUploader(new Arguments().withPattern("**/matches.nothing"));
         assertSoftlyThat(softly -> {
             softly.assertThat(result.exitCode).isNotZero();
-            softly.assertThat(result.stdoutAndStdErr).contains("The pattern").contains("could not be resolved to any files");
+            softly.assertThat(result.stdoutAndStdErr).contains("The pattern")
+                    .contains("could not be resolved to any files");
         });
     }
 
@@ -117,7 +122,8 @@ public class NativeImageIT {
                 .withUser("has-no-permissions").withAccessKey("SU2nfdkpcsoOXK2zDVf2DLEQiDaMD8fM"));
         assertSoftlyThat(softly -> {
             softly.assertThat(result.exitCode).isNotZero();
-            softly.assertThat(result.stdoutAndStdErr).contains("is not allowed to upload data to the Teamscale project");
+            softly.assertThat(result.stdoutAndStdErr)
+                    .contains("is not allowed to upload data to the Teamscale project");
         });
     }
 
@@ -131,7 +137,8 @@ public class NativeImageIT {
 
     @Test
     public void successfulMultiFormatUpload() {
-        ProcessUtils.ProcessResult result = runUploader(new Arguments().withInput("src/test/resources/coverage_files/input_file"));
+        ProcessUtils.ProcessResult result =
+                runUploader(new Arguments().withInput("src/test/resources/coverage_files/input_file"));
         assertThat(result.exitCode)
                 .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
                 .isZero();
@@ -170,8 +177,9 @@ public class NativeImageIT {
     @Test
     public void selfSignedCertificateShouldBeAcceptedWithInsecureFlag() {
         try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
-            ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT)
-                    .withInsecure());
+            ProcessUtils.ProcessResult result =
+                    runUploader(new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT)
+                            .withInsecure());
             assertThat(result.exitCode)
                     .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
                     .isZero();
@@ -244,6 +252,32 @@ public class NativeImageIT {
         }
     }
 
+    @Test
+    @EnabledOnOs(OS.MAC)
+    public void testXCResultConversion() throws IOException {
+        try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
+            ProcessUtils.ProcessResult result = runUploader(new Arguments()
+                    .withPattern("src/test/resources/coverage_files/output.xcresult.tar.gz")
+                    .withFormat("XCODE")
+                    .withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT)
+                    .withAutoDetectCommit());
+            assertThat(result.exitCode)
+                    .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+                    .isZero();
+            assertThat(server.sessions).hasSize(1);
+            assertThat(server.uploadedReportsByName).hasSize(2);
+            for (String expectedFile : List
+                    .of("output.xcresult.tar.gz.testwisecoverage.json", "output.xcresult.tar.gz.xccov")) {
+                assertThat(server.uploadedReportsByName.get(expectedFile))
+                        .containsExactly(readResource(expectedFile + ".expected"));
+            }
+        }
+    }
+
+    private byte[] readResource(String name) throws IOException {
+        return NativeImageIT.class.getResourceAsStream(name).readAllBytes();
+    }
+
     private void assertSoftlyThat(Consumer<SoftAssertions> verifier) {
         SoftAssertions softly = new SoftAssertions();
         verifier.accept(softly);
@@ -268,7 +302,7 @@ public class NativeImageIT {
         private String user = "build";
         private String accessKey = getAccessKeyFromCi();
         private String project = "teamscale-upload";
-        private final String format = "simple";
+        private String format = "simple";
         private final String partition = "NativeImageIT";
         private String pattern = "src/test/resources/coverage_files\\*.simple";
         private String input = null;
@@ -279,6 +313,11 @@ public class NativeImageIT {
         private String commit = null;
         private String additionalMessageLine = null;
         private boolean stackTrace = false;
+
+        private Arguments withFormat(String format) {
+            this.format = format;
+            return this;
+        }
 
         private Arguments withPattern(String pattern) {
             this.pattern = pattern;

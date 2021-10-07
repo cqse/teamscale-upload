@@ -1,5 +1,7 @@
 package com.teamscale.upload.autodetect_revision;
 
+import com.teamscale.upload.utils.FileSystemUtils;
+import com.teamscale.upload.utils.LogUtils;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteStreamHandler;
@@ -9,6 +11,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.concurrent.TimeUnit;
 
 public class ProcessUtils {
 
@@ -82,4 +85,35 @@ public class ProcessUtils {
         }
     }
 
+    /**
+     * Starts a {@link Process} for the commands.
+     */
+    public static Process executeProcess(String... commands) throws IOException, InterruptedException {
+        return new ProcessBuilder(commands).start();
+    }
+
+    /**
+     * Starts a {@link Process} for the commands and returns the standard output as a {@link String}.
+     */
+    public static String executeProcessAndGetOutput(long timeoutSeconds, String... commands) throws IOException, InterruptedException {
+        Process process = executeProcess(commands);
+        String output = FileSystemUtils.getInputAsString(process.getInputStream());
+        ensureProcessFinishedWithoutErrors(process, timeoutSeconds);
+        return output;
+    }
+
+    /**
+     * Ensures that the {@link Process} has finished successfully and logs errors as warnings to the console.
+     */
+    public static void ensureProcessFinishedWithoutErrors(Process process, long timeoutSeconds) throws IOException, InterruptedException {
+        String errorOutput = FileSystemUtils.getInputAsString(process.getErrorStream());
+
+        if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
+            process.destroy();
+            LogUtils.warn("Process took too long to execute: " + process);
+        }
+        if (!process.isAlive() && process.exitValue() != 0) {
+            LogUtils.warn(String.format("Process %s terminated with non-zero exit value %d: %s", process, process.exitValue(), errorOutput));
+        }
+    }
 }

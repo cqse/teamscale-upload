@@ -1,13 +1,21 @@
 package com.teamscale.upload.test_utils;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import spark.Request;
 import spark.Response;
 import spark.Service;
+
+import javax.servlet.MultipartConfigElement;
+import javax.servlet.ServletException;
+import javax.servlet.http.Part;
 
 import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 
@@ -57,6 +65,9 @@ public class TeamscaleMockServer implements AutoCloseable {
      * All {@link Session}s opened on this Teamscale instance.
      */
     public final List<Session> sessions = new ArrayList<>();
+
+    public final Map<String, byte[]> uploadedReportsByName = new HashMap<>();
+
     private final Service spark;
 
     public TeamscaleMockServer(int port) {
@@ -72,7 +83,7 @@ public class TeamscaleMockServer implements AutoCloseable {
         spark.port(port);
         spark.post("/api/projects/:projectName/external-analysis/session", this::openSession);
         spark.post("/api/projects/:projectName/external-analysis/session/:session", this::noOpHandler);
-        spark.post("/api/projects/:projectName/external-analysis/session/:session/report", this::noOpHandler);
+        spark.post("/api/projects/:projectName/external-analysis/session/:session/report", this::receiveReportHandler);
         spark.exception(Exception.class, (Exception exception, Request request, Response response) -> {
             response.status(SC_INTERNAL_SERVER_ERROR);
             response.body("Exception: " + exception.getMessage());
@@ -90,6 +101,19 @@ public class TeamscaleMockServer implements AutoCloseable {
         return "fake-session-id";
     }
 
+    private String receiveReportHandler(Request request, Response response) throws ServletException, IOException {
+        request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement(""));
+
+        Part report = request.raw().getPart("report");
+
+        try (InputStream is = report.getInputStream()) {
+            uploadedReportsByName.put(report.getSubmittedFileName(), is.readAllBytes());
+        }
+
+        return "Report uploaded";
+    }
+
+
     private String noOpHandler(Request request, Response response) {
         return "";
     }
@@ -98,5 +122,4 @@ public class TeamscaleMockServer implements AutoCloseable {
     public void close() {
         spark.stop();
     }
-
 }

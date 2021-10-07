@@ -1,12 +1,12 @@
 package com.teamscale.upload;
 
 import com.teamscale.upload.utils.LogUtils;
-
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
+import okhttp3.HttpUrl;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -15,8 +15,6 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
-
-import okhttp3.HttpUrl;
 
 /**
  * Parses and validates the command line arguments.

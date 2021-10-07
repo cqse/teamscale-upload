@@ -6,17 +6,8 @@ import com.teamscale.upload.utils.LogUtils;
 import com.teamscale.upload.utils.MessageUtils;
 import com.teamscale.upload.utils.OkHttpUtils;
 import com.teamscale.upload.utils.SafeResponse;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.ConnectException;
-import java.net.UnknownHostException;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
-
-import javax.net.ssl.SSLHandshakeException;
-
+import com.teamscale.upload.xcode.XCResultConverter;
+import com.teamscale.upload.xcode.XCResultConverter.ConversionException;
 import okhttp3.Credentials;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
@@ -25,11 +16,28 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import org.apache.commons.io.FileUtils;
+
+import javax.net.ssl.SSLHandshakeException;
+import java.io.File;
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Main class of the teamscale-upload project.
  */
 public class TeamscaleUpload {
+
+    /**
+     * The enum name of the XCode report format.
+     */
+    private static final String XCODE_REPORT_FORMAT = "XCODE";
 
     /**
      * This method serves as entry point to the teamscale-upload application.
@@ -42,9 +50,13 @@ public class TeamscaleUpload {
         }
 
         Map<String, Set<File>> formatToFiles =
-                ReportPatternUtils.resolveInputFilePatterns(commandLine.inputFile, commandLine.files, commandLine.format);
+                ReportPatternUtils
+                        .resolveInputFilePatterns(commandLine.inputFile, commandLine.files, commandLine.format);
 
-        OkHttpClient client = OkHttpUtils.createClient(commandLine.validateSsl, commandLine.getKeyStorePath(), commandLine.getKeyStorePassword());
+        convertXCodeReports(formatToFiles);
+
+        OkHttpClient client = OkHttpUtils.createClient(commandLine.validateSsl, commandLine.getKeyStorePath(),
+                commandLine.getKeyStorePassword());
         try {
             performUpload(client, formatToFiles, commandLine);
         } catch (SSLHandshakeException e) {
@@ -55,6 +67,50 @@ public class TeamscaleUpload {
             client.dispatcher().executorService().shutdownNow();
             client.connectionPool().evictAll();
         }
+    }
+
+    /**
+     * Converts the reports from the internal binary XCode format to a readable report that can be uploaded to Teamscale.
+     */
+    private static void convertXCodeReports(Map<String, Set<File>> formatToFiles)
+            throws IOException, ConversionException {
+        if (!formatToFiles.containsKey(XCODE_REPORT_FORMAT)) {
+            return;
+        }
+
+        Set<File> xcresultBundles = formatToFiles.remove(XCODE_REPORT_FORMAT);
+
+        for (File xcodeReport : xcresultBundles) {
+            File workingDirectory = Files.createTempDirectory(null).toFile();
+            XCResultConverter converter = new XCResultConverter(workingDirectory);
+
+            LogUtils.info("Running conversion with temporary working directory: " + workingDirectory.getAbsolutePath());
+
+            Thread cleanupHook = new Thread(() -> {
+                try {
+                    converter.stopProcesses();
+                    deleteWorkingDirectory(workingDirectory);
+                } catch (IOException | InterruptedException e) {
+                    LogUtils.warn("Unable to delete temporary working directory " + workingDirectory.getAbsolutePath() +
+                            ": " + e.getMessage());
+                }
+            });
+
+            Runtime.getRuntime().addShutdownHook(cleanupHook);
+
+            converter.convert(xcodeReport).forEach(convertedReport -> {
+                formatToFiles.computeIfAbsent(convertedReport.reportFormat, x -> new HashSet<>())
+                        .add(convertedReport.report);
+            });
+
+            deleteWorkingDirectory(workingDirectory);
+            Runtime.getRuntime().removeShutdownHook(cleanupHook);
+        }
+    }
+
+    private static void deleteWorkingDirectory(File workingDirectory) throws IOException {
+        LogUtils.info("Deleting temporary working directory: " + workingDirectory.getAbsolutePath());
+        FileUtils.deleteDirectory(workingDirectory);
     }
 
     private static void handleSslConnectionFailure(CommandLine commandLine, SSLHandshakeException e) {
@@ -103,7 +159,8 @@ public class TeamscaleUpload {
         closeSession(client, commandLine, sessionId);
     }
 
-    private static String openSession(OkHttpClient client, CommandLine commandLine, Collection<String> formats) throws IOException {
+    private static String openSession(OkHttpClient client, CommandLine commandLine, Collection<String> formats)
+            throws IOException {
         HttpUrl.Builder builder = commandLine.url.newBuilder()
                 .addPathSegments("api/projects").addPathSegment(commandLine.project)
                 .addPathSegments("external-analysis/session")
@@ -157,14 +214,16 @@ public class TeamscaleUpload {
             // auto-detect if neither option is given
             String commit = AutodetectCommitUtils.detectCommit();
             if (commit == null) {
-                LogUtils.fail("Failed to automatically detect the commit. Please specify it manually via --commit or --branch-and-timestamp");
+                LogUtils.fail(
+                        "Failed to automatically detect the commit. Please specify it manually via --commit or --branch-and-timestamp");
             }
             builder.addQueryParameter("revision", commit);
             return commit;
         }
     }
 
-    private static void closeSession(OkHttpClient client, CommandLine commandLine, String sessionId) throws IOException {
+    private static void closeSession(OkHttpClient client, CommandLine commandLine, String sessionId)
+            throws IOException {
         HttpUrl.Builder builder = commandLine.url.newBuilder()
                 .addPathSegments("api/projects").addPathSegment(commandLine.project)
                 .addPathSegments("external-analysis/session")
@@ -215,7 +274,8 @@ public class TeamscaleUpload {
         sendRequest(client, commandLine, url, request);
     }
 
-    private static String sendRequest(OkHttpClient client, CommandLine commandLine, HttpUrl url, Request request) throws IOException {
+    private static String sendRequest(OkHttpClient client, CommandLine commandLine, HttpUrl url, Request request)
+            throws IOException {
 
         try (Response response = client.newCall(request).execute()) {
             SafeResponse safeResponse = new SafeResponse(response);
@@ -223,11 +283,13 @@ public class TeamscaleUpload {
             System.out.println("Successful");
             return safeResponse.body;
         } catch (UnknownHostException e) {
-            LogUtils.failWithoutStackTrace("The host " + url + " could not be resolved. Please ensure you have no typo and that" +
-                    " this host is reachable from this server.", e);
+            LogUtils.failWithoutStackTrace(
+                    "The host " + url + " could not be resolved. Please ensure you have no typo and that" +
+                            " this host is reachable from this server.", e);
         } catch (ConnectException e) {
-            LogUtils.failWithoutStackTrace("The URL " + url + " refused a connection. Please ensure that you have no typo and that" +
-                    " this endpoint is reachable and not blocked by firewalls.", e);
+            LogUtils.failWithoutStackTrace(
+                    "The URL " + url + " refused a connection. Please ensure that you have no typo and that" +
+                            " this endpoint is reachable and not blocked by firewalls.", e);
         }
 
         return null;
@@ -247,8 +309,9 @@ public class TeamscaleUpload {
         }
 
         if (response.unsafeResponse.code() == 401) {
-            HttpUrl editUserUrl = commandLine.url.newBuilder().addPathSegments("admin.html#users").addQueryParameter("action", "edit")
-                    .addQueryParameter("username", commandLine.username).build();
+            HttpUrl editUserUrl =
+                    commandLine.url.newBuilder().addPathSegments("admin.html#users").addQueryParameter("action", "edit")
+                            .addQueryParameter("username", commandLine.username).build();
             LogUtils.fail("You provided incorrect credentials." +
                             " Either the user '" + commandLine.username + "' does not exist in Teamscale" +
                             " or the access key you provided is incorrect." +
@@ -261,7 +324,8 @@ public class TeamscaleUpload {
         if (response.unsafeResponse.code() == 403) {
             // can't include a URL to the corresponding Teamscale screen since that page does not support aliases
             // and the user may have provided an alias, so we'd be directing them to a red error page in that case
-            LogUtils.fail("The user user '" + commandLine.username + "' is not allowed to upload data to the Teamscale project '" + commandLine.project + "'." +
+            LogUtils.fail("The user user '" + commandLine.username +
+                            "' is not allowed to upload data to the Teamscale project '" + commandLine.project + "'." +
                             " Please grant this user the 'Perform External Uploads' permission in Teamscale" +
                             " under Project Configuration > Projects by clicking on the button showing three" +
                             " persons next to project '" + commandLine.project + "'.",
@@ -290,7 +354,8 @@ public class TeamscaleUpload {
         }
 
         HttpUrl projectPerspectiveUrl = commandLine.url.newBuilder().addPathSegments("project.html").build();
-        LogUtils.fail("The project with ID or alias '" + commandLine.project + "' does not seem to exist in Teamscale." +
+        LogUtils.fail(
+                "The project with ID or alias '" + commandLine.project + "' does not seem to exist in Teamscale." +
                         " Please ensure that you used the project ID or the project alias, NOT the project name." +
                         " You can see the IDs of all projects at " + projectPerspectiveUrl +
                         "\nPlease also ensure that the Teamscale URL is correct and no proxy is required to access it.",
