@@ -30,6 +30,11 @@ class ConversionTask implements Callable<ConversionResult> {
             byte[] result;
 
             try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                /*
+                 * We read the output before waiting for the process to finish since xccov doesn't terminate
+                 * if the output is large and not read from the input stream. The behavior is special to
+                 * xccov and doesn't occur for any other call of XCode command line tools.
+                 */
                 process.getInputStream().transferTo(baos);
                 result = baos.toByteArray();
             }
@@ -38,7 +43,7 @@ class ConversionTask implements Callable<ConversionResult> {
 
             return new ConversionResult(sourceFile, result);
         } catch (IOException | InterruptedException e) {
-            LogUtils.warn("Error while viewing coverage for source file " + sourceFile + ": " + e.getMessage());
+            LogUtils.warn("Error while exporting coverage for source file " + sourceFile + ": " + e.getMessage());
             return null;
         }
     }

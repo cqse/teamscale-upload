@@ -13,7 +13,6 @@ import com.teamscale.upload.report.xcode.ActionsInvocationRecord;
 import com.teamscale.upload.report.xcode.Reference;
 import com.teamscale.upload.utils.FileSystemUtils;
 import com.teamscale.upload.utils.LogUtils;
-import com.teamscale.upload.utils.StringUtils;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -22,7 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
@@ -42,14 +41,29 @@ import static java.util.stream.Collectors.toList;
 public class XCResultConverter {
 
     /**
-     * The maximum number of seconds to for conversion processes or threads.
+     * The enum name of the XCode report format.
+     */
+    public static final String XCODE_REPORT_FORMAT = "XCODE";
+
+    /**
+     * The enum name of the Testwise Coverage report format.
+     */
+    private static final String TESTWISE_COVERAGE_REPORT_FORMAT = "TESTWISE_COVERAGE";
+
+
+    /**
+     * The maximum number of seconds to wait for a process or thread to terminate.
      */
     public static final int TIMEOUT_SECONDS = 120;
 
     /**
-     * The number of conversion threads to run in parallel for faster conversion.
+     * The number of conversion threads to run in parallel for faster conversion. By default, we use
+     * the number of available processors to distribute work since this setting was most performant
+     * when testing locally.
      */
-    public static final int CONVERSION_THREAD_COUNT = Runtime.getRuntime().availableProcessors() * 2;
+    public static final int CONVERSION_THREAD_COUNT =
+            Integer.getInteger("com.teamscale.upload.xcode.conversion-thread-count",
+                    Runtime.getRuntime().availableProcessors());
 
     /**
      * File extension used for converted XCResult bundles.
@@ -73,26 +87,37 @@ public class XCResultConverter {
             validateCommandLineTools();
 
             File reportDirectory = getReportDirectory(report);
+            ActionsInvocationRecord actionsInvocationRecord = getActionsInvocationRecord(reportDirectory);
+            List<ConvertedReport> convertedReports = new ArrayList<>();
 
-            ConvertedReport testResults = new ConvertedReport("TESTWISE_COVERAGE",
-                    extractTestResults(report, reportDirectory));
-            ConvertedReport testCoverage = new ConvertedReport("XCODE",
-                    extractCoverageData(report, reportDirectory));
+            convertedReports.add(new ConvertedReport(TESTWISE_COVERAGE_REPORT_FORMAT,
+                    extractTestResults(report, reportDirectory, actionsInvocationRecord)));
 
-            return Arrays.asList(testResults, testCoverage);
-        } catch (IOException | InterruptedException | ExecutionException | TimeoutException e) {
+            if (actionsInvocationRecord.hasCoverageData()) {
+                convertedReports.add(new ConvertedReport(XCODE_REPORT_FORMAT,
+                        extractCoverageData(report, reportDirectory)));
+            }
+
+            return convertedReports;
+        } catch (IOException e) {
+            LogUtils.warn(
+                    String.format("Error while converting report %s: %s", report.getAbsolutePath(), e.getMessage()));
+            return Collections.emptyList();
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
             throw new ConversionException(
                     String.format("Error while converting report %s: %s", report.getAbsolutePath(), e.getMessage()), e);
         }
     }
 
-    private File extractTestResults(File report, File reportDirectory)
+    private ActionsInvocationRecord getActionsInvocationRecord(File reportDirectory)
             throws IOException, InterruptedException {
         String actionsInvocationRecordJson = ProcessUtils.executeProcessAndGetOutput(TIMEOUT_SECONDS,
                 "xcrun", "xcresulttool", "get", "--path", reportDirectory.getAbsolutePath(), "--format", "json");
-        ActionsInvocationRecord actionsInvocationRecord = new Gson()
-                .fromJson(actionsInvocationRecordJson, ActionsInvocationRecord.class);
+        return new Gson().fromJson(actionsInvocationRecordJson, ActionsInvocationRecord.class);
+    }
 
+    private File extractTestResults(File report, File reportDirectory, ActionsInvocationRecord actionsInvocationRecord)
+            throws IOException, InterruptedException {
         List<TestInfo> tests = new ArrayList<>();
 
         for (ActionRecord action : actionsInvocationRecord.actions) {
@@ -148,9 +173,6 @@ public class XCResultConverter {
         Queue<Future<ConversionResult>> conversionResults = submitConversionTasks(reportDirectory, sourceFiles);
         File convertedCoverageReport = new File(report.getAbsolutePath() + CONVERTED_REPORT_FILE_EXTENSION);
 
-        LogUtils.info(
-                String.format("Writing conversion result to file: %s.", convertedCoverageReport.getAbsolutePath()));
-
         writeConversionResults(conversionResults, convertedCoverageReport);
         waitForRunningProcessesToFinish();
 
@@ -177,7 +199,6 @@ public class XCResultConverter {
                 executorService.shutdownNow();
             }
         }
-        LogUtils.info("All conversion processes finished.");
     }
 
     /**
@@ -186,7 +207,6 @@ public class XCResultConverter {
     public void stopProcesses() throws InterruptedException, IOException {
         if (executorService != null) {
             if (!executorService.isTerminated()) {
-                LogUtils.info("Stopping conversion processes.");
                 executorService.shutdownNow();
                 waitForRunningProcessesToFinish();
             }
@@ -207,20 +227,18 @@ public class XCResultConverter {
         if (report.isFile() &&
                 (reportFileName.endsWith(".xcresult.tar") || reportFileName.endsWith(".xcresult.tar.gz")) ||
                 reportFileName.endsWith(".xcresult.tgz")) {
-            String reportDirectoryName =
-                    StringUtils.stripSuffix(StringUtils.stripSuffix(reportFileName, ".gz"), ".tar");
+            String reportDirectoryName = reportFileName + "_extracted.xcresult";
             File temporaryReportDirectory = new File(workingDirectory, reportDirectoryName);
 
-            LogUtils.info(String.format("Decompressing Gzipped Tar archive %s to temporary directory %s",
-                    report.getAbsolutePath(), temporaryReportDirectory.getAbsolutePath()));
             FileSystemUtils.extractTarArchive(report, temporaryReportDirectory);
 
             return temporaryReportDirectory;
         }
 
         throw new ConversionException(
-                "Report location must be an existing directory with a name that ends with '.xcresult', '.xcresult.tar' or '.xcresult.tar.gz': " +
-                        report.getAbsolutePath());
+                "Report location must be an existing directory with a name that ends with '.xcresult' or a file " +
+                        "that ends with '.xcresult.tar', '.xcresult.tar.gz' or '.xcresult.tgz': "
+                        + report.getAbsolutePath());
     }
 
     /**
@@ -236,9 +254,9 @@ public class XCResultConverter {
         }
 
         while (!conversionResults.isEmpty()) {
-            ConversionResult conversionResult = conversionResults.remove().get(2, TimeUnit.MINUTES);
+            ConversionResult conversionResult = conversionResults.remove().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
             if (conversionResult == null) {
-                // Can happen when the application is forcefully quit.
+                // Can happen when the application is forcefully quit or a timeout occurs
                 continue;
             }
 
@@ -265,7 +283,7 @@ public class XCResultConverter {
     private static void validateCommandLineTools() throws IOException, InterruptedException, ConversionException {
         if (ProcessUtils.executeProcess("xcrun", "--version").waitFor() != 0) {
             throw new ConversionException(
-                    "Command line tools not installed. Install command line tools on MacOS by installing XCode " +
+                    "XCode command line tools not installed. Install command line tools on MacOS by installing XCode " +
                             "from the store and running 'xcode-select --install'.");
         }
     }

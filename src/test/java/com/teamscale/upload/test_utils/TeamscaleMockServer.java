@@ -1,5 +1,12 @@
 package com.teamscale.upload.test_utils;
 
+import spark.Request;
+import spark.Response;
+import spark.Service;
+
+import javax.servlet.MultipartConfigElement;
+import javax.servlet.ServletException;
+import javax.servlet.http.Part;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,14 +15,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import spark.Request;
-import spark.Response;
-import spark.Service;
-
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.ServletException;
-import javax.servlet.http.Part;
 
 import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 
@@ -66,6 +65,9 @@ public class TeamscaleMockServer implements AutoCloseable {
      */
     public final List<Session> sessions = new ArrayList<>();
 
+    /**
+     * The raw report by the filename of the uploaded report.
+     */
     public final Map<String, byte[]> uploadedReportsByName = new HashMap<>();
 
     private final Service spark;

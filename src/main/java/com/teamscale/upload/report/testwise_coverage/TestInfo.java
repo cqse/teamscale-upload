@@ -6,7 +6,7 @@ import com.teamscale.upload.report.xcode.ActionTest;
  * Generic container of all information about a specific test as written to the
  * report.
  * <p>
- * This class is a DTO used to deserialize testwise coverage reports. Field
+ * This class is a DTO used to serialize testwise coverage reports. Field
  * names and structure may not be changed.
  */
 public class TestInfo {

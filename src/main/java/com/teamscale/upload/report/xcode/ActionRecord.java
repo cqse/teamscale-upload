@@ -15,7 +15,7 @@ public class ActionRecord {
     }
 
     /**
-     * Returns true if the {@link ActionRecord} contains test coverage data.
+     * Returns true if the {@link #actionResult} indicates that the XCResult bundle contains coverage data.
      */
     public boolean hasCoverageData() {
         return actionResult.coverage != null && actionResult.coverage.hasCoverageData;

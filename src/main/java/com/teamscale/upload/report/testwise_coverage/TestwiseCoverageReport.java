@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * Container for coverage produced by multiple tests.
  * <p>
- * This class is a DTO used to deserialize testwise coverage reports. Field
+ * This class is a DTO used to serialize testwise coverage reports. Field
  * names and structure may not be changed.
  */
 public class TestwiseCoverageReport {
@@ -23,7 +23,7 @@ public class TestwiseCoverageReport {
      */
     public final List<TestInfo> tests;
 
-    public TestwiseCoverageReport( List<TestInfo> tests) {
+    public TestwiseCoverageReport(List<TestInfo> tests) {
         this.tests = tests;
     }
 }

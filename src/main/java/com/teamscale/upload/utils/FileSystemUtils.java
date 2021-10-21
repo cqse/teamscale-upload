@@ -19,14 +19,14 @@ package com.teamscale.upload.utils;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
-import org.apache.commons.compress.utils.IOUtils;
+import org.apache.commons.io.IOUtils;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 /**
  * File system utilities.
@@ -48,7 +48,7 @@ public class FileSystemUtils {
 
     /**
      * Decompresses the contents of a Tar file to the destination folder. The Tar
-     * file may also use Gzip but must indicate this with the *.gz extension.
+     * file may also use Gzip but must indicate this with the *.tar.gz or *.tgz extension.
      */
     public static void extractTarArchive(File tarArchive, File destination) throws IOException {
         InputStream inputStream = new FileInputStream(tarArchive);
@@ -56,7 +56,7 @@ public class FileSystemUtils {
             inputStream = new GzipCompressorInputStream(inputStream);
         }
 
-        validateDestination(destination);
+        ensureEmptyDirectory(destination);
 
         try (TarArchiveInputStream tarArchiveInputStream = new TarArchiveInputStream(inputStream)) {
             TarArchiveEntry entry;
@@ -76,15 +76,26 @@ public class FileSystemUtils {
         }
     }
 
-    private static void validateDestination(File destination) throws IOException {
-        if (!destination.exists()) {
-            if (!destination.mkdirs()) {
-                throw new IOException("Unable to create temporary directory: " + destination);
-            }
+    /**
+     * Ensures that the file represents an empty directory. Creates the directory if it doesn't exist yet.
+     *
+     * @throws IOException In case directory is not empty or can't be created.
+     */
+    private static void ensureEmptyDirectory(File directory) throws IOException {
+        if (!directory.exists() && !directory.mkdirs()) {
+            throw new IOException("Unable to create directory: " + directory);
         }
-        File[] files = destination.listFiles();
-        if (files == null || files.length > 0) {
-            throw new IOException("Temporary decompressed *.xcresult directory isn't empty: " + destination);
+
+        File[] files = directory.listFiles();
+
+        if (files == null) {
+            if (!directory.isDirectory()) {
+                throw new IOException("Expected empty directory but it's a file instead: " + directory);
+            }
+            throw new IOException("Unexpected error when listing files in directory: " + directory);
+        }
+        if (files.length > 0) {
+            throw new IOException("Expected directory to be empty: " + directory);
         }
     }
 
@@ -94,7 +105,8 @@ public class FileSystemUtils {
     private static void mkdirs(File directory) throws IOException {
         if (!directory.exists()) {
             if (!directory.mkdirs()) {
-                throw new IOException("Unable to create directory for Tar archive entry: " + directory.getAbsolutePath());
+                throw new IOException(
+                        "Unable to create directory for Tar archive entry: " + directory.getAbsolutePath());
             }
         }
     }
@@ -103,8 +115,6 @@ public class FileSystemUtils {
      * Returns the contents of the {@link InputStream} as a {@link String}.
      */
     public static String getInputAsString(InputStream inputStream) throws IOException {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        IOUtils.copy(inputStream, byteArrayOutputStream);
-        return byteArrayOutputStream.toString();
+        return IOUtils.toString(inputStream, StandardCharsets.UTF_8);
     }
 }

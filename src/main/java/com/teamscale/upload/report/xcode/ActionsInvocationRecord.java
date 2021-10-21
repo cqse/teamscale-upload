@@ -23,6 +23,9 @@ public class ActionsInvocationRecord {
         this.actions = actions;
     }
 
+    /**
+     * Returns true if the XCResult bundle contains coverage data.
+     */
     public boolean hasCoverageData() {
         return Arrays.stream(actions).anyMatch(ActionRecord::hasCoverageData);
     }

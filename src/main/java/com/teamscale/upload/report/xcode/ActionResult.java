@@ -1,7 +1,7 @@
 package com.teamscale.upload.report.xcode;
 
 /**
- * An {@link ActionResult} that summarizes build and test execution stepts.
+ * An {@link ActionResult} that summarizes build and test execution steps.
  */
 public class ActionResult {
 

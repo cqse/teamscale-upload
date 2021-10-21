@@ -72,6 +72,10 @@ public class LogUtils {
 
     /**
      * Print an info message to stdout.
+     * <p>
+     * Use sparingly and only if the information is helpful and actionable to the user. Logging too
+     * many implementation details is confusing to the user and may lead to them skipping over
+     * important information. CLI output should be concise.
      */
     public static void info(String message) {
         System.out.println("INFO: " + message);

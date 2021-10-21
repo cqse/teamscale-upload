@@ -35,11 +35,6 @@ import java.util.Set;
 public class TeamscaleUpload {
 
     /**
-     * The enum name of the XCode report format.
-     */
-    private static final String XCODE_REPORT_FORMAT = "XCODE";
-
-    /**
      * This method serves as entry point to the teamscale-upload application.
      */
     public static void main(String[] args) throws Exception {
@@ -74,17 +69,15 @@ public class TeamscaleUpload {
      */
     private static void convertXCodeReports(Map<String, Set<File>> formatToFiles)
             throws IOException, ConversionException {
-        if (!formatToFiles.containsKey(XCODE_REPORT_FORMAT)) {
+        if (!formatToFiles.containsKey(XCResultConverter.XCODE_REPORT_FORMAT)) {
             return;
         }
 
-        Set<File> xcresultBundles = formatToFiles.remove(XCODE_REPORT_FORMAT);
+        Set<File> xcresultBundles = formatToFiles.remove(XCResultConverter.XCODE_REPORT_FORMAT);
 
         for (File xcodeReport : xcresultBundles) {
             File workingDirectory = Files.createTempDirectory(null).toFile();
             XCResultConverter converter = new XCResultConverter(workingDirectory);
-
-            LogUtils.info("Running conversion with temporary working directory: " + workingDirectory.getAbsolutePath());
 
             Thread cleanupHook = new Thread(() -> {
                 try {
@@ -96,15 +89,19 @@ public class TeamscaleUpload {
                 }
             });
 
-            Runtime.getRuntime().addShutdownHook(cleanupHook);
+            try {
+                Runtime.getRuntime().addShutdownHook(cleanupHook);
 
-            converter.convert(xcodeReport).forEach(convertedReport -> {
-                formatToFiles.computeIfAbsent(convertedReport.reportFormat, x -> new HashSet<>())
-                        .add(convertedReport.report);
-            });
+                converter.convert(xcodeReport).forEach(convertedReport -> {
+                    formatToFiles.computeIfAbsent(convertedReport.reportFormat, x -> new HashSet<>())
+                            .add(convertedReport.report);
+                });
+            } finally {
+                deleteWorkingDirectory(workingDirectory);
+                Runtime.getRuntime().removeShutdownHook(cleanupHook);
+            }
 
-            deleteWorkingDirectory(workingDirectory);
-            Runtime.getRuntime().removeShutdownHook(cleanupHook);
+
         }
     }
 
