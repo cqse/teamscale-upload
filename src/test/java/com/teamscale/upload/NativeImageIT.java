@@ -82,8 +82,7 @@ public class NativeImageIT {
         ProcessUtils.ProcessResult result = runUploader(new Arguments().withProject("wrong-project_"));
         assertSoftlyThat(softly -> {
             softly.assertThat(result.exitCode).isNotZero();
-            softly.assertThat(result.stdoutAndStdErr).contains("The project")
-                    .contains("does not seem to exist in Teamscale");
+            softly.assertThat(result.stdoutAndStdErr).contains("The project").contains("does not seem to exist in Teamscale");
         });
     }
 
@@ -110,8 +109,7 @@ public class NativeImageIT {
         ProcessUtils.ProcessResult result = runUploader(new Arguments().withPattern("**/matches.nothing"));
         assertSoftlyThat(softly -> {
             softly.assertThat(result.exitCode).isNotZero();
-            softly.assertThat(result.stdoutAndStdErr).contains("The pattern")
-                    .contains("could not be resolved to any files");
+            softly.assertThat(result.stdoutAndStdErr).contains("The pattern").contains("could not be resolved to any files");
         });
     }
 
@@ -121,8 +119,7 @@ public class NativeImageIT {
                 .withUser("has-no-permissions").withAccessKey("SU2nfdkpcsoOXK2zDVf2DLEQiDaMD8fM"));
         assertSoftlyThat(softly -> {
             softly.assertThat(result.exitCode).isNotZero();
-            softly.assertThat(result.stdoutAndStdErr)
-                    .contains("is not allowed to upload data to the Teamscale project");
+            softly.assertThat(result.stdoutAndStdErr).contains("is not allowed to upload data to the Teamscale project");
         });
     }
 
@@ -136,8 +133,7 @@ public class NativeImageIT {
 
     @Test
     public void successfulMultiFormatUpload() {
-        ProcessUtils.ProcessResult result =
-                runUploader(new Arguments().withInput("src/test/resources/coverage_files/input_file"));
+        ProcessUtils.ProcessResult result = runUploader(new Arguments().withInput("src/test/resources/coverage_files/input_file"));
         assertThat(result.exitCode)
                 .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
                 .isZero();
@@ -176,9 +172,8 @@ public class NativeImageIT {
     @Test
     public void selfSignedCertificateShouldBeAcceptedWithInsecureFlag() {
         try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
-            ProcessUtils.ProcessResult result =
-                    runUploader(new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT)
-                            .withInsecure());
+            ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT)
+                    .withInsecure());
             assertThat(result.exitCode)
                     .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
                     .isZero();
