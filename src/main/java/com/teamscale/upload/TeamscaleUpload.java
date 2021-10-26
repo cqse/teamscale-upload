@@ -74,13 +74,21 @@ public class TeamscaleUpload {
         Set<File> xcresultBundles = formatToFiles.remove(XCResultConverter.XCODE_REPORT_FORMAT);
 
         for (File xcodeReport : xcresultBundles) {
+            if (!XCResultConverter.needsConversion(xcodeReport)) {
+                formatToFiles.computeIfAbsent(XCResultConverter.XCODE_REPORT_FORMAT, x -> new HashSet<>())
+                        .add(xcodeReport);
+                continue;
+            }
+
             File workingDirectory = Files.createTempDirectory(null).toFile();
             XCResultConverter converter = new XCResultConverter(workingDirectory);
 
+            // Cleanup hook to ensure temporarily created files and directories are deleted if the user
+            // terminates the application forcefully (e.g. via Ctrl+C).
             Thread cleanupHook = new Thread(() -> {
                 try {
                     converter.stopProcesses();
-                    deleteWorkingDirectory(workingDirectory);
+                    FileUtils.deleteDirectory(workingDirectory);
                 } catch (IOException | InterruptedException e) {
                     LogUtils.warn("Unable to delete temporary working directory " + workingDirectory.getAbsolutePath() +
                             ": " + e.getMessage());
@@ -95,17 +103,10 @@ public class TeamscaleUpload {
                             .add(convertedReport.report);
                 });
             } finally {
-                deleteWorkingDirectory(workingDirectory);
+                FileUtils.deleteDirectory(workingDirectory);
                 Runtime.getRuntime().removeShutdownHook(cleanupHook);
             }
-
-
         }
-    }
-
-    private static void deleteWorkingDirectory(File workingDirectory) throws IOException {
-        LogUtils.info("Deleting temporary working directory: " + workingDirectory.getAbsolutePath());
-        FileUtils.deleteDirectory(workingDirectory);
     }
 
     private static void handleSslConnectionFailure(CommandLine commandLine, SSLHandshakeException e) {

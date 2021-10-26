@@ -13,9 +13,9 @@ class ConversionResult {
     /**
      * The raw output of the xccov conversion tool.
      */
-    final byte[] result;
+    final String result;
 
-    public ConversionResult(String sourceFile, byte[] result) {
+    public ConversionResult(String sourceFile, String result) {
         this.sourceFile = sourceFile;
         this.result = result;
     }

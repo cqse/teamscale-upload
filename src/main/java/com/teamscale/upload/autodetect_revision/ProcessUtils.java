@@ -11,9 +11,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.concurrent.TimeUnit;
 
+/**
+ * Utiliy methods for executing processes on the command line.
+ */
 public class ProcessUtils {
+
+    private static final int EXIT_CODE_CTRL_C_TERMINATED = 130;
+
+    private static final int EXIT_CODE_SUCCESS = 0;
 
     private static class CaptureStreamHandler implements ExecuteStreamHandler {
 
@@ -88,32 +94,31 @@ public class ProcessUtils {
     /**
      * Starts a {@link Process} for the commands.
      */
-    public static Process executeProcess(String... commands) throws IOException, InterruptedException {
+    public static Process startProcess(String... commands) throws IOException {
         return new ProcessBuilder(commands).start();
     }
 
     /**
      * Starts a {@link Process} for the commands and returns the standard output as a {@link String}.
      */
-    public static String executeProcessAndGetOutput(long timeoutSeconds, String... commands) throws IOException, InterruptedException {
-        Process process = executeProcess(commands);
+    public static String executeProcess(String... commands) throws IOException, InterruptedException {
+        Process process = startProcess(commands);
         String output = FileSystemUtils.getInputAsString(process.getInputStream());
-        ensureProcessFinishedWithoutErrors(process, timeoutSeconds);
+        ensureProcessFinishedWithoutErrors(process);
         return output;
     }
 
     /**
      * Ensures that the {@link Process} has finished successfully and logs errors as warnings to the console.
      */
-    public static void ensureProcessFinishedWithoutErrors(Process process, long timeoutSeconds) throws IOException, InterruptedException {
+    public static void ensureProcessFinishedWithoutErrors(Process process) throws IOException, InterruptedException {
         String errorOutput = FileSystemUtils.getInputAsString(process.getErrorStream());
+        int exitCode = process.waitFor();
 
-        if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
-            process.destroy();
-            LogUtils.warn("Process took too long to execute: " + process);
-        }
-        if (!process.isAlive() && process.exitValue() != 0) {
-            LogUtils.warn(String.format("Process %s terminated with non-zero exit value %d: %s", process, process.exitValue(), errorOutput));
+        if (exitCode != EXIT_CODE_SUCCESS && exitCode != EXIT_CODE_CTRL_C_TERMINATED) {
+            LogUtils.warn(
+                    String.format("Process %s terminated with non-zero exit value %d: %s", process, process.exitValue(),
+                            errorOutput));
         }
     }
 }

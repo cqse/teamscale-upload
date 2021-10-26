@@ -8,13 +8,17 @@ import com.teamscale.upload.report.xcode.deserializers.WrappedBooleanDeserialize
  */
 public class CodeCoverageInfo {
 
+    /** Reference to the  */
+    public final Reference archiveRef;
+
     /**
      * True if the XCResult bundle contains test converage information.
      */
     @JsonAdapter(WrappedBooleanDeserializer.class)
     public final boolean hasCoverageData;
 
-    public CodeCoverageInfo(boolean hasCoverageData) {
+    public CodeCoverageInfo(Reference archiveRef, boolean hasCoverageData) {
+        this.archiveRef = archiveRef;
         this.hasCoverageData = hasCoverageData;
     }
 }
