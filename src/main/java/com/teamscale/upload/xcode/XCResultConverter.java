@@ -117,7 +117,8 @@ public class XCResultConverter {
 
         for (int i = 0; i < actionsInvocationRecord.actions.length; i++) {
             ActionRecord action = actionsInvocationRecord.actions[i];
-            File xccovArchive = new File(reportDirectory.getAbsolutePath() + "." + i + ".xccovarchive");
+            File tempDirectory = Files.createTempDirectory(workingDirectory.toPath(), null).toFile();
+            File xccovArchive = new File(tempDirectory, reportDirectory.getName() + "." + i + ".xccovarchive");
             String archiveRef = action.actionResult.coverage.archiveRef.id;
 
             FileSystemUtils.mkdirs(xccovArchive.getParentFile());
