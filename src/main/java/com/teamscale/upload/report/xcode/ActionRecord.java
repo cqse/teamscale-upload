@@ -1,7 +1,7 @@
 package com.teamscale.upload.report.xcode;
 
 /**
- * An {@link ActionRecord} in an {@link ActionsInvocationRecord}.
+ * An object of type ActionRecord in the summary JSON output of the XCode xcresulttool executable.
  */
 public class ActionRecord {
 

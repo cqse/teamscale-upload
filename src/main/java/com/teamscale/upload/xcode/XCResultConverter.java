@@ -10,7 +10,7 @@ import com.teamscale.upload.report.xcode.ActionTestPlanRunSummaries;
 import com.teamscale.upload.report.xcode.ActionTestPlanRunSummary;
 import com.teamscale.upload.report.xcode.ActionTestableSummary;
 import com.teamscale.upload.report.xcode.ActionsInvocationRecord;
-import com.teamscale.upload.report.xcode.Reference;
+import com.teamscale.upload.report.xcode.XCResultObjectIdReference;
 import com.teamscale.upload.utils.FileSystemUtils;
 import com.teamscale.upload.utils.LogUtils;
 
@@ -52,19 +52,19 @@ public class XCResultConverter {
      * the number of available processors to distribute work since this setting was most performant
      * when testing locally.
      */
-    public static final int CONVERSION_THREAD_COUNT =
+    private static final int CONVERSION_THREAD_COUNT =
             Integer.getInteger("com.teamscale.upload.xcode.conversion-thread-count",
                     Runtime.getRuntime().availableProcessors());
 
     /**
      * File extension used for converted XCResult bundles.
      */
-    public static final String XCCOV_REPORT_FILE_EXTENSION = ".xccov";
+    private static final String XCCOV_REPORT_FILE_EXTENSION = ".xccov";
 
     /**
      * File extension used for converted XCResult bundles.
      */
-    public static final String TESTWISE_COVERAGE_REPORT_FILE_EXTENSION = ".testwisecoverage.json";
+    private static final String TESTWISE_COVERAGE_REPORT_FILE_EXTENSION = ".testwisecoverage.json";
 
     private final File workingDirectory;
 
@@ -191,7 +191,7 @@ public class XCResultConverter {
         List<TestInfo> tests = new ArrayList<>();
 
         for (ActionRecord action : actionsInvocationRecord.actions) {
-            Reference testsRef = action.actionResult.testsRef;
+            XCResultObjectIdReference testsRef = action.actionResult.testsRef;
             if (testsRef == null) {
                 continue;
             }
@@ -223,7 +223,7 @@ public class XCResultConverter {
 
     private void extractTests(ActionTest actionTest, List<TestInfo> tests) {
         if (actionTest.subTests == null) {
-            tests.add(new TestInfo(actionTest));
+            TestInfo.create(actionTest).ifPresent(tests::add);
             return;
         }
 

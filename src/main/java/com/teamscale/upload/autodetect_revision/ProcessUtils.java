@@ -13,7 +13,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
- * Utiliy methods for executing processes on the command line.
+ * Utility methods for executing processes on the command line.
  */
 public class ProcessUtils {
 
@@ -85,7 +85,8 @@ public class ProcessUtils {
             int exitCode = executor.execute(commandLine);
             return new ProcessResult(exitCode, handler.getStdOutAndStdErr(), null);
         } catch (IOException e) {
-            System.err.println("Tried to run `" + command + " " + String.join(" ", arguments) + "` which failed with an exception");
+            System.err.println("Tried to run `" + command + " " + String.join(" ", arguments) +
+                    "` which failed with an exception");
             e.printStackTrace();
             return new ProcessResult(-1, "", e);
         }
@@ -111,7 +112,7 @@ public class ProcessUtils {
     /**
      * Ensures that the {@link Process} has finished successfully and logs errors as warnings to the console.
      */
-    public static void ensureProcessFinishedWithoutErrors(Process process) throws IOException, InterruptedException {
+    private static void ensureProcessFinishedWithoutErrors(Process process) throws IOException, InterruptedException {
         String errorOutput = FileSystemUtils.getInputAsString(process.getErrorStream());
         int exitCode = process.waitFor();
 

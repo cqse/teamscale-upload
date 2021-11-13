@@ -41,7 +41,7 @@ public class FileSystemUtils {
 
     private static final List<String> TAR_FILE_EXTENSIONS = List.of(".tar", ".tar.gz", ".tgz");
 
-    private static final List<String> GZIP_FILE_EXTENSIONS =List.of(".tar.gz", ".tgz");
+    private static final List<String> GZIP_FILE_EXTENSIONS = List.of(".tar.gz", ".tgz");
 
     /**
      * Replace platform dependent separator char with forward slashes to create
@@ -51,21 +51,16 @@ public class FileSystemUtils {
         return path.replace(File.separatorChar, UNIX_SEPARATOR);
     }
 
-    /** Returns true if the given file is a Tar file as indicated by possible file extensions. */
+    /**
+     * Returns true if the given file is a Tar file as indicated by possible file extensions.
+     */
     public static boolean isTarFile(File file) {
         if (!file.isFile()) {
             return false;
         }
 
         String fileName = file.getName();
-
-        for (String tarFileExtension : TAR_FILE_EXTENSIONS) {
-            if (fileName.endsWith(tarFileExtension)) {
-                return true;
-            }
-        }
-
-        return false;
+        return TAR_FILE_EXTENSIONS.stream().anyMatch(fileName::endsWith);
     }
 
     /**
@@ -87,11 +82,10 @@ public class FileSystemUtils {
     public static void extractTarArchive(File tarArchive, File destination) throws IOException {
         InputStream inputStream = new FileInputStream(tarArchive);
 
-        for (String gzipFileExtension : GZIP_FILE_EXTENSIONS) {
-            if (tarArchive.getName().endsWith(gzipFileExtension)) {
-                inputStream = new GzipCompressorInputStream(inputStream);
-                break;
-            }
+        String tarArchiveName = tarArchive.getName();
+
+        if (GZIP_FILE_EXTENSIONS.stream().anyMatch(tarArchiveName::endsWith)) {
+            inputStream = new GzipCompressorInputStream(inputStream);
         }
 
         ensureEmptyDirectory(destination);
@@ -157,11 +151,12 @@ public class FileSystemUtils {
     }
 
     /**
-     * Creates the directory and all parent directories if they don't exist.
+     * Ensures that the file is an empty file. If the file already exist it is deleted and
+     * a new empty one is created.
      */
     public static void ensureEmptyFile(File file) throws IOException {
         if (file.isDirectory()) {
-            throw new IOException("Unalbe to create empty file because it is a directory: " + file);
+            throw new IOException("Unable to create empty file because it is a directory: " + file);
         }
         if (file.exists() && !file.delete()) {
             throw new IOException("Unable to delete existing file: " + file);

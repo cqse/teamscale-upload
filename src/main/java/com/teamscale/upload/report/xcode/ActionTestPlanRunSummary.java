@@ -4,7 +4,8 @@ import com.google.gson.annotations.JsonAdapter;
 import com.teamscale.upload.report.xcode.deserializers.WrappedArrayDeserializer;
 
 /**
- * The {@link ActionTestPlanRunSummary} in an {@link ActionTestPlanRunSummaries} object.
+ * An object of type ActionTestPlanRunSummary in the XCResult bundle summary output
+ * for an {@link ActionResult#testsRef}.
  */
 public class ActionTestPlanRunSummary {
 

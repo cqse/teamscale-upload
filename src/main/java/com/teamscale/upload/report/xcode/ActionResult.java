@@ -1,7 +1,7 @@
 package com.teamscale.upload.report.xcode;
 
 /**
- * An {@link ActionResult} that summarizes build and test execution steps.
+ * An object of type ActionResult in the summary JSON output of the XCode xcresulttool executable.
  */
 public class ActionResult {
 
@@ -11,12 +11,12 @@ public class ActionResult {
     public final CodeCoverageInfo coverage;
 
     /**
-     * The refernce to the test object that can be used to load the
+     * The reference to the test object that can be used to load the
      * corresponding {@link ActionTestPlanRunSummaries}.
      */
-    public final Reference testsRef;
+    public final XCResultObjectIdReference testsRef;
 
-    public ActionResult(CodeCoverageInfo coverage, Reference testsRef) {
+    public ActionResult(CodeCoverageInfo coverage, XCResultObjectIdReference testsRef) {
         this.coverage = coverage;
         this.testsRef = testsRef;
     }

@@ -55,7 +55,7 @@
     "allDeclaredFields": true
   },
   {
-    "name": "com.teamscale.upload.report.xcode.Reference",
+    "name": "com.teamscale.upload.report.xcode.XCResultObjectIdReference",
     "allDeclaredConstructors": true,
     "allDeclaredFields": true
   },

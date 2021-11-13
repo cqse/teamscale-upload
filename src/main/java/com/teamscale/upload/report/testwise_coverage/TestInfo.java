@@ -2,6 +2,8 @@ package com.teamscale.upload.report.testwise_coverage;
 
 import com.teamscale.upload.report.xcode.ActionTest;
 
+import java.util.Optional;
+
 /**
  * Generic container of all information about a specific test as written to the
  * report.
@@ -27,9 +29,18 @@ public class TestInfo {
      */
     public final String result;
 
-    public TestInfo(ActionTest actionTest) {
-        this.uniformPath = actionTest.identifier;
-        this.duration = actionTest.duration;
-        this.result = actionTest.getTestExecutionResult();
+    public TestInfo(String uniformPath, double duration, String result) {
+        this.uniformPath = uniformPath;
+        this.duration = duration;
+        this.result = result;
+    }
+
+    /**
+     * Creates a {@link TestInfo} from the {@link ActionTest}. Returns {@link Optional#empty()} in case
+     * the {@link ActionTest} doesn't represent an actual test.
+     */
+    public static Optional<TestInfo> create(ActionTest actionTest) {
+        return actionTest.getTestExecutionResult()
+                .map(result -> new TestInfo(actionTest.identifier, actionTest.duration, result));
     }
 }

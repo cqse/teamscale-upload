@@ -6,9 +6,12 @@ import com.teamscale.upload.report.testwise_coverage.TestInfo;
 import com.teamscale.upload.report.xcode.deserializers.WrappedArrayDeserializer;
 import com.teamscale.upload.report.xcode.deserializers.WrappedDoubleDeserializer;
 import com.teamscale.upload.report.xcode.deserializers.WrappedStringDeserializer;
+import com.teamscale.upload.utils.LogUtils;
+
+import java.util.Optional;
 
 /**
- * Format of an object of type ActionTest in the XCResult bundle summary output for a test reference.
+ * An object of type ActionTest in the XCResult bundle summary output for an {@link ActionResult#testsRef}.
  */
 public class ActionTest {
 
@@ -34,7 +37,7 @@ public class ActionTest {
     public final String testStatus;
 
     /**
-     * The sub tests below this {@link ActionTest}s. This field is null for {@link ActionTest}s
+     * The sub-tests below this {@link ActionTest}. This field is null for {@link ActionTest}s
      * representing actual test functions/methods and such tests map directly to the {@link TestInfo}
      * objects without the need to consider parent {@link ActionTest} objects.
      */
@@ -52,17 +55,26 @@ public class ActionTest {
     /**
      * Returns the Teamscale ETestExecutionResult value as a String corresponding to the {@link #testStatus}.
      */
-    public String getTestExecutionResult() {
+    public Optional<String> getTestExecutionResult() {
+        if (testStatus == null) {
+            /*
+             * Can happen if this is not an actual test node but rather
+             * some intermediate node that simply doesn't have any children.
+             */
+            return Optional.empty();
+        }
+
         switch (testStatus) {
             case "Success":
             case "Expected Failure":
-                return "PASSED";
+                return Optional.of("PASSED");
             case "Failure":
-                return "FAILURE";
+                return Optional.of("FAILURE");
             case "Skipped":
-                return "SKIPPED";
+                return Optional.of("SKIPPED");
             default:
-                throw new AssertionError(String.format("Unknown test status %s for test %s.", testStatus, identifier));
+                LogUtils.warn("Test " + identifier + " in XCResult bundle has unknown test status " + testStatus);
+                return Optional.empty();
         }
     }
 }

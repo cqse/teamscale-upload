@@ -4,8 +4,9 @@ import com.google.gson.annotations.JsonAdapter;
 import com.teamscale.upload.report.xcode.deserializers.WrappedArrayDeserializer;
 
 /**
- * Data object for the summary JSON output of the XCode xcresulttool executable for a {@link ActionResult#testsRef}.
- * An example invocation is {@code xcrun xcresulttool get --path path/to/some.xcresult --format json --id abc123}.
+ * Root object of type ActionTestPlanRunSummaries in the XCResult bundle summary output
+ * for an {@link ActionResult#testsRef}. An example invocation is
+ * {@code xcrun xcresulttool get --path path/to/some.xcresult --format json --id sometestrefid}.
  */
 public class ActionTestPlanRunSummaries {
 
