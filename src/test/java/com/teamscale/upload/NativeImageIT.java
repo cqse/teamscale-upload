@@ -2,11 +2,13 @@ package com.teamscale.upload;
 
 import com.teamscale.upload.autodetect_revision.ProcessUtils;
 import com.teamscale.upload.test_utils.TeamscaleMockServer;
-
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -244,6 +246,32 @@ public class NativeImageIT {
         }
     }
 
+    @Test
+    @EnabledOnOs(OS.MAC)
+    public void testXCResultConversion() throws IOException {
+        try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
+            ProcessUtils.ProcessResult result = runUploader(new Arguments()
+                    .withPattern("src/test/resources/coverage_files/output.xcresult.tar.gz")
+                    .withFormat("XCODE")
+                    .withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT)
+                    .withAutoDetectCommit());
+            assertThat(result.exitCode)
+                    .describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+                    .isZero();
+            assertThat(server.sessions).hasSize(1);
+            assertThat(server.uploadedReportsByName).hasSize(2);
+            for (String expectedFile : List
+                    .of("output.xcresult.tar.gz.testwisecoverage.json", "output.xcresult.tar.gz.xccov")) {
+                assertThat(server.uploadedReportsByName.get(expectedFile))
+                        .containsExactly(readResource(expectedFile + ".expected"));
+            }
+        }
+    }
+
+    private byte[] readResource(String name) throws IOException {
+        return NativeImageIT.class.getResourceAsStream(name).readAllBytes();
+    }
+
     private void assertSoftlyThat(Consumer<SoftAssertions> verifier) {
         SoftAssertions softly = new SoftAssertions();
         verifier.accept(softly);
@@ -268,7 +296,7 @@ public class NativeImageIT {
         private String user = "build";
         private String accessKey = getAccessKeyFromCi();
         private String project = "teamscale-upload";
-        private final String format = "simple";
+        private String format = "simple";
         private final String partition = "NativeImageIT";
         private String pattern = "src/test/resources/coverage_files\\*.simple";
         private String input = null;
@@ -279,6 +307,11 @@ public class NativeImageIT {
         private String commit = null;
         private String additionalMessageLine = null;
         private boolean stackTrace = false;
+
+        private Arguments withFormat(String format) {
+            this.format = format;
+            return this;
+        }
 
         private Arguments withPattern(String pattern) {
             this.pattern = pattern;

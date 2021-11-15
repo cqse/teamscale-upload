@@ -35,7 +35,7 @@ To create a native executable locally, you must install the [GraalVM JDK](https:
 All of this is accomplished easily with [SDKMAN!](https://sdkman.io/):
 
 ```bash
-sdk install java 20.3.0.r11-grl  # install graal and make it your default JDK
+sdk install java 21.2.0.r11-grl  # install graal and make it your default JDK
 gu install native-image          # install native-image
 native-image --version           # check that everything worked
 ```

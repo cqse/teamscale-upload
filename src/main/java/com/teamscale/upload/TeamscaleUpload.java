@@ -6,17 +6,8 @@ import com.teamscale.upload.utils.LogUtils;
 import com.teamscale.upload.utils.MessageUtils;
 import com.teamscale.upload.utils.OkHttpUtils;
 import com.teamscale.upload.utils.SafeResponse;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.ConnectException;
-import java.net.UnknownHostException;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
-
-import javax.net.ssl.SSLHandshakeException;
-
+import com.teamscale.upload.xcode.XCResultConverter;
+import com.teamscale.upload.xcode.XCResultConverter.ConversionException;
 import okhttp3.Credentials;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
@@ -25,6 +16,18 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import org.apache.commons.io.FileUtils;
+
+import javax.net.ssl.SSLHandshakeException;
+import java.io.File;
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Main class of the teamscale-upload project.
@@ -44,6 +47,8 @@ public class TeamscaleUpload {
         Map<String, Set<File>> formatToFiles =
                 ReportPatternUtils.resolveInputFilePatterns(commandLine.inputFile, commandLine.files, commandLine.format);
 
+        convertXCodeReports(formatToFiles);
+
         OkHttpClient client = OkHttpUtils.createClient(commandLine.validateSsl, commandLine.getKeyStorePath(), commandLine.getKeyStorePassword());
         try {
             performUpload(client, formatToFiles, commandLine);
@@ -54,6 +59,53 @@ public class TeamscaleUpload {
             // prevent JVM shutdown
             client.dispatcher().executorService().shutdownNow();
             client.connectionPool().evictAll();
+        }
+    }
+
+    /**
+     * Converts the reports from the internal binary XCode format to a readable report that can be uploaded to Teamscale.
+     */
+    private static void convertXCodeReports(Map<String, Set<File>> formatToFiles)
+            throws IOException, ConversionException {
+        if (!formatToFiles.containsKey(XCResultConverter.XCODE_REPORT_FORMAT)) {
+            return;
+        }
+
+        Set<File> xcresultBundles = formatToFiles.remove(XCResultConverter.XCODE_REPORT_FORMAT);
+
+        for (File xcodeReport : xcresultBundles) {
+            if (!XCResultConverter.needsConversion(xcodeReport)) {
+                formatToFiles.computeIfAbsent(XCResultConverter.XCODE_REPORT_FORMAT, x -> new HashSet<>())
+                        .add(xcodeReport);
+                continue;
+            }
+
+            File workingDirectory = Files.createTempDirectory(null).toFile();
+            XCResultConverter converter = new XCResultConverter(workingDirectory);
+
+            // Cleanup hook to ensure temporarily created files and directories are deleted if the user
+            // terminates the application forcefully (e.g. via Ctrl+C).
+            Thread cleanupHook = new Thread(() -> {
+                try {
+                    converter.stopProcesses();
+                    FileUtils.deleteDirectory(workingDirectory);
+                } catch (IOException | InterruptedException e) {
+                    LogUtils.warn("Unable to delete temporary working directory " + workingDirectory.getAbsolutePath() +
+                            ": " + e.getMessage());
+                }
+            });
+
+            try {
+                Runtime.getRuntime().addShutdownHook(cleanupHook);
+
+                converter.convert(xcodeReport).forEach(convertedReport -> {
+                    formatToFiles.computeIfAbsent(convertedReport.reportFormat, x -> new HashSet<>())
+                            .add(convertedReport.report);
+                });
+            } finally {
+                FileUtils.deleteDirectory(workingDirectory);
+                Runtime.getRuntime().removeShutdownHook(cleanupHook);
+            }
         }
     }
 
