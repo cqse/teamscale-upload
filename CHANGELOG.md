@@ -6,6 +6,10 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 
+# 2.2.0
+
+- [feature] add automatic conversion of XCResult bundles when uploading XCode reports
+
 # 2.1.1
 
 - [fix] change confusing error message when incorrect --commit parameter is given
