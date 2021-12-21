@@ -7,8 +7,8 @@ import com.google.gson.JsonElement;
  */
 public class WrappedDoubleDeserializer extends WrappedValueDeserializerBase<Double> {
 
-    @Override
-    protected Double convertValue(JsonElement value) {
-        return value.getAsDouble();
-    }
+	@Override
+	protected Double convertValue(JsonElement value) {
+		return value.getAsDouble();
+	}
 }

@@ -7,18 +7,18 @@ import java.io.File;
  */
 public class ConvertedReport {
 
-    /**
-     * The report format of the converted report file.
-     */
-    public final String reportFormat;
+	/**
+	 * The report format of the converted report file.
+	 */
+	public final String reportFormat;
 
-    /**
-     * The converted report file.
-     */
-    public final File report;
+	/**
+	 * The converted report file.
+	 */
+	public final File report;
 
-    public ConvertedReport(String reportFormat, File report) {
-        this.reportFormat = reportFormat;
-        this.report = report;
-    }
+	public ConvertedReport(String reportFormat, File report) {
+		this.reportFormat = reportFormat;
+		this.report = report;
+	}
 }

@@ -27,14 +27,14 @@ import java.lang.reflect.Type;
  */
 public abstract class WrappedValueDeserializerBase<T> implements JsonDeserializer<T> {
 
-    @Override
-    public T deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext)
-            throws JsonParseException {
-        return convertValue(jsonElement.getAsJsonObject().get("_value"));
-    }
+	@Override
+	public T deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext)
+			throws JsonParseException {
+		return convertValue(jsonElement.getAsJsonObject().get("_value"));
+	}
 
-    /**
-     * Converts the value {@link JsonElement} to the actual value.
-     */
-    protected abstract T convertValue(JsonElement value);
+	/**
+	 * Converts the value {@link JsonElement} to the actual value.
+	 */
+	protected abstract T convertValue(JsonElement value);
 }

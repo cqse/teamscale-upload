@@ -17,109 +17,110 @@ import java.io.OutputStream;
  */
 public class ProcessUtils {
 
-    private static final int EXIT_CODE_CTRL_C_TERMINATED = 130;
+	private static final int EXIT_CODE_CTRL_C_TERMINATED = 130;
 
-    private static final int EXIT_CODE_SUCCESS = 0;
+	private static final int EXIT_CODE_SUCCESS = 0;
 
-    private static class CaptureStreamHandler implements ExecuteStreamHandler {
+	public static ProcessResult run(String command, String... arguments) {
+		CommandLine commandLine = new CommandLine(command);
+		commandLine.addArguments(arguments, false);
+		DefaultExecutor executor = new DefaultExecutor();
+		CaptureStreamHandler handler = new CaptureStreamHandler();
+		executor.setStreamHandler(handler);
+		executor.setExitValues(null); // don't throw in case of non-zero exit codes
+		try {
+			int exitCode = executor.execute(commandLine);
+			return new ProcessResult(exitCode, handler.getStdOutAndStdErr(), null);
+		} catch (IOException e) {
+			System.err.println("Tried to run `" + command + " " + String.join(" ", arguments)
+					+ "` which failed with an exception");
+			e.printStackTrace();
+			return new ProcessResult(-1, "", e);
+		}
+	}
 
-        private final ByteArrayOutputStream stdoutAndStderrStream = new ByteArrayOutputStream();
-        private final PumpStreamHandler wrappedHandler = new PumpStreamHandler(stdoutAndStderrStream);
+	/**
+	 * Starts a {@link Process} for the commands.
+	 */
+	public static Process startProcess(String... commands) throws IOException {
+		return new ProcessBuilder(commands).start();
+	}
 
-        public String getStdOutAndStdErr() {
-            // we want to use the platform default charset here
-            // as I'm guessing it's used for the process output
-            return stdoutAndStderrStream.toString();
-        }
+	/**
+	 * Starts a {@link Process} for the commands and returns the standard output as
+	 * a {@link String}.
+	 */
+	public static String executeProcess(String... commands) throws IOException, InterruptedException {
+		Process process = startProcess(commands);
+		String output = FileSystemUtils.getInputAsString(process.getInputStream());
+		ensureProcessFinishedWithoutErrors(process);
+		return output;
+	}
 
-        @Override
-        public void setProcessInputStream(OutputStream os) {
-            wrappedHandler.setProcessInputStream(os);
-        }
+	/**
+	 * Ensures that the {@link Process} has finished successfully and logs errors as
+	 * warnings to the console.
+	 */
+	private static void ensureProcessFinishedWithoutErrors(Process process) throws IOException, InterruptedException {
+		String errorOutput = FileSystemUtils.getInputAsString(process.getErrorStream());
+		int exitCode = process.waitFor();
 
-        @Override
-        public void setProcessErrorStream(InputStream is) {
-            wrappedHandler.setProcessErrorStream(is);
-        }
+		if (exitCode != EXIT_CODE_SUCCESS && exitCode != EXIT_CODE_CTRL_C_TERMINATED) {
+			LogUtils.warn(String.format("Process %s terminated with non-zero exit value %d: %s", process,
+					process.exitValue(), errorOutput));
+		}
+	}
 
-        @Override
-        public void setProcessOutputStream(InputStream is) {
-            wrappedHandler.setProcessOutputStream(is);
-        }
+	private static class CaptureStreamHandler implements ExecuteStreamHandler {
 
-        @Override
-        public void start() {
-            wrappedHandler.start();
-        }
+		private final ByteArrayOutputStream stdoutAndStderrStream = new ByteArrayOutputStream();
+		private final PumpStreamHandler wrappedHandler = new PumpStreamHandler(stdoutAndStderrStream);
 
-        @Override
-        public void stop() throws IOException {
-            wrappedHandler.stop();
-        }
-    }
+		public String getStdOutAndStdErr() {
+			// we want to use the platform default charset here
+			// as I'm guessing it's used for the process output
+			return stdoutAndStderrStream.toString();
+		}
 
-    public static class ProcessResult {
-        public final int exitCode;
-        public final String stdoutAndStdErr;
-        public final IOException exception;
+		@Override
+		public void setProcessInputStream(OutputStream os) {
+			wrappedHandler.setProcessInputStream(os);
+		}
 
-        private ProcessResult(int exitCode, String stdoutAndStdErr, IOException exception) {
-            this.exitCode = exitCode;
-            this.stdoutAndStdErr = stdoutAndStdErr;
-            this.exception = exception;
-        }
+		@Override
+		public void setProcessErrorStream(InputStream is) {
+			wrappedHandler.setProcessErrorStream(is);
+		}
 
-        public boolean wasSuccessful() {
-            return exception == null && exitCode == 0;
-        }
-    }
+		@Override
+		public void setProcessOutputStream(InputStream is) {
+			wrappedHandler.setProcessOutputStream(is);
+		}
 
-    public static ProcessResult run(String command, String... arguments) {
-        CommandLine commandLine = new CommandLine(command);
-        commandLine.addArguments(arguments, false);
-        DefaultExecutor executor = new DefaultExecutor();
-        CaptureStreamHandler handler = new CaptureStreamHandler();
-        executor.setStreamHandler(handler);
-        executor.setExitValues(null); // don't throw in case of non-zero exit codes
-        try {
-            int exitCode = executor.execute(commandLine);
-            return new ProcessResult(exitCode, handler.getStdOutAndStdErr(), null);
-        } catch (IOException e) {
-            System.err.println("Tried to run `" + command + " " + String.join(" ", arguments) +
-                    "` which failed with an exception");
-            e.printStackTrace();
-            return new ProcessResult(-1, "", e);
-        }
-    }
+		@Override
+		public void start() {
+			wrappedHandler.start();
+		}
 
-    /**
-     * Starts a {@link Process} for the commands.
-     */
-    public static Process startProcess(String... commands) throws IOException {
-        return new ProcessBuilder(commands).start();
-    }
+		@Override
+		public void stop() throws IOException {
+			wrappedHandler.stop();
+		}
+	}
 
-    /**
-     * Starts a {@link Process} for the commands and returns the standard output as a {@link String}.
-     */
-    public static String executeProcess(String... commands) throws IOException, InterruptedException {
-        Process process = startProcess(commands);
-        String output = FileSystemUtils.getInputAsString(process.getInputStream());
-        ensureProcessFinishedWithoutErrors(process);
-        return output;
-    }
+	public static class ProcessResult {
+		public final int exitCode;
+		public final String stdoutAndStdErr;
+		public final IOException exception;
 
-    /**
-     * Ensures that the {@link Process} has finished successfully and logs errors as warnings to the console.
-     */
-    private static void ensureProcessFinishedWithoutErrors(Process process) throws IOException, InterruptedException {
-        String errorOutput = FileSystemUtils.getInputAsString(process.getErrorStream());
-        int exitCode = process.waitFor();
+		private ProcessResult(int exitCode, String stdoutAndStdErr, IOException exception) {
+			this.exitCode = exitCode;
+			this.stdoutAndStdErr = stdoutAndStdErr;
+			this.exception = exception;
+		}
 
-        if (exitCode != EXIT_CODE_SUCCESS && exitCode != EXIT_CODE_CTRL_C_TERMINATED) {
-            LogUtils.warn(
-                    String.format("Process %s terminated with non-zero exit value %d: %s", process, process.exitValue(),
-                            errorOutput));
-        }
-    }
+		public boolean wasSuccessful() {
+			return exception == null && exitCode == 0;
+		}
+	}
 }

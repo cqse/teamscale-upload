@@ -29,47 +29,47 @@ import java.util.function.Function;
  */
 public class CollectionUtils {
 
-    /**
-     * Returns a list that contains the elements of the specified list in reversed
-     * order.
-     * <p>
-     * This method does not modify the original collection.
-     */
-    public static <T> ArrayList<T> reverse(Collection<T> list) {
-        ArrayList<T> reversed = new ArrayList<>(list);
-        Collections.reverse(reversed);
-        return reversed;
-    }
+	/**
+	 * Returns a list that contains the elements of the specified list in reversed
+	 * order.
+	 * <p>
+	 * This method does not modify the original collection.
+	 */
+	public static <T> ArrayList<T> reverse(Collection<T> list) {
+		ArrayList<T> reversed = new ArrayList<>(list);
+		Collections.reverse(reversed);
+		return reversed;
+	}
 
-    /**
-     * Applies the mapper {@link Function} to all items in the collection and
-     * returns the resulting {@link List}.
-     * <p>
-     * This method does not modify the original collection.
-     */
-    public static <T, R> List<R> map(Collection<T> list, Function<? super T, ? extends R> mapper) {
-        List<R> result = new ArrayList<>(list.size());
-        for (T entry : list) {
-            result.add(mapper.apply(entry));
-        }
-        return result;
-    }
+	/**
+	 * Applies the mapper {@link Function} to all items in the collection and
+	 * returns the resulting {@link List}.
+	 * <p>
+	 * This method does not modify the original collection.
+	 */
+	public static <T, R> List<R> map(Collection<T> list, Function<? super T, ? extends R> mapper) {
+		List<R> result = new ArrayList<>(list.size());
+		for (T entry : list) {
+			result.add(mapper.apply(entry));
+		}
+		return result;
+	}
 
-    /**
-     * Returns a list implementation that allows for efficient random access.
-     * <p>
-     * If the passed collection already supports random access, it gets returned
-     * directly. Otherwise a list that supports random access is returned with the
-     * same content as the passed list.
-     */
-    public static <T> List<T> asRandomAccessList(Collection<T> list) {
-        // It is not guaranteed that implementations of RandomAccess also
-        // implement List. Hence, we check for both.
-        if (list instanceof List<?> && list instanceof RandomAccess) {
-            return (List<T>) list;
-        }
+	/**
+	 * Returns a list implementation that allows for efficient random access.
+	 * <p>
+	 * If the passed collection already supports random access, it gets returned
+	 * directly. Otherwise a list that supports random access is returned with the
+	 * same content as the passed list.
+	 */
+	public static <T> List<T> asRandomAccessList(Collection<T> list) {
+		// It is not guaranteed that implementations of RandomAccess also
+		// implement List. Hence, we check for both.
+		if (list instanceof List<?> && list instanceof RandomAccess) {
+			return (List<T>) list;
+		}
 
-        return new ArrayList<>(list);
-    }
+		return new ArrayList<>(list);
+	}
 
 }
