@@ -5,16 +5,16 @@ package com.teamscale.upload.resolve;
  */
 public class FilePatternResolutionException extends Exception {
 
-    /**
-     * Serialization ID.
-     */
-    private static final long serialVersionUID = 1L;
+	/**
+	 * Serialization ID.
+	 */
+	private static final long serialVersionUID = 1L;
 
-    /**
-     * Constructor.
-     */
-    public FilePatternResolutionException(String message, Throwable cause) {
-        super(message, cause);
-    }
+	/**
+	 * Constructor.
+	 */
+	public FilePatternResolutionException(String message, Throwable cause) {
+		super(message, cause);
+	}
 
 }

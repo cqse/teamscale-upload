@@ -7,8 +7,8 @@ import com.google.gson.JsonElement;
  */
 public class WrappedBooleanDeserializer extends WrappedValueDeserializerBase<Boolean> {
 
-    @Override
-    protected Boolean convertValue(JsonElement value) {
-        return value.getAsBoolean();
-    }
+	@Override
+	protected Boolean convertValue(JsonElement value) {
+		return value.getAsBoolean();
+	}
 }

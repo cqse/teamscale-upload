@@ -7,26 +7,27 @@ import com.teamscale.upload.report.xcode.deserializers.WrappedArrayDeserializer;
 import java.util.Arrays;
 
 /**
- * Root object of type ActionsInvocationRecord for the summary JSON output of the XCode xcresulttool executable.
- * An example invocation is {@code xcrun xcresulttool get --path path/to/some.xcresult --format json}.
+ * Root object of type ActionsInvocationRecord for the summary JSON output of
+ * the XCode xcresulttool executable. An example invocation is
+ * {@code xcrun xcresulttool get --path path/to/some.xcresult --format json}.
  */
 public class ActionsInvocationRecord {
 
-    /**
-     * List of {@link ActionRecord}s.
-     */
-    @SerializedName("actions")
-    @JsonAdapter(WrappedArrayDeserializer.class)
-    public final ActionRecord[] actions;
+	/**
+	 * List of {@link ActionRecord}s.
+	 */
+	@SerializedName("actions")
+	@JsonAdapter(WrappedArrayDeserializer.class)
+	public final ActionRecord[] actions;
 
-    public ActionsInvocationRecord(ActionRecord[] actions) {
-        this.actions = actions;
-    }
+	public ActionsInvocationRecord(ActionRecord[] actions) {
+		this.actions = actions;
+	}
 
-    /**
-     * Returns true if the XCResult bundle contains coverage data.
-     */
-    public boolean hasCoverageData() {
-        return Arrays.stream(actions).anyMatch(ActionRecord::hasCoverageData);
-    }
+	/**
+	 * Returns true if the XCResult bundle contains coverage data.
+	 */
+	public boolean hasCoverageData() {
+		return Arrays.stream(actions).anyMatch(ActionRecord::hasCoverageData);
+	}
 }

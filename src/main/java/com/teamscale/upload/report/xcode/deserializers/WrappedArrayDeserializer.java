@@ -20,7 +20,8 @@ import java.lang.reflect.Type;
  * }
  * </pre>
  * <p>
- * is the same as just deserializing this Array like this without a special deserializer
+ * is the same as just deserializing this Array like this without a special
+ * deserializer
  *
  * <pre>
  * [ v1, v2, v3, ... ]
@@ -28,10 +29,10 @@ import java.lang.reflect.Type;
  */
 public class WrappedArrayDeserializer<T> implements JsonDeserializer<T[]> {
 
-    @Override
-    public T[] deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext)
-            throws JsonParseException {
-        JsonArray values = jsonElement.getAsJsonObject().getAsJsonArray("_values");
-        return jsonDeserializationContext.deserialize(values, type);
-    }
+	@Override
+	public T[] deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext)
+			throws JsonParseException {
+		JsonArray values = jsonElement.getAsJsonObject().getAsJsonArray("_values");
+		return jsonDeserializationContext.deserialize(values, type);
+	}
 }

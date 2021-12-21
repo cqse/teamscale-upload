@@ -9,13 +9,13 @@ import com.teamscale.upload.report.xcode.deserializers.WrappedArrayDeserializer;
  */
 public class ActionTestableSummary {
 
-    /**
-     * The contained {@link ActionTest}s.
-     */
-    @JsonAdapter(WrappedArrayDeserializer.class)
-    public final ActionTest[] tests;
+	/**
+	 * The contained {@link ActionTest}s.
+	 */
+	@JsonAdapter(WrappedArrayDeserializer.class)
+	public final ActionTest[] tests;
 
-    public ActionTestableSummary(ActionTest[] tests) {
-        this.tests = tests;
-    }
+	public ActionTestableSummary(ActionTest[] tests) {
+		this.tests = tests;
+	}
 }

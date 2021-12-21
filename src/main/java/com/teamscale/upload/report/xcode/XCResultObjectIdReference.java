@@ -9,14 +9,14 @@ import com.teamscale.upload.report.xcode.deserializers.WrappedStringDeserializer
  */
 public class XCResultObjectIdReference {
 
-    /**
-     * The id of the reference that can be passed to the
-     * xcresulttool to export the object data.
-     */
-    @JsonAdapter(WrappedStringDeserializer.class)
-    public final String id;
+	/**
+	 * The id of the reference that can be passed to the xcresulttool to export the
+	 * object data.
+	 */
+	@JsonAdapter(WrappedStringDeserializer.class)
+	public final String id;
 
-    public XCResultObjectIdReference(String id) {
-        this.id = id;
-    }
+	public XCResultObjectIdReference(String id) {
+		this.id = id;
+	}
 }

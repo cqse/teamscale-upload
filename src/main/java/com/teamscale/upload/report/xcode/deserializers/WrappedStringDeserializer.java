@@ -7,8 +7,8 @@ import com.google.gson.JsonElement;
  */
 public class WrappedStringDeserializer extends WrappedValueDeserializerBase<String> {
 
-    @Override
-    protected String convertValue(JsonElement value) {
-        return value.getAsString();
-    }
+	@Override
+	protected String convertValue(JsonElement value) {
+		return value.getAsString();
+	}
 }
