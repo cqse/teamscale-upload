@@ -30,11 +30,12 @@ public class CommandLine {
 	 * The Teamscale username.
 	 */
 	public final String username;
-    /**
-     * Teamscale access key used for authentication. Either obtained via command-line option,
-     * via stdin or via the environment variable $TEAMSCALE_ACCESSKEY.
-     */
-    public final String accessKey;
+	/**
+	 * Teamscale access key used for authentication. Either obtained via
+	 * command-line option, via stdin or via the environment variable
+	 * $TEAMSCALE_ACCESSKEY.
+	 */
+	public final String accessKey;
 	/**
 	 * The Teamscale partition.
 	 */
@@ -88,7 +89,7 @@ public class CommandLine {
 		this.project = namespace.getString("project");
 		this.username = namespace.getString("user");
 		String accessKeyViaOption = namespace.getString("accesskey");
-        this.accessKey = determineAccessKeyToUse(accessKeyViaOption);
+		this.accessKey = determineAccessKeyToUse(accessKeyViaOption);
 		this.partition = namespace.getString("partition");
 		this.commit = namespace.getString("commit");
 		this.timestamp = namespace.getString("branch_and_timestamp");
@@ -117,25 +118,25 @@ public class CommandLine {
 	}
 
 	/**
-     * Determines the access key to be used for further authentication by using one of
-     * these in the following order:
+	 * Determines the access key to be used for further authentication by using one
+	 * of these in the following order:
 	 * <ul>
-	 *     <li>Provided via the option --access-key <access-key></li>
-     *     <li>Provided via STDIN when option "--access-key -" is used</li>
-     *     <li>Provided via environment variable $TEAMSCALE_ACCESSKEY</li>
+	 * <li>Provided via the option --access-key <access-key></li>
+	 * <li>Provided via STDIN when option "--access-key -" is used</li>
+	 * <li>Provided via environment variable $TEAMSCALE_ACCESSKEY</li>
 	 * </ul>
-     */
+	 */
 	private String determineAccessKeyToUse(String accessKeyViaOption) {
-        if(accessKeyViaOption != null && !("-".equals(accessKeyViaOption))) {
-            return accessKeyViaOption;
-        } else if(accessKeyViaOption != null) {
-            System.out.print("Reading access key from standard input: ");
-            Scanner inputScanner = new Scanner(System.in);
-            String accessKeyViaStdin = inputScanner.nextLine();
-            inputScanner.close();
-            System.out.println("\nRead access key");
-            return accessKeyViaStdin;
-        }
+		if (accessKeyViaOption != null && !("-".equals(accessKeyViaOption))) {
+			return accessKeyViaOption;
+		} else if (accessKeyViaOption != null) {
+			System.out.print("Reading access key from standard input: ");
+			Scanner inputScanner = new Scanner(System.in);
+			String accessKeyViaStdin = inputScanner.nextLine();
+			inputScanner.close();
+			System.out.println("\nRead access key");
+			return accessKeyViaStdin;
+		}
 		return System.getenv("TEAMSCALE_ACCESSKEY"); // may be null, but is validated later
 	}
 
@@ -163,8 +164,8 @@ public class CommandLine {
 						+ " 'Perform External Uploads' permission for the given Teamscale project.");
 		parser.addArgument("-a", "--accesskey").metavar("ACCESSKEY").required(false)
 				.help("The IDE access key of the given user. Can be retrieved in Teamscale under Admin > Users."
-                        + "Alternatively, use '--accesskey -' for the program to obtain the access key via"
-                        + "the standard input, or specify environment variable $TEAMSCALE_ACCESSKEY.");
+						+ "Alternatively, use '--accesskey -' for the program to obtain the access key via"
+						+ "the standard input, or specify environment variable $TEAMSCALE_ACCESSKEY.");
 		parser.addArgument("-t", "--partition").metavar("PARTITION").required(true)
 				.help("The partition into which the data is inserted in Teamscale."
 						+ " Successive uploads into the same partition will overwrite the data"
@@ -313,7 +314,7 @@ public class CommandLine {
 	}
 
 	private void validateAccessKey(ArgumentParser parser) throws ArgumentParserException {
-		if(accessKey == null) {
+		if (accessKey == null) {
 			throw new ArgumentParserException("You did not specify a Teamscale access key. You can either specify"
 					+ "it via --accesskey <access key>, via setting the environment variable $TEAMSCALE_ACCESSKEY or via stdin"
 					+ " using '--accesskey -'.", parser);
