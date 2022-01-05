@@ -45,7 +45,7 @@ with [SDKMAN!](https://sdkman.io/):
 
 ```bash
 sdk install java 21.2.0.r11-grl  # install graal and make it your default JDK
-gu install native-image          # install native-image
+gu install native-image          # install native-image (you may need gu.cmd for windows)
 native-image --version           # check that everything worked
 ```
 
