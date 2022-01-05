@@ -26,6 +26,11 @@ public class ProcessUtils {
 
 	private static final int EXIT_CODE_SUCCESS = 0;
 
+	/**
+	 * Run the command with the given arguments. Additionally, takes a file which
+	 * can be used to pipe input to stdin of the command. The parameter stdinFile
+	 * may be null to indicate that no stdin should be used.
+	 */
 	public static ProcessResult runWithStdin(String command, String stdinFile, String... arguments) {
 
 		CommandLine commandLine = new CommandLine(command);
@@ -60,6 +65,7 @@ public class ProcessUtils {
 		}
 	}
 
+	/** Run the command with the given arguments. */
 	public static ProcessResult run(String command, String... arguments) {
 		return runWithStdin(command, null, arguments);
 	}
