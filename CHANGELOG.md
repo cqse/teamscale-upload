@@ -6,6 +6,8 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 
+- [feature] access keys can now also be passed via stdin or environment variable
+
 # 2.2.0
 
 - [feature] add automatic conversion of XCResult bundles when uploading XCode reports
