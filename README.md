@@ -45,9 +45,11 @@ with [SDKMAN!](https://sdkman.io/):
 
 ```bash
 sdk install java 21.2.0.r11-grl  # install graal and make it your default JDK
-gu install native-image          # install native-image (you may need gu.cmd for windows)
+gu install native-image          # install native-image
 native-image --version           # check that everything worked
 ```
+
+**If you get "command not found" for "gu" on windows, you can try "gu.cmd" and "native-image.cmd".**
 
 The executable is always created under `./target/`.
 
