@@ -44,7 +44,7 @@ default JDK by setting `JAVA_HOME` and putting `$JAVA_HOME/bin` on your `PATH`. 
 with [SDKMAN!](https://sdkman.io/):
 
 ```bash
-sdk install java 21.2.0.r11-grl  # install graal and make it your default JDK
+sdk install java 21.2.0.r11-grl  # Install graal and make it your default JDK. If it is already installed, you need 'use' instead of 'install'.
 gu install native-image          # install native-image
 native-image --version           # check that everything worked
 ```
