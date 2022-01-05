@@ -21,7 +21,7 @@ jobs:
           native-image: true
       - name: Build
         env:
-          ACCESS_KEY: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
+          TEAMSCALE_ACCESS_KEY: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
         run: mvn clean verify
       - name: Reduce Image Size
         uses: crazy-max/ghaction-upx@v1
@@ -49,7 +49,7 @@ jobs:
           native-image: true
       - name: Build
         env:
-          ACCESS_KEY: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
+          TEAMSCALE_ACCESS_KEY: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
         run: ./build-windows.bat
       - name: Reduce Image Size
         uses: crazy-max/ghaction-upx@v1

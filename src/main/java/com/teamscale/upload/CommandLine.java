@@ -1,13 +1,5 @@
 package com.teamscale.upload;
 
-import com.teamscale.upload.utils.LogUtils;
-import net.sourceforge.argparse4j.ArgumentParsers;
-import net.sourceforge.argparse4j.impl.Arguments;
-import net.sourceforge.argparse4j.inf.ArgumentParser;
-import net.sourceforge.argparse4j.inf.ArgumentParserException;
-import net.sourceforge.argparse4j.inf.Namespace;
-import okhttp3.HttpUrl;
-
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -17,10 +9,28 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
 
+import com.teamscale.upload.utils.LogUtils;
+
+import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.impl.Arguments;
+import net.sourceforge.argparse4j.inf.ArgumentParser;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import net.sourceforge.argparse4j.inf.Namespace;
+import okhttp3.HttpUrl;
+
 /**
  * Parses and validates the command line arguments.
  */
 public class CommandLine {
+
+	/**
+	 * Name of the environment variable which is used to store the Teamscale access
+	 * key. This is not only relevant for users of the tool, but also for our tests.
+	 * In GitHub we initialize the environment variable from a GitHub secret, see
+	 * ".github/workflows/actions.yml". For local testing you will need to set the
+	 * environment variable manually.
+	 */
+	public static final String TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE = "TEAMSCALE_ACCESS_KEY";
 
 	/**
 	 * The Teamscale project ID or alias.
@@ -33,7 +43,7 @@ public class CommandLine {
 	/**
 	 * Teamscale access key used for authentication. Either obtained via
 	 * command-line option, via stdin or via the environment variable
-	 * $TEAMSCALE_ACCESSKEY.
+	 * {@link #TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE}.
 	 */
 	public final String accessKey;
 	/**
@@ -121,15 +131,19 @@ public class CommandLine {
 	 * Determines the access key to be used for further authentication by using one
 	 * of these in the following order:
 	 * <ul>
+	 * <li>Provided via environment variable
+	 * {@link #TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE}</li>
 	 * <li>Provided via the option --access-key <access-key></li>
 	 * <li>Provided via STDIN when option "--access-key -" is used</li>
-	 * <li>Provided via environment variable $TEAMSCALE_ACCESSKEY</li>
 	 * </ul>
 	 */
 	private String determineAccessKeyToUse(String accessKeyViaOption) {
-		if (accessKeyViaOption != null && !("-".equals(accessKeyViaOption))) {
-			return accessKeyViaOption;
-		} else if (accessKeyViaOption != null) {
+		if (accessKeyViaOption == null) {
+			// may be null, but is validated later
+			return System.getenv(TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE);
+		}
+
+		if (accessKeyViaOption.equals("-")) {
 			System.out.print("Reading access key from standard input: ");
 			Scanner inputScanner = new Scanner(System.in);
 			String accessKeyViaStdin = inputScanner.nextLine();
@@ -137,7 +151,8 @@ public class CommandLine {
 			System.out.println("\nRead access key");
 			return accessKeyViaStdin;
 		}
-		return System.getenv("TEAMSCALE_ACCESSKEY"); // may be null, but is validated later
+
+		return accessKeyViaOption;
 	}
 
 	private static List<String> getListSafe(Namespace namespace, String key) {
@@ -165,7 +180,8 @@ public class CommandLine {
 		parser.addArgument("-a", "--accesskey").metavar("ACCESSKEY").required(false)
 				.help("The IDE access key of the given user. Can be retrieved in Teamscale under Admin > Users."
 						+ "Alternatively, use '--accesskey -' for the program to obtain the access key via"
-						+ "the standard input, or specify environment variable $TEAMSCALE_ACCESSKEY.");
+						+ "the standard input, or specify environment variable $"
+						+ TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE + ".");
 		parser.addArgument("-t", "--partition").metavar("PARTITION").required(true)
 				.help("The partition into which the data is inserted in Teamscale."
 						+ " Successive uploads into the same partition will overwrite the data"
@@ -315,9 +331,11 @@ public class CommandLine {
 
 	private void validateAccessKey(ArgumentParser parser) throws ArgumentParserException {
 		if (accessKey == null) {
-			throw new ArgumentParserException("You did not specify a Teamscale access key. You can either specify"
-					+ "it via --accesskey <access key>, via setting the environment variable $TEAMSCALE_ACCESSKEY or via stdin"
-					+ " using '--accesskey -'.", parser);
+			throw new ArgumentParserException(
+					"You did not specify a Teamscale access key. You can either specify"
+							+ "it via --accesskey <access key>, via setting the environment variable $"
+							+ TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE + " or via stdin" + " using '--accesskey -'.",
+					parser);
 		}
 	}
 
