@@ -148,7 +148,7 @@ public class CommandLine {
 			Scanner inputScanner = new Scanner(System.in);
 			String accessKeyViaStdin = inputScanner.nextLine();
 			inputScanner.close();
-			System.out.println("\nRead access key");
+			System.out.println("\nSuccessfully read access key");
 			return accessKeyViaStdin;
 		}
 
@@ -334,7 +334,7 @@ public class CommandLine {
 			throw new ArgumentParserException(
 					"You did not specify a Teamscale access key. You can either specify"
 							+ "it via --accesskey <access key>, via setting the environment variable $"
-							+ TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE + " or via stdin" + " using '--accesskey -'.",
+							+ TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE + " or via stdin using '--accesskey -'.",
 					parser);
 		}
 	}

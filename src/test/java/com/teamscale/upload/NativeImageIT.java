@@ -56,7 +56,7 @@ public class NativeImageIT {
 			softly.assertThat(result.exitCode).isNotZero();
 			// the command line library we use adjusts the word spacing based on the
 			// terminal width so on different machines the output may contain a different
-			// number of spaces this behaviour can unfortunately not be disabled
+			// number of spaces. This behaviour can unfortunately not be disabled
 			softly.assertThat(result.stdoutAndStdErr)
 					.matches(Pattern.compile(".*You +provided +an +invalid +URL.*", Pattern.DOTALL));
 		});
@@ -252,7 +252,8 @@ public class NativeImageIT {
 			file = Paths.get(temporaryFileName);
 			Files.writeString(file, System.getenv(CommandLine.TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE));
 
-			ProcessUtils.ProcessResult result = runUploader(new Arguments().withAccessKeyViaStdin(temporaryFileName));
+			ProcessUtils.ProcessResult result = runUploader(
+					new Arguments().withAccessKeyViaStdin(temporaryFileName));
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isZero();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -319,7 +320,8 @@ public class NativeImageIT {
 	}
 
 	private ProcessUtils.ProcessResult runUploader(Arguments arguments) {
-		return ProcessUtils.runWithStdin("./target/teamscale-upload", arguments.stdin, arguments.toStringArray());
+		return ProcessUtils.runWithStdin("./target/teamscale-upload", arguments.stdinFilePath,
+				arguments.toStringArray());
 	}
 
 	private static String getAccessKeyFromCi() {
@@ -346,7 +348,7 @@ public class NativeImageIT {
 		private String commit = null;
 		private String additionalMessageLine = null;
 		private boolean stackTrace = false;
-		private String stdin = null;
+		private String stdinFilePath = null;
 
 		private Arguments withFormat(String format) {
 			this.format = format;
@@ -412,11 +414,11 @@ public class NativeImageIT {
 			return this;
 		}
 
-		private Arguments withAccessKeyViaStdin(String stdin) {
+		private Arguments withAccessKeyViaStdin(String stdinFilePath) {
 			this.accessKey = "-";
 			// If the access key is set to '-', we need to pipe the key from a file via
 			// stdin.
-			this.stdin = stdin;
+			this.stdinFilePath = stdinFilePath;
 			return this;
 		}
 
