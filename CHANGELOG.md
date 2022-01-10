@@ -6,6 +6,8 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 
+# 2.3.0
+
 - [feature] access keys can now also be passed via stdin or environment variable
 
 # 2.2.0
