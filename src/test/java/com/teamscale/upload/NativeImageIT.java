@@ -1,40 +1,44 @@
 package com.teamscale.upload;
 
-import com.teamscale.upload.autodetect_revision.ProcessUtils;
-import com.teamscale.upload.test_utils.TeamscaleMockServer;
-import org.assertj.core.api.SoftAssertions;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.junit.jupiter.api.condition.EnabledOnOs;
-import org.junit.jupiter.api.condition.OS;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.assertj.core.api.SoftAssertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
+
+import com.teamscale.upload.autodetect_revision.ProcessUtils;
+import com.teamscale.upload.test_utils.TeamscaleMockServer;
 
 /**
- * Runs the Maven-generated native image in different scenarios. To run this
- * test locally, you must provide the `build` user's access key for
- * https://demo.teamscale.com in the environment variable `ACCESS_KEY`.
- * Otherwise this test will be skipped silently.
+ * Runs the Maven-generated native image in different scenarios.
+ *
+ * Before you can run the test, you will need to generate the native image,
+ * please refer to the repository README.md for instructions.
+ *
+ * You will also need to specify the access key for the test user for
+ * https://demo.teamscale.com in the environment variable
+ * {@link CommandLine#TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE}. If you do not
+ * have the access key for the 'build' user, you can temporarily set
+ * {@link #TEAMSCALE_TEST_USER} to your personal user and use your access key.
+ * Ask a colleague for the necessary permissions in Teamscale if necessary.
  */
-@EnabledIfEnvironmentVariable(named = "ACCESS_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = CommandLine.TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE, matches = ".*")
 public class NativeImageIT {
 
 	private static final int MOCK_TEAMSCALE_PORT = 24398;
-
-	private static String getAccessKeyFromCi() {
-		String accessKey = System.getenv("ACCESS_KEY");
-		if (accessKey == null) {
-			return "not-a-ci-build";
-		}
-		return accessKey;
-	}
+	private static final String TEAMSCALE_TEST_USER = "build";
 
 	@Test
 	public void wrongAccessKey() {
@@ -51,9 +55,8 @@ public class NativeImageIT {
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
 			// the command line library we use adjusts the word spacing based on the
-			// terminal width
-			// so on different machines the output my contain a different number of spaces
-			// this behaviour can unfortunately not be disabled
+			// terminal width so on different machines the output may contain a different
+			// number of spaces. This behaviour can unfortunately not be disabled
 			softly.assertThat(result.stdoutAndStdErr)
 					.matches(Pattern.compile(".*You +provided +an +invalid +URL.*", Pattern.DOTALL));
 		});
@@ -237,6 +240,52 @@ public class NativeImageIT {
 		}
 	}
 
+	/** Tests that passing the access key via stdin works as expected (TS-28611). */
+	@Test
+	public void testCorrectAccessKeyFromStdIn() throws IOException {
+		Path file = null;
+		try {
+			// We create a temporary file where we write the correct access key from the
+			// environment variable to test the input via stdin. We do not commit this file
+			// as we do not want to leak the access key as plain string in the repository.
+			String temporaryFileName = "temporary_access_key.txt";
+			file = Paths.get(temporaryFileName);
+			Files.writeString(file, System.getenv(CommandLine.TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE));
+
+			ProcessUtils.ProcessResult result = runUploader(
+					new Arguments().withAccessKeyViaStdin(temporaryFileName));
+			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isZero();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			if (file != null && Files.exists(file)) {
+				Files.delete(file);
+			}
+		}
+	}
+
+	/** Tests that passing an incorrect access key via stdin fails (TS-28611). */
+	@Test
+	public void testIncorrectAccessKeyFromStdIn() {
+		ProcessUtils.ProcessResult result = runUploader(
+				new Arguments().withAccessKeyViaStdin("src/test/resources/incorrect_access_key.txt"));
+		assertSoftlyThat(softly -> {
+			softly.assertThat(result.exitCode).isNotZero();
+			softly.assertThat(result.stdoutAndStdErr).contains("You provided incorrect credentials");
+		});
+	}
+
+	/**
+	 * Tests that passing the access key via environment variable works as expected
+	 * (TS-28611).
+	 */
+	@Test
+	public void testCorrectAccessWithKeyFromEnvironmentVariable() {
+		ProcessUtils.ProcessResult result = runUploader(new Arguments().withoutAccessKeyInOption());
+		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isZero();
+
+	}
+
 	@Test
 	@EnabledOnOs(OS.MAC)
 	public void testXCResultConversion() throws IOException {
@@ -271,13 +320,22 @@ public class NativeImageIT {
 	}
 
 	private ProcessUtils.ProcessResult runUploader(Arguments arguments) {
-		return ProcessUtils.run("./target/teamscale-upload", arguments.toStringArray());
+		return ProcessUtils.runWithStdin("./target/teamscale-upload", arguments.stdinFilePath,
+				arguments.toStringArray());
+	}
+
+	private static String getAccessKeyFromCi() {
+		String accessKey = System.getenv(CommandLine.TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE);
+		if (accessKey == null) {
+			return "not-a-ci-build";
+		}
+		return accessKey;
 	}
 
 	private static class Arguments {
 		private final String partition = "NativeImageIT";
 		private String url = "https://demo.teamscale.com";
-		private String user = "build";
+		private String user = TEAMSCALE_TEST_USER;
 		private String accessKey = getAccessKeyFromCi();
 		private String project = "teamscale-upload";
 		private String format = "simple";
@@ -290,6 +348,7 @@ public class NativeImageIT {
 		private String commit = null;
 		private String additionalMessageLine = null;
 		private boolean stackTrace = false;
+		private String stdinFilePath = null;
 
 		private Arguments withFormat(String format) {
 			this.format = format;
@@ -346,6 +405,23 @@ public class NativeImageIT {
 			return this;
 		}
 
+		/**
+		 * No access key is specified as option. The key which is specified in the
+		 * environment variable should be used instead.
+		 */
+		private Arguments withoutAccessKeyInOption() {
+			this.accessKey = null;
+			return this;
+		}
+
+		private Arguments withAccessKeyViaStdin(String stdinFilePath) {
+			this.accessKey = "-";
+			// If the access key is set to '-', we need to pipe the key from a file via
+			// stdin.
+			this.stdinFilePath = stdinFilePath;
+			return this;
+		}
+
 		private Arguments withUser(String user) {
 			this.user = user;
 			return this;
@@ -362,8 +438,12 @@ public class NativeImageIT {
 		}
 
 		private String[] toStringArray() {
-			List<String> arguments = new ArrayList<>(Arrays.asList("-s", url, "-u", user, "-a", accessKey, "-f", format,
-					"-p", project, "-t", partition));
+			List<String> arguments = new ArrayList<>(
+					Arrays.asList("-s", url, "-u", user, "-f", format, "-p", project, "-t", partition));
+			if (accessKey != null) {
+				arguments.add("-a");
+				arguments.add(accessKey);
+			}
 			if (input != null) {
 				arguments.add("-i");
 				arguments.add(input);

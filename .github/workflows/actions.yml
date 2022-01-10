@@ -17,11 +17,11 @@ jobs:
         uses: ayltai/setup-graalvm@v1
         with:
           java-version: 11
-          graalvm-version: 20.3.0
+          graalvm-version: 21.2.0
           native-image: true
       - name: Build
         env:
-          ACCESS_KEY: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
+          TEAMSCALE_ACCESS_KEY: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
         run: mvn clean verify
       - name: Reduce Image Size
         uses: crazy-max/ghaction-upx@v1
@@ -45,11 +45,11 @@ jobs:
         uses: ayltai/setup-graalvm@v1
         with:
           java-version: 11
-          graalvm-version: 20.3.0
+          graalvm-version: 21.2.0
           native-image: true
       - name: Build
         env:
-          ACCESS_KEY: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
+          TEAMSCALE_ACCESS_KEY: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
         run: ./build-windows.bat
       - name: Reduce Image Size
         uses: crazy-max/ghaction-upx@v1
