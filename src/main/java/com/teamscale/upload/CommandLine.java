@@ -12,6 +12,7 @@ import java.util.Scanner;
 import com.teamscale.upload.utils.LogUtils;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.helper.HelpScreenException;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
@@ -252,6 +253,9 @@ public class CommandLine {
 			CommandLine commandLine = new CommandLine(namespace);
 			commandLine.validate(parser);
 			return commandLine;
+		} catch (HelpScreenException e) {
+			System.exit(0); // teamscale-upload -h should return exit code 0
+			return null;
 		} catch (ArgumentParserException e) {
 			parser.handleError(e);
 			System.exit(1);
