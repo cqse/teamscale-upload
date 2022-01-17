@@ -59,6 +59,12 @@ public class CommandLine {
 	 */
 	public final String commit;
 	/**
+	 * The repository can be specified in combination with the commit/revision to
+	 * identify the correct commit in situations where the same revision exists in
+	 * multiple repositories.
+	 */
+	public final String repository;
+	/**
 	 * The branch:timestamp to which to upload. May be null.
 	 */
 	public final String timestamp;
@@ -102,6 +108,7 @@ public class CommandLine {
 		this.accessKey = determineAccessKeyToUse(accessKeyViaOption);
 		this.partition = namespace.getString("partition");
 		this.commit = namespace.getString("commit");
+		this.repository = namespace.getString("repository");
 		this.timestamp = namespace.getString("branch_and_timestamp");
 		this.files = getListSafe(namespace, "files");
 		this.url = HttpUrl.parse(namespace.getString("server"));
@@ -196,6 +203,10 @@ public class CommandLine {
 						+ " E.g. if you obtained a test coverage report in your CI pipeline, then this"
 						+ " is the commit the CI pipeline built before running the tests."
 						+ " Can be either a Git SHA1, a SVN revision number or an Team Foundation changeset ID.");
+		parser.addArgument("-r", "--repository").metavar("REPOSITORY").required(false)
+				.help("When using the revision parameter, this parameter allows to pass a repository name which"
+						+ "is used to identify the correct commit in situations where the same revision exists"
+						+ "in multiple repositories.");
 		parser.addArgument("-b", "--branch-and-timestamp").metavar("BRANCH_AND_TIMESTAMP").required(false)
 				.help("The branch and Unix Epoch timestamp for which you obtained the report files."
 						+ " E.g. if you obtained a test coverage report in your CI pipeline, then this"
@@ -298,6 +309,11 @@ public class CommandLine {
 			throw new ArgumentParserException("You used more than one of --commit and --branch-and-timestamp."
 					+ " You must choose one of these options to specify the commit for which you would like to"
 					+ " upload data to Teamscale", parser);
+		}
+
+		if (this.commit == null && this.repository != null) {
+			throw new ArgumentParserException("You can only specify a repository if you also specify a commit.",
+					parser);
 		}
 
 		if (files.isEmpty() && inputFile == null) {

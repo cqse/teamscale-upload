@@ -204,6 +204,10 @@ public class TeamscaleUpload {
 	private static String handleRevisionAndBranchTimestamp(CommandLine commandLine, HttpUrl.Builder builder) {
 		if (commandLine.commit != null) {
 			builder.addQueryParameter("revision", commandLine.commit);
+			if (commandLine.repository != null) {
+				// repository can be specified optionally when specifying a commit/revision
+				builder.addQueryParameter("repository", commandLine.repository);
+			}
 			return commandLine.commit;
 		} else if (commandLine.timestamp != null) {
 			builder.addQueryParameter("t", commandLine.timestamp);
