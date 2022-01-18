@@ -69,6 +69,11 @@ public class CommandLine {
 	 */
 	public final String timestamp;
 	/**
+	 * If this is set to true, the upload's timestamp will be set to right after the
+	 * last commit.
+	 */
+	public final boolean movetolastcommit;
+	/**
 	 * The Teamscale server URL.
 	 */
 	public final HttpUrl url;
@@ -110,6 +115,7 @@ public class CommandLine {
 		this.commit = namespace.getString("commit");
 		this.repository = namespace.getString("repository");
 		this.timestamp = namespace.getString("branch_and_timestamp");
+		this.movetolastcommit = namespace.getBoolean("movetolastcommit");
 		this.files = getListSafe(namespace, "files");
 		this.url = HttpUrl.parse(namespace.getString("server"));
 		this.message = namespace.getString("message");
@@ -215,6 +221,10 @@ public class CommandLine {
 						+ " 00:00:00 UTC Thursday, 1 January 1970 or the string 'HEAD' to upload to"
 						+ " the latest revision on that branch." + "\nFormat: BRANCH:TIMESTAMP"
 						+ "\nExample: master:1597845930000" + "\nExample: develop:HEAD");
+		parser.addArgument("--movetolastcommit").metavar("MOVETOLASTCOMMIT").required(false) //
+				.type(Boolean.class).setDefault(false)
+				.help("Whether to move the upload timestamp to right after the last commit."
+						+ " Can be either 'true' or 'false'.");
 		parser.addArgument("--message").metavar("MESSAGE").required(false)
 				.help("The message for the commit created in Teamscale for this upload. Will be"
 						+ " visible in the Activity perspective. Defaults to a message containing"
