@@ -252,8 +252,7 @@ public class NativeImageIT {
 			file = Paths.get(temporaryFileName);
 			Files.writeString(file, System.getenv(CommandLine.TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE));
 
-			ProcessUtils.ProcessResult result = runUploader(
-					new Arguments().withAccessKeyViaStdin(temporaryFileName));
+			ProcessUtils.ProcessResult result = runUploader(new Arguments().withAccessKeyViaStdin(temporaryFileName));
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isZero();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -283,7 +282,16 @@ public class NativeImageIT {
 	public void testCorrectAccessWithKeyFromEnvironmentVariable() {
 		ProcessUtils.ProcessResult result = runUploader(new Arguments().withoutAccessKeyInOption());
 		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isZero();
+	}
 
+	@Test
+	public void testRepositoryParameterPassed() {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
+			ProcessUtils.ProcessResult result = runUploader(
+					new Arguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withRepository("repository1"));
+			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isZero();
+			assertThat(server.sessions).hasSize(1);
+		}
 	}
 
 	@Test
@@ -346,6 +354,8 @@ public class NativeImageIT {
 		private boolean autoDetectCommit = false;
 		private String timestamp = "master:HEAD";
 		private String commit = null;
+		private String repository = null;
+		private boolean moveToLastCommit = false;
 		private String additionalMessageLine = null;
 		private boolean stackTrace = false;
 		private String stdinFilePath = null;
@@ -367,6 +377,16 @@ public class NativeImageIT {
 
 		private Arguments withCommit(String commit) {
 			this.commit = commit;
+			return this;
+		}
+
+		private Arguments withRepository(String repository) {
+			this.repository = repository;
+			return this;
+		}
+
+		private Arguments withMoveToLastCommit(boolean moveToLastCommit) {
+			this.moveToLastCommit = moveToLastCommit;
 			return this;
 		}
 

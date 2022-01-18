@@ -72,7 +72,7 @@ public class CommandLine {
 	 * If this is set to true, the upload's timestamp will be set to right after the
 	 * last commit.
 	 */
-	public final boolean movetolastcommit;
+	public final boolean moveToLastCommit;
 	/**
 	 * The Teamscale server URL.
 	 */
@@ -115,7 +115,7 @@ public class CommandLine {
 		this.commit = namespace.getString("commit");
 		this.repository = namespace.getString("repository");
 		this.timestamp = namespace.getString("branch_and_timestamp");
-		this.movetolastcommit = namespace.getBoolean("movetolastcommit");
+		this.moveToLastCommit = namespace.getBoolean("movetolastcommit");
 		this.files = getListSafe(namespace, "files");
 		this.url = HttpUrl.parse(namespace.getString("server"));
 		this.message = namespace.getString("message");
