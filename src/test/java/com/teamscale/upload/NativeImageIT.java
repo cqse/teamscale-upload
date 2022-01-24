@@ -305,7 +305,7 @@ public class NativeImageIT {
 
 	@Test
 	public void successfulUploadWithRepository() {
-		ProcessUtils.ProcessResult result = runUploader(new Arguments().withRepository("cqse/teamscale-upload"));
+		ProcessUtils.ProcessResult result = runUploader(new Arguments().withRepository("cqse/teamscale-upload").withPartition("NativeImageIT>TestRepository").withCommit("ef7367b45614e92433c3489ad57323f3b98063f4"));
 		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isZero();
 	}
 
@@ -338,7 +338,7 @@ public class NativeImageIT {
 	}
 
 	private static class Arguments {
-		private final String partition = "NativeImageIT";
+		private String partition = "NativeImageIT";
 		private String url = "https://demo.teamscale.com";
 		private String user = TEAMSCALE_TEST_USER;
 		private String accessKey = getAccessKeyFromCi();
@@ -448,6 +448,11 @@ public class NativeImageIT {
 			return this;
 		}
 
+		private Arguments withPartition(String partition) {
+			this.partition = partition;
+			return this;
+		}
+
 		private String[] toStringArray() {
 			List<String> arguments = new ArrayList<>(
 					Arrays.asList("-s", url, "-u", user, "-f", format, "-p", project, "-t", partition));
@@ -481,6 +486,11 @@ public class NativeImageIT {
 			} else if (!autoDetectCommit) {
 				arguments.add("--branch-and-timestamp");
 				arguments.add(timestamp);
+			}
+
+			if(repository != null) {
+				arguments.add("--repository");
+				arguments.add(repository);
 			}
 
 			return arguments.toArray(new String[0]);
