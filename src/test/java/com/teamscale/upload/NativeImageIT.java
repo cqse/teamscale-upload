@@ -252,8 +252,7 @@ public class NativeImageIT {
 			file = Paths.get(temporaryFileName);
 			Files.writeString(file, System.getenv(CommandLine.TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE));
 
-			ProcessUtils.ProcessResult result = runUploader(
-					new Arguments().withAccessKeyViaStdin(temporaryFileName));
+			ProcessUtils.ProcessResult result = runUploader(new Arguments().withAccessKeyViaStdin(temporaryFileName));
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isZero();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -304,6 +303,12 @@ public class NativeImageIT {
 		}
 	}
 
+	@Test
+	public void successfulUploadWithRepository() {
+		ProcessUtils.ProcessResult result = runUploader(new Arguments().withRepository("cqse/teamscale-upload").withPartition("NativeImageIT > TestRepository").withCommit("ef7367b45614e92433c3489ad57323f3b98063f4"));
+		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isZero();
+	}
+
 	private byte[] readResource(String name) throws IOException {
 		return NativeImageIT.class.getResourceAsStream(name).readAllBytes();
 	}
@@ -333,7 +338,7 @@ public class NativeImageIT {
 	}
 
 	private static class Arguments {
-		private final String partition = "NativeImageIT";
+		private String partition = "NativeImageIT";
 		private String url = "https://demo.teamscale.com";
 		private String user = TEAMSCALE_TEST_USER;
 		private String accessKey = getAccessKeyFromCi();
@@ -346,6 +351,7 @@ public class NativeImageIT {
 		private boolean autoDetectCommit = false;
 		private String timestamp = "master:HEAD";
 		private String commit = null;
+		private String repository = null;
 		private String additionalMessageLine = null;
 		private boolean stackTrace = false;
 		private String stdinFilePath = null;
@@ -372,6 +378,11 @@ public class NativeImageIT {
 
 		private Arguments withTimestamp(String timestamp) {
 			this.timestamp = timestamp;
+			return this;
+		}
+
+		private Arguments withRepository(String repository) {
+			this.repository = repository;
 			return this;
 		}
 
@@ -437,6 +448,11 @@ public class NativeImageIT {
 			return this;
 		}
 
+		private Arguments withPartition(String partition) {
+			this.partition = partition;
+			return this;
+		}
+
 		private String[] toStringArray() {
 			List<String> arguments = new ArrayList<>(
 					Arrays.asList("-s", url, "-u", user, "-f", format, "-p", project, "-t", partition));
@@ -470,6 +486,11 @@ public class NativeImageIT {
 			} else if (!autoDetectCommit) {
 				arguments.add("--branch-and-timestamp");
 				arguments.add(timestamp);
+			}
+
+			if(repository != null) {
+				arguments.add("--repository");
+				arguments.add(repository);
 			}
 
 			return arguments.toArray(new String[0]);

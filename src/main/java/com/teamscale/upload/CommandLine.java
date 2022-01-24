@@ -60,9 +60,20 @@ public class CommandLine {
 	 */
 	public final String commit;
 	/**
+	 * The repository can be specified in combination with the commit/revision to
+	 * identify the correct commit in situations where the same revision exists in
+	 * multiple repositories.
+	 */
+	public final String repository;
+	/**
 	 * The branch:timestamp to which to upload. May be null.
 	 */
 	public final String timestamp;
+	/**
+	 * If this is set to true, the upload's timestamp will be set to right after the
+	 * last commit.
+	 */
+	public final boolean moveToLastCommit;
 	/**
 	 * The Teamscale server URL.
 	 */
@@ -103,7 +114,9 @@ public class CommandLine {
 		this.accessKey = determineAccessKeyToUse(accessKeyViaOption);
 		this.partition = namespace.getString("partition");
 		this.commit = namespace.getString("commit");
+		this.repository = namespace.getString("repository");
 		this.timestamp = namespace.getString("branch_and_timestamp");
+		this.moveToLastCommit = namespace.getBoolean("movetolastcommit");
 		this.files = getListSafe(namespace, "files");
 		this.url = HttpUrl.parse(namespace.getString("server"));
 		this.message = namespace.getString("message");
@@ -197,6 +210,10 @@ public class CommandLine {
 						+ " E.g. if you obtained a test coverage report in your CI pipeline, then this"
 						+ " is the commit the CI pipeline built before running the tests."
 						+ " Can be either a Git SHA1, a SVN revision number or an Team Foundation changeset ID.");
+		parser.addArgument("-r", "--repository").metavar("REPOSITORY").required(false)
+				.help("When using the revision parameter, this parameter allows to pass a repository name which"
+						+ " is used to identify the correct commit in situations where the same revision exists"
+						+ " in multiple repositories.");
 		parser.addArgument("-b", "--branch-and-timestamp").metavar("BRANCH_AND_TIMESTAMP").required(false)
 				.help("The branch and Unix Epoch timestamp for which you obtained the report files."
 						+ " E.g. if you obtained a test coverage report in your CI pipeline, then this"
@@ -205,6 +222,8 @@ public class CommandLine {
 						+ " 00:00:00 UTC Thursday, 1 January 1970 or the string 'HEAD' to upload to"
 						+ " the latest revision on that branch." + "\nFormat: BRANCH:TIMESTAMP"
 						+ "\nExample: master:1597845930000" + "\nExample: develop:HEAD");
+		parser.addArgument("--movetolastcommit").action(Arguments.storeTrue()).required(false)
+				.help("Moves the upload timestamp to right after the last commit.");
 		parser.addArgument("--message").metavar("MESSAGE").required(false)
 				.help("The message for the commit created in Teamscale for this upload. Will be"
 						+ " visible in the Activity perspective. Defaults to a message containing"
@@ -230,8 +249,8 @@ public class CommandLine {
 				.help("Path(s) or pattern(s) of the report files to upload. Alternatively, you may"
 						+ " provide input files via -i or --input");
 		parser.addArgument("--stacktrace").action(Arguments.storeTrue()).required(false)
-				.help("Enables printing stack traces in all cases where errors occur." + " Used for debugging.");
-
+				.help("Enables printing stack traces in all cases where errors occur." //
+						+ " Used for debugging.");
 		parser.epilog("For general usage help and alternative upload methods, please check our online"
 				+ " documentation at:" + "\nhttp://cqse.eu/tsu-docs" + "\n\nTARGET COMMIT"
 				+ "\n\nBy default, teamscale-upload tries to automatically detect the code commit"
@@ -302,6 +321,11 @@ public class CommandLine {
 			throw new ArgumentParserException("You used more than one of --commit and --branch-and-timestamp."
 					+ " You must choose one of these options to specify the commit for which you would like to"
 					+ " upload data to Teamscale", parser);
+		}
+
+		if (this.commit == null && this.repository != null) {
+			throw new ArgumentParserException("You can only specify a repository if you also specify a commit.",
+					parser);
 		}
 
 		if (files.isEmpty() && inputFile == null) {
