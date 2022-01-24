@@ -222,7 +222,7 @@ public class CommandLine {
 						+ " the latest revision on that branch." + "\nFormat: BRANCH:TIMESTAMP"
 						+ "\nExample: master:1597845930000" + "\nExample: develop:HEAD");
 		parser.addArgument("--movetolastcommit").action(Arguments.storeTrue()).required(false)
-				.help("Enables automatically moving the upload timestamp to right after the last commit.");
+				.help("Moves the upload timestamp to right after the last commit.");
 		parser.addArgument("--message").metavar("MESSAGE").required(false)
 				.help("The message for the commit created in Teamscale for this upload. Will be"
 						+ " visible in the Activity perspective. Defaults to a message containing"
