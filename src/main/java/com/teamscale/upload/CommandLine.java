@@ -211,8 +211,8 @@ public class CommandLine {
 						+ " Can be either a Git SHA1, a SVN revision number or an Team Foundation changeset ID.");
 		parser.addArgument("-r", "--repository").metavar("REPOSITORY").required(false)
 				.help("When using the revision parameter, this parameter allows to pass a repository name which"
-						+ "is used to identify the correct commit in situations where the same revision exists"
-						+ "in multiple repositories.");
+						+ " is used to identify the correct commit in situations where the same revision exists"
+						+ " in multiple repositories.");
 		parser.addArgument("-b", "--branch-and-timestamp").metavar("BRANCH_AND_TIMESTAMP").required(false)
 				.help("The branch and Unix Epoch timestamp for which you obtained the report files."
 						+ " E.g. if you obtained a test coverage report in your CI pipeline, then this"
@@ -221,10 +221,8 @@ public class CommandLine {
 						+ " 00:00:00 UTC Thursday, 1 January 1970 or the string 'HEAD' to upload to"
 						+ " the latest revision on that branch." + "\nFormat: BRANCH:TIMESTAMP"
 						+ "\nExample: master:1597845930000" + "\nExample: develop:HEAD");
-		parser.addArgument("--movetolastcommit").metavar("MOVETOLASTCOMMIT").required(false) //
-				.type(Boolean.class).setDefault(false)
-				.help("Whether to move the upload timestamp to right after the last commit."
-						+ " Can be either 'true' or 'false'.");
+		parser.addArgument("--movetolastcommit").action(Arguments.storeTrue()).required(false)
+				.help("Enables automatically moving the upload timestamp to right after the last commit.");
 		parser.addArgument("--message").metavar("MESSAGE").required(false)
 				.help("The message for the commit created in Teamscale for this upload. Will be"
 						+ " visible in the Activity perspective. Defaults to a message containing"
@@ -250,8 +248,8 @@ public class CommandLine {
 				.help("Path(s) or pattern(s) of the report files to upload. Alternatively, you may"
 						+ " provide input files via -i or --input");
 		parser.addArgument("--stacktrace").action(Arguments.storeTrue()).required(false)
-				.help("Enables printing stack traces in all cases where errors occur." + " Used for debugging.");
-
+				.help("Enables printing stack traces in all cases where errors occur." //
+						+ " Used for debugging.");
 		parser.epilog("For general usage help and alternative upload methods, please check our online"
 				+ " documentation at:" + "\nhttp://cqse.eu/tsu-docs" + "\n\nTARGET COMMIT"
 				+ "\n\nBy default, teamscale-upload tries to automatically detect the code commit"

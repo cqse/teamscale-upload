@@ -303,6 +303,12 @@ public class NativeImageIT {
 		}
 	}
 
+	@Test
+	public void successfulUploadWithRepository() {
+		ProcessUtils.ProcessResult result = runUploader(new Arguments().withRepository("cqse/teamscale-upload"));
+		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isZero();
+	}
+
 	private byte[] readResource(String name) throws IOException {
 		return NativeImageIT.class.getResourceAsStream(name).readAllBytes();
 	}
@@ -345,6 +351,7 @@ public class NativeImageIT {
 		private boolean autoDetectCommit = false;
 		private String timestamp = "master:HEAD";
 		private String commit = null;
+		private String repository = null;
 		private String additionalMessageLine = null;
 		private boolean stackTrace = false;
 		private String stdinFilePath = null;
@@ -371,6 +378,11 @@ public class NativeImageIT {
 
 		private Arguments withTimestamp(String timestamp) {
 			this.timestamp = timestamp;
+			return this;
+		}
+
+		private Arguments withRepository(String repository) {
+			this.repository = repository;
 			return this;
 		}
 
