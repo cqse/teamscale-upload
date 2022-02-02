@@ -305,7 +305,15 @@ public class NativeImageIT {
 
 	@Test
 	public void successfulUploadWithRepository() {
-		ProcessUtils.ProcessResult result = runUploader(new Arguments().withRepository("cqse/teamscale-upload").withPartition("NativeImageIT > TestRepository").withCommit("ef7367b45614e92433c3489ad57323f3b98063f4"));
+		ProcessUtils.ProcessResult result = runUploader(
+				new Arguments().withRepository("cqse/teamscale-upload").withPartition("NativeImageIT > TestRepository")
+						.withCommit("ef7367b45614e92433c3489ad57323f3b98063f4"));
+		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isZero();
+	}
+
+	@Test
+	public void successfulUploadWithMoveToLastCommit() {
+		ProcessUtils.ProcessResult result = runUploader(new Arguments().withMoveToLastCommit());
 		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isZero();
 	}
 
@@ -355,6 +363,7 @@ public class NativeImageIT {
 		private String additionalMessageLine = null;
 		private boolean stackTrace = false;
 		private String stdinFilePath = null;
+		private boolean moveToLastCommit = false;
 
 		private Arguments withFormat(String format) {
 			this.format = format;
@@ -453,6 +462,11 @@ public class NativeImageIT {
 			return this;
 		}
 
+		private Arguments withMoveToLastCommit() {
+			this.moveToLastCommit = true;
+			return this;
+		}
+
 		private String[] toStringArray() {
 			List<String> arguments = new ArrayList<>(
 					Arrays.asList("-s", url, "-u", user, "-f", format, "-p", project, "-t", partition));
@@ -479,6 +493,9 @@ public class NativeImageIT {
 			if (stackTrace) {
 				arguments.add("--stacktrace");
 			}
+			if (moveToLastCommit) {
+				arguments.add("--move-to-last-commit");
+			}
 
 			if (commit != null) {
 				arguments.add("--commit");
@@ -488,7 +505,7 @@ public class NativeImageIT {
 				arguments.add(timestamp);
 			}
 
-			if(repository != null) {
+			if (repository != null) {
 				arguments.add("--repository");
 				arguments.add(repository);
 			}
