@@ -6,6 +6,11 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 
+# 2.4.0
+
+- [feature] if a revision exists in multiple repositories the correct repository can be passed using `--repository`
+- [feature] upload can be moved to the latest revision using `--move-to-last-commit`
+
 # 2.3.0
 
 - [feature] access keys can now also be passed via stdin or environment variable

@@ -167,7 +167,7 @@ public class TeamscaleUpload {
 		String revision = handleRevisionAndBranchTimestamp(commandLine, builder);
 
 		if (commandLine.moveToLastCommit) {
-			builder.addQueryParameter("movetolastcommit", "true");
+			builder.addQueryParameter("move_to_last_commit", "true");
 		}
 
 		String message = commandLine.message;
