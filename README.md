@@ -3,6 +3,7 @@
 [Download](https://github.com/cqse/teamscale-upload/releases/latest)
 • [Documentation](https://docs.teamscale.com/howto/uploading-external-results/#upload-via-command-line)
 • [Changelog](https://github.com/cqse/teamscale-upload/blob/master/CHANGELOG.md)
+• [Github Action](https://github.com/marketplace/actions/teamscale-upload)
 
 **Command-line tool to upload external analysis results (coverage, findings, ...) to Teamscale.**
 
