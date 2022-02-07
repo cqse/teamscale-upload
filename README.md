@@ -109,3 +109,5 @@ Please update the CHANGELOG and consider semantic versioning when choosing the v
 Then simply create a release in GitHub and paste the release notes from the CHANGELOG into the release description.
 GitHub Actions will automatically create and attach the binaries.
 
+Finally, also create a new release of the [GitHub Action](https://github.com/cqse/teamscale-upload-action) with the same version number.
+
