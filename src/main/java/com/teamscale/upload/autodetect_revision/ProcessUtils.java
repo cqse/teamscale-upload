@@ -1,10 +1,6 @@
 package com.teamscale.upload.autodetect_revision;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -14,15 +10,12 @@ import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteStreamHandler;
 import org.apache.commons.exec.PumpStreamHandler;
 
-import com.teamscale.upload.utils.FileSystemUtils;
-import com.teamscale.upload.utils.LogUtils;
-
 /**
  * Utility methods for executing processes on the command line.
  */
 public class ProcessUtils {
 
-	private static final int EXIT_CODE_CTRL_C_TERMINATED = 130;
+	public static final int EXIT_CODE_CTRL_C_TERMINATED = 130;
 
 	private static final int EXIT_CODE_SUCCESS = 0;
 
@@ -54,6 +47,7 @@ public class ProcessUtils {
 		CaptureStreamHandler handler = new CaptureStreamHandler(input);
 		executor.setStreamHandler(handler);
 		executor.setExitValues(null); // don't throw in case of non-zero exit codes
+
 		try {
 			int exitCode = executor.execute(commandLine);
 			return new ProcessResult(exitCode, handler.getStdOutAndStdErr(), null);
@@ -68,38 +62,6 @@ public class ProcessUtils {
 	/** Run the command with the given arguments. */
 	public static ProcessResult run(String command, String... arguments) {
 		return runWithStdin(command, null, arguments);
-	}
-
-	/**
-	 * Starts a {@link Process} for the commands.
-	 */
-	public static Process startProcess(String... commands) throws IOException {
-		return new ProcessBuilder(commands).start();
-	}
-
-	/**
-	 * Starts a {@link Process} for the commands and returns the standard output as
-	 * a {@link String}.
-	 */
-	public static String executeProcess(String... commands) throws IOException, InterruptedException {
-		Process process = startProcess(commands);
-		String output = FileSystemUtils.getInputAsString(process.getInputStream());
-		ensureProcessFinishedWithoutErrors(process);
-		return output;
-	}
-
-	/**
-	 * Ensures that the {@link Process} has finished successfully and logs errors as
-	 * warnings to the console.
-	 */
-	private static void ensureProcessFinishedWithoutErrors(Process process) throws IOException, InterruptedException {
-		String errorOutput = FileSystemUtils.getInputAsString(process.getErrorStream());
-		int exitCode = process.waitFor();
-
-		if (exitCode != EXIT_CODE_SUCCESS && exitCode != EXIT_CODE_CTRL_C_TERMINATED) {
-			LogUtils.warn(String.format("Process %s terminated with non-zero exit value %d: %s", process,
-					process.exitValue(), errorOutput));
-		}
 	}
 
 	private static class CaptureStreamHandler implements ExecuteStreamHandler {
@@ -156,7 +118,7 @@ public class ProcessUtils {
 		}
 
 		public boolean wasSuccessful() {
-			return exception == null && exitCode == 0;
+			return exception == null && exitCode == EXIT_CODE_SUCCESS;
 		}
 	}
 }

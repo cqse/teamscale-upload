@@ -126,13 +126,13 @@ public class XCResultConverter {
 	 * directory.
 	 */
 	private static List<String> getSourceFiles(File reportDirectory) throws IOException, InterruptedException {
-		String output = ProcessUtils.executeProcess("xcrun", "xccov", "view", "--archive", "--file-list",
-				reportDirectory.getAbsolutePath());
+		String output = ProcessUtils.runWithStdin("xcrun", null, "xccov", "view", "--archive", "--file-list",
+				reportDirectory.getAbsolutePath()).stdoutAndStdErr;
 		return output.lines().sorted().collect(toList());
 	}
 
 	private static void validateCommandLineTools() throws IOException, InterruptedException, ConversionException {
-		if (ProcessUtils.startProcess("xcrun", "--version").waitFor() != 0) {
+		if (!ProcessUtils.runWithStdin("xcrun",null, "--version").wasSuccessful()) {
 			throw new ConversionException(
 					"XCode command line tools not installed. Install command line tools on MacOS by installing XCode "
 							+ "from the store and running 'xcode-select --install'.");
@@ -187,7 +187,7 @@ public class XCResultConverter {
 			String archiveRef = action.actionResult.coverage.archiveRef.id;
 
 			FileSystemUtils.mkdirs(xccovArchive.getParentFile());
-			ProcessUtils.executeProcess("xcrun", "xcresulttool", "export", "--type", "directory", "--path",
+			ProcessUtils.runWithStdin("xcrun",null, "xcresulttool", "export", "--type", "directory", "--path",
 					reportDirectory.getAbsolutePath(), "--id", archiveRef, "--output-path",
 					xccovArchive.getAbsolutePath());
 
@@ -222,8 +222,8 @@ public class XCResultConverter {
 
 	private ActionsInvocationRecord getActionsInvocationRecord(File reportDirectory)
 			throws IOException, InterruptedException {
-		String actionsInvocationRecordJson = ProcessUtils.executeProcess("xcrun", "xcresulttool", "get", "--path",
-				reportDirectory.getAbsolutePath(), "--format", "json");
+		String actionsInvocationRecordJson = ProcessUtils.runWithStdin("xcrun", null,"xcresulttool", "get", "--path",
+				reportDirectory.getAbsolutePath(), "--format", "json").stdoutAndStdErr;
 		return new Gson().fromJson(actionsInvocationRecordJson, ActionsInvocationRecord.class);
 	}
 
@@ -237,8 +237,8 @@ public class XCResultConverter {
 				continue;
 			}
 
-			String json = ProcessUtils.executeProcess("xcrun", "xcresulttool", "get", "--path",
-					reportDirectory.getAbsolutePath(), "--format", "json", "--id", testsRef.id);
+			String json = ProcessUtils.runWithStdin("xcrun", null,"xcresulttool", "get", "--path",
+					reportDirectory.getAbsolutePath(), "--format", "json", "--id", testsRef.id).stdoutAndStdErr;
 			ActionTestPlanRunSummaries actionTestPlanRunSummaries = new Gson().fromJson(json,
 					ActionTestPlanRunSummaries.class);
 
