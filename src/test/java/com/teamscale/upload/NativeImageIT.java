@@ -29,7 +29,7 @@ import com.teamscale.upload.test_utils.TeamscaleMockServer;
  *
  * You will also need to specify the access key for the test user for
  * https://demo.teamscale.com in the environment variable
- * {@link CommandLine#TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE}. If you do not
+ * {@link CommandLine#TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE}. If you don't
  * have the access key for the 'teamscale-upload-build-test-user' user on
  * demo.teamscale.com, it is stored in 1password as
  * "teamscale-upload-build-test-user".
