@@ -9,11 +9,9 @@
 
 ## Tool Setup
 
-If you want to use the tool as part of a Github build pipeline, consider using
-the [Github Action](https://github.com/marketplace/actions/teamscale-upload).
+If you want to use the tool as part of a Github build pipeline, consider using the [Github Action](https://github.com/marketplace/actions/teamscale-upload).
 
-For a local setup (on a build machine), the [Download](https://github.com/cqse/teamscale-upload/releases/latest) page
-offers native executables for Windows and Linux (no other tools required on the machine).
+For a local setup (on a build machine), the [Download](https://github.com/cqse/teamscale-upload/releases/latest) page offers native executables for Windows and Linux (no other tools required on the machine).
 
 Run `teamscale-upload --help` to see all available options.
 
