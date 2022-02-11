@@ -34,46 +34,54 @@ Thus, please always test your changes after compiling to a native executable!**
 ### Setup (Windows, in git-bash)
 
 #### Setup SDKMAN to get GraalVm and make it the standard VM in the current git bash
+
 In [Chocolatey](https://chocolatey.org/):
+
 * Install git bash
 * Install MingGW-w64
 * Install 7zip
 
 Problem: `git bash` and `MinGW` do not contain a `zip` program. We need to create a symlink such that they use `7zip`.
 Open a git bash in administrator mode and run this (need admin mode to create symlink)
+
 ```bash
 ln -s /c/Program\ Files/7-Zip/7z.exe /c/Program\ Files/Git/mingw64/bin/zip.exe
 ```
 
 In a normal-mode git-bash again:
+
 ```bash
 curl -s "https://get.sdkman.io" | bash
 source "$HOME/.sdkman/bin/sdkman-init.sh"
 ```
 
 This will install the graal VM and make it the default JVM for the current git bash session
+
 ```bash
 sdk install java 21.2.0.r11-grl
 ```
 
-Install `native-image` (a GraalVM extension).
-Native Image can be added to GraalVM with the GraalVM Updater tool (`gu`).
-Run this command to install Native Image (in the admin-mode git bash):
+Install `native-image` (a GraalVM extension). Native Image can be added to GraalVM with the GraalVM Updater tool (`gu`).
+Run this command to install Native Image (in the normal-mode git bash):
+
 ```bash
-/C/Program\ Files/GraalVM/graalvm-ce-java11-22.0.0.2/bin/gu.cmd install native-image
+"$HOME\.sdkman\candidates\java\current\bin\gu.cmd" install native-image
 ```
 
 #### Install visual studio C++ build tools
+
 ```bash
 choco install visualstudio2019-workload-vctools
 ```
+
 This should install `C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvarsall.bat`
 That file is required and called in `./build-windows.bat`.
 
 ### Setup (Linux)
 
 To create a native executable locally, you must install the [GraalVM JDK](https://www.graalvm.org/) and make it your
-default JDK by setting `JAVA_HOME` and putting `$JAVA_HOME/bin` on your `PATH`. All of this is accomplished with [SDKMAN!](https://sdkman.io/):
+default JDK by setting `JAVA_HOME` and putting `$JAVA_HOME/bin` on your `PATH`. All of this is accomplished
+with [SDKMAN!](https://sdkman.io/):
 
 ```bash
 sdk install java 21.2.0.r11-grl  # Install graal and make it your default JDK. If it is already installed, you need 'use' instead of 'install'.
@@ -140,4 +148,5 @@ Please update the CHANGELOG and consider semantic versioning when choosing the v
 Then simply create a release in GitHub and paste the release notes from the CHANGELOG into the release description.
 GitHub Actions will automatically create and attach the binaries.
 
-Finally, also create a new release of the [GitHub Action](https://github.com/cqse/teamscale-upload-action) with the same version number.
+Finally, also create a new release of the [GitHub Action](https://github.com/cqse/teamscale-upload-action) with the same
+version number.
