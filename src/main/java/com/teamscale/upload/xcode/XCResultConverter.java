@@ -1,18 +1,6 @@
 package com.teamscale.upload.xcode;
 
-import com.google.gson.Gson;
-import com.teamscale.upload.autodetect_revision.ProcessUtils;
-import com.teamscale.upload.report.testwise_coverage.TestInfo;
-import com.teamscale.upload.report.testwise_coverage.TestwiseCoverageReport;
-import com.teamscale.upload.report.xcode.ActionRecord;
-import com.teamscale.upload.report.xcode.ActionTest;
-import com.teamscale.upload.report.xcode.ActionTestPlanRunSummaries;
-import com.teamscale.upload.report.xcode.ActionTestPlanRunSummary;
-import com.teamscale.upload.report.xcode.ActionTestableSummary;
-import com.teamscale.upload.report.xcode.ActionsInvocationRecord;
-import com.teamscale.upload.report.xcode.XCResultObjectIdReference;
-import com.teamscale.upload.utils.FileSystemUtils;
-import com.teamscale.upload.utils.LogUtils;
+import static java.util.stream.Collectors.toList;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,7 +18,19 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import static java.util.stream.Collectors.toList;
+import com.google.gson.Gson;
+import com.teamscale.upload.autodetect_revision.ProcessUtils;
+import com.teamscale.upload.report.testwise_coverage.TestInfo;
+import com.teamscale.upload.report.testwise_coverage.TestwiseCoverageReport;
+import com.teamscale.upload.report.xcode.ActionRecord;
+import com.teamscale.upload.report.xcode.ActionTest;
+import com.teamscale.upload.report.xcode.ActionTestPlanRunSummaries;
+import com.teamscale.upload.report.xcode.ActionTestPlanRunSummary;
+import com.teamscale.upload.report.xcode.ActionTestableSummary;
+import com.teamscale.upload.report.xcode.ActionsInvocationRecord;
+import com.teamscale.upload.report.xcode.XCResultObjectIdReference;
+import com.teamscale.upload.utils.FileSystemUtils;
+import com.teamscale.upload.utils.LogUtils;
 
 /**
  * Converts XCResult bundles to a human readable report format that can be
@@ -132,7 +132,7 @@ public class XCResultConverter {
 	}
 
 	private static void validateCommandLineTools() throws IOException, InterruptedException, ConversionException {
-		if (!ProcessUtils.runWithStdin("xcrun",null, "--version").wasSuccessful()) {
+		if (!ProcessUtils.runWithStdin("xcrun", null, "--version").wasSuccessful()) {
 			throw new ConversionException(
 					"XCode command line tools not installed. Install command line tools on MacOS by installing XCode "
 							+ "from the store and running 'xcode-select --install'.");
@@ -187,7 +187,7 @@ public class XCResultConverter {
 			String archiveRef = action.actionResult.coverage.archiveRef.id;
 
 			FileSystemUtils.mkdirs(xccovArchive.getParentFile());
-			ProcessUtils.runWithStdin("xcrun",null, "xcresulttool", "export", "--type", "directory", "--path",
+			ProcessUtils.runWithStdin("xcrun", null, "xcresulttool", "export", "--type", "directory", "--path",
 					reportDirectory.getAbsolutePath(), "--id", archiveRef, "--output-path",
 					xccovArchive.getAbsolutePath());
 
@@ -222,7 +222,7 @@ public class XCResultConverter {
 
 	private ActionsInvocationRecord getActionsInvocationRecord(File reportDirectory)
 			throws IOException, InterruptedException {
-		String actionsInvocationRecordJson = ProcessUtils.runWithStdin("xcrun", null,"xcresulttool", "get", "--path",
+		String actionsInvocationRecordJson = ProcessUtils.runWithStdin("xcrun", null, "xcresulttool", "get", "--path",
 				reportDirectory.getAbsolutePath(), "--format", "json").stdoutAndStdErr;
 		return new Gson().fromJson(actionsInvocationRecordJson, ActionsInvocationRecord.class);
 	}
@@ -237,7 +237,7 @@ public class XCResultConverter {
 				continue;
 			}
 
-			String json = ProcessUtils.runWithStdin("xcrun", null,"xcresulttool", "get", "--path",
+			String json = ProcessUtils.runWithStdin("xcrun", null, "xcresulttool", "get", "--path",
 					reportDirectory.getAbsolutePath(), "--format", "json", "--id", testsRef.id).stdoutAndStdErr;
 			ActionTestPlanRunSummaries actionTestPlanRunSummaries = new Gson().fromJson(json,
 					ActionTestPlanRunSummaries.class);
