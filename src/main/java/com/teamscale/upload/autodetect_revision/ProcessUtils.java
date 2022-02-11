@@ -1,6 +1,10 @@
 package com.teamscale.upload.autodetect_revision;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -15,6 +19,10 @@ import org.apache.commons.exec.PumpStreamHandler;
  */
 public class ProcessUtils {
 
+	/**
+	 * Return code that we expect for Processes that were terminated with Ctrl-C by
+	 * a user (check against {@link ProcessResult#exitCode}.
+	 */
 	public static final int EXIT_CODE_CTRL_C_TERMINATED = 130;
 
 	private static final int EXIT_CODE_SUCCESS = 0;
