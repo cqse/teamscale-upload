@@ -44,6 +44,8 @@ This will install the graal VM and make it the default JVM for the current git b
 
 ```bash
 sdk install java 21.2.0.r11-grl
+# For subsequent usages when the JDK has already been installed
+# sdk use java 21.2.0.r11-grl 
 ```
 
 Install `native-image` (a GraalVM extension). Native Image can be added to GraalVM with the GraalVM Updater tool (`gu`).
@@ -51,6 +53,12 @@ Run this command to install Native Image (in the normal-mode git bash):
 
 ```bash
 "$HOME\.sdkman\candidates\java\current\bin\gu.cmd" install native-image
+```
+
+Verify the correct installation of native-image
+
+```bash
+native-image.cmd --version         
 ```
 
 #### Install visual studio C++ build tools
@@ -62,34 +70,7 @@ choco install visualstudio2019-workload-vctools
 This should install `C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvarsall.bat`
 That file is required and called in `./build-windows.bat`.
 
-### Setup (Linux)
-
-To create a native executable locally, you must install the [GraalVM JDK](https://www.graalvm.org/) and make it your default JDK by setting `JAVA_HOME` and putting `$JAVA_HOME/bin` on your `PATH`.
-All of this is accomplished with [SDKMAN!](https://sdkman.io/):
-
-```bash
-sdk install java 21.2.0.r11-grl  # Install graal and make it your default JDK. If it is already installed, you need 'use' instead of 'install'.
-gu install native-image          # install native-image (gu is the graalvm updater)
-native-image --version           # check that everything worked
-```
-
-**If you get "command not found" for "gu" on windows, you can try "gu.cmd" and "native-image.cmd".**
-
-The executable is always created under `./target/`.
-
-### Building a Linux Native Executable
-
-```bash
-./mvnw clean package
-```
-
-### Building a Windows Native Executable
-
-On Windows, you must install the Visual Studio compiler tooling, e.g. via [Chocolatey](https://chocolatey.org/):
-
-```batch
-choco install visualstudio2019-workload-vctools
-```
+#### Building a Native Executable (Windows)
 
 To create a native executable, run
 
@@ -97,9 +78,30 @@ To create a native executable, run
 ./build-windows.bat
 ```
 
+### Setup (Linux)
+
+To create a native executable locally, you must install the [GraalVM JDK](https://www.graalvm.org/) and make it your default JDK by setting `JAVA_HOME` and putting `$JAVA_HOME/bin` on your `PATH`.
+All of this is accomplished with [SDKMAN!](https://sdkman.io/):
+
+```bash
+sdk install java 21.2.0.r11-grl  # Install graal and make it your default JDK.
+# For subsequent usages when the JDK has already been installed
+# sdk use java 21.2.0.r11-grl 
+gu install native-image          # install native-image (gu is the graalvm updater)
+native-image --version           # check that everything worked
+```
+
+The executable is always created under `./target/`.
+
+#### Building a Native Executable (Linux)
+
+```bash
+./mvnw clean package
+```
+
 ### Dealing with Reflection
 
-The native image is built by statically determining all necessary classes and remove the unnecessary ones (to minimize binary size).
+The native image is built by statically determining all necessary classes and removing the unnecessary ones (to minimize binary size).
 Thus, if you or one of your dependencies uses reflection, classes may be missing at runtime and the native executable will crash.
 
 - Minimize dependencies.

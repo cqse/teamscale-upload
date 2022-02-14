@@ -28,7 +28,7 @@ public class CommandLine {
 	 * Name of the environment variable which is used to store the Teamscale access
 	 * key. This is not only relevant for users of the tool, but also for our tests.
 	 *
-	 * For our tests, this is Access Token für user name
+	 * For our tests, this is Access Token for user name
 	 * "teamscale-upload-build-test-user" on demo.teamscale.com. The user has
 	 * report-upload permission for project "teamscale-upload" and is used for
 	 * testing in the Github Project https://github.com/cqse/teamscale-upload. The
