@@ -27,10 +27,18 @@ public class ProcessUtils {
 
 	private static final int EXIT_CODE_SUCCESS = 0;
 
+	/** Run the command with the given arguments. */
+	public static ProcessResult run(String command, String... arguments) {
+		return runWithStdin(command, null, arguments);
+	}
+
 	/**
-	 * Run the command with the given arguments. Additionally, takes a file which
-	 * can be used to pipe input to stdin of the command. The parameter stdinFile
-	 * may be null to indicate that no stdin should be used.
+	 * Run the command with the given arguments. This method should not be called
+	 * directly in production code (only with parameter stdinFile=null).
+	 *
+	 * To allow simulating user input in test, this method takes a file which can be
+	 * used to pipe input to stdin of the command. The parameter stdinFile may be
+	 * null to indicate that no stdin should be used.
 	 */
 	public static ProcessResult runWithStdin(String command, String stdinFile, String... arguments) {
 
@@ -65,11 +73,6 @@ public class ProcessUtils {
 			e.printStackTrace();
 			return new ProcessResult(-1, "", e);
 		}
-	}
-
-	/** Run the command with the given arguments. */
-	public static ProcessResult run(String command, String... arguments) {
-		return runWithStdin(command, null, arguments);
 	}
 
 	private static class CaptureStreamHandler implements ExecuteStreamHandler {

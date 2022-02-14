@@ -22,7 +22,7 @@ class ConversionTask implements Callable<ConversionResult> {
 
 	@Override
 	public ConversionResult call() {
-		ProcessUtils.ProcessResult results = ProcessUtils.runWithStdin("xcrun", null, "xccov", "view", "--archive",
+		ProcessUtils.ProcessResult results = ProcessUtils.run("xcrun", "xccov", "view", "--archive",
 				reportDirectory.getAbsolutePath(), "--file", sourceFile);
 		if (results.wasSuccessful()) {
 			String result = results.stdoutAndStdErr;
