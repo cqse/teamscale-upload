@@ -17,4 +17,4 @@ echo "Did not find Visual Studio vcvarsall.bat at one of the expected locations.
 exit
 :vcvarsall_executed
 
-./mvnw.cmd clean verify
+./mvnw.cmd package

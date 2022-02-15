@@ -1,11 +1,10 @@
 package com.teamscale.upload.xcode;
 
+import java.io.File;
+import java.util.concurrent.Callable;
+
 import com.teamscale.upload.autodetect_revision.ProcessUtils;
 import com.teamscale.upload.utils.LogUtils;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.concurrent.Callable;
 
 /**
  * Conversion task for one source file in the XCResult report directory.
@@ -23,18 +22,22 @@ class ConversionTask implements Callable<ConversionResult> {
 
 	@Override
 	public ConversionResult call() {
-		try {
-			String result = ProcessUtils.executeProcess("xcrun", "xccov", "view", "--archive",
-					reportDirectory.getAbsolutePath(), "--file", sourceFile);
-
+		ProcessUtils.ProcessResult results = ProcessUtils.run("xcrun", "xccov", "view", "--archive",
+				reportDirectory.getAbsolutePath(), "--file", sourceFile);
+		if (results.wasSuccessful()) {
+			String result = results.stdoutAndStdErr;
 			return new ConversionResult(sourceFile, result);
-		} catch (InterruptedException e) {
+		} else if (results.exitCode == ProcessUtils.EXIT_CODE_CTRL_C_TERMINATED) {
 			// Drop exception since this only occurs if the user terminates the application
 			// with Ctrl+C.
-		} catch (IOException e) {
-			LogUtils.warn("Error while exporting coverage for source file " + sourceFile + ": " + e.getMessage());
+			return null;
+		} else if (results.exception != null) {
+			LogUtils.warn("Error while exporting coverage for source file " + sourceFile + ": "
+					+ results.exception.getMessage());
+			return null;
+		} else {
+			LogUtils.warn("Error while exporting coverage for source file " + sourceFile + " (unknown error)");
+			return null;
 		}
-
-		return null;
 	}
 }

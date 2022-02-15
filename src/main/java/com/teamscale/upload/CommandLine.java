@@ -27,9 +27,14 @@ public class CommandLine {
 	/**
 	 * Name of the environment variable which is used to store the Teamscale access
 	 * key. This is not only relevant for users of the tool, but also for our tests.
-	 * In GitHub we initialize the environment variable from a GitHub secret, see
-	 * ".github/workflows/actions.yml". For local testing you will need to set the
-	 * environment variable manually.
+	 *
+	 * For our tests, this is Access Token for user name
+	 * "teamscale-upload-build-test-user" on demo.teamscale.com. The user has
+	 * report-upload permission for project "teamscale-upload" and is used for
+	 * testing in the Github Project https://github.com/cqse/teamscale-upload. The
+	 * access token is stored as "Secret" in Gitlab. For local testing you will need
+	 * to set the environment variable manually. It is stored in 1password as
+	 * "teamscale-upload-build-test-user".
 	 */
 	public static final String TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE = "TEAMSCALE_ACCESS_KEY";
 
@@ -360,7 +365,7 @@ public class CommandLine {
 	private void validateAccessKey(ArgumentParser parser) throws ArgumentParserException {
 		if (accessKey == null) {
 			throw new ArgumentParserException(
-					"You did not specify a Teamscale access key. You can either specify"
+					"You did not specify a Teamscale access key. You can either specify "
 							+ "it via --accesskey <access key>, via setting the environment variable $"
 							+ TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE + " or via stdin using '--accesskey -'.",
 					parser);

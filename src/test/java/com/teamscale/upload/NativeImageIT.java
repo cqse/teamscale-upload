@@ -29,16 +29,16 @@ import com.teamscale.upload.test_utils.TeamscaleMockServer;
  *
  * You will also need to specify the access key for the test user for
  * https://demo.teamscale.com in the environment variable
- * {@link CommandLine#TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE}. If you do not
- * have the access key for the 'build' user, you can temporarily set
- * {@link #TEAMSCALE_TEST_USER} to your personal user and use your access key.
- * Ask a colleague for the necessary permissions in Teamscale if necessary.
+ * {@link CommandLine#TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE}. If you don't
+ * have the access key for the 'teamscale-upload-build-test-user' user on
+ * demo.teamscale.com, it is stored in 1password as
+ * "teamscale-upload-build-test-user".
  */
 @EnabledIfEnvironmentVariable(named = CommandLine.TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE, matches = ".*")
 public class NativeImageIT {
 
 	private static final int MOCK_TEAMSCALE_PORT = 24398;
-	private static final String TEAMSCALE_TEST_USER = "build";
+	private static final String TEAMSCALE_TEST_USER = "teamscale-upload-build-test-user";
 
 	@Test
 	public void wrongAccessKey() {

@@ -14,22 +14,31 @@ import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteStreamHandler;
 import org.apache.commons.exec.PumpStreamHandler;
 
-import com.teamscale.upload.utils.FileSystemUtils;
-import com.teamscale.upload.utils.LogUtils;
-
 /**
  * Utility methods for executing processes on the command line.
  */
 public class ProcessUtils {
 
-	private static final int EXIT_CODE_CTRL_C_TERMINATED = 130;
+	/**
+	 * Return code that we expect for Processes that were terminated with Ctrl-C by
+	 * a user (check against {@link ProcessResult#exitCode}.
+	 */
+	public static final int EXIT_CODE_CTRL_C_TERMINATED = 130;
 
 	private static final int EXIT_CODE_SUCCESS = 0;
 
+	/** Run the command with the given arguments. */
+	public static ProcessResult run(String command, String... arguments) {
+		return runWithStdin(command, null, arguments);
+	}
+
 	/**
-	 * Run the command with the given arguments. Additionally, takes a file which
-	 * can be used to pipe input to stdin of the command. The parameter stdinFile
-	 * may be null to indicate that no stdin should be used.
+	 * Run the command with the given arguments. This method should not be called
+	 * directly in production code (only with parameter stdinFile=null).
+	 *
+	 * To allow simulating user input in test, this method takes a file which can be
+	 * used to pipe input to stdin of the command. The parameter stdinFile may be
+	 * null to indicate that no stdin should be used.
 	 */
 	public static ProcessResult runWithStdin(String command, String stdinFile, String... arguments) {
 
@@ -54,6 +63,7 @@ public class ProcessUtils {
 		CaptureStreamHandler handler = new CaptureStreamHandler(input);
 		executor.setStreamHandler(handler);
 		executor.setExitValues(null); // don't throw in case of non-zero exit codes
+
 		try {
 			int exitCode = executor.execute(commandLine);
 			return new ProcessResult(exitCode, handler.getStdOutAndStdErr(), null);
@@ -62,43 +72,6 @@ public class ProcessUtils {
 					+ "` which failed with an exception");
 			e.printStackTrace();
 			return new ProcessResult(-1, "", e);
-		}
-	}
-
-	/** Run the command with the given arguments. */
-	public static ProcessResult run(String command, String... arguments) {
-		return runWithStdin(command, null, arguments);
-	}
-
-	/**
-	 * Starts a {@link Process} for the commands.
-	 */
-	public static Process startProcess(String... commands) throws IOException {
-		return new ProcessBuilder(commands).start();
-	}
-
-	/**
-	 * Starts a {@link Process} for the commands and returns the standard output as
-	 * a {@link String}.
-	 */
-	public static String executeProcess(String... commands) throws IOException, InterruptedException {
-		Process process = startProcess(commands);
-		String output = FileSystemUtils.getInputAsString(process.getInputStream());
-		ensureProcessFinishedWithoutErrors(process);
-		return output;
-	}
-
-	/**
-	 * Ensures that the {@link Process} has finished successfully and logs errors as
-	 * warnings to the console.
-	 */
-	private static void ensureProcessFinishedWithoutErrors(Process process) throws IOException, InterruptedException {
-		String errorOutput = FileSystemUtils.getInputAsString(process.getErrorStream());
-		int exitCode = process.waitFor();
-
-		if (exitCode != EXIT_CODE_SUCCESS && exitCode != EXIT_CODE_CTRL_C_TERMINATED) {
-			LogUtils.warn(String.format("Process %s terminated with non-zero exit value %d: %s", process,
-					process.exitValue(), errorOutput));
 		}
 	}
 
@@ -156,7 +129,7 @@ public class ProcessUtils {
 		}
 
 		public boolean wasSuccessful() {
-			return exception == null && exitCode == 0;
+			return exception == null && exitCode == EXIT_CODE_SUCCESS;
 		}
 	}
 }
