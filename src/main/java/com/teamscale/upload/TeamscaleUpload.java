@@ -22,6 +22,7 @@ import javax.net.ssl.SSLHandshakeException;
 import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.util.Collection;
@@ -50,7 +51,7 @@ public class TeamscaleUpload {
 		convertXCodeReports(formatToFiles);
 
 		OkHttpClient client = OkHttpUtils.createClient(commandLine.validateSsl, commandLine.getKeyStorePath(),
-				commandLine.getKeyStorePassword());
+				commandLine.getKeyStorePassword(), commandLine.getTimeoutInSeconds());
 		try {
 			performUpload(client, formatToFiles, commandLine);
 		} catch (SSLHandshakeException e) {
@@ -285,6 +286,10 @@ public class TeamscaleUpload {
 			LogUtils.failWithoutStackTrace(
 					"The URL " + url + " refused a connection. Please ensure that you have no typo and that"
 							+ " this endpoint is reachable and not blocked by firewalls.",
+					e);
+		} catch (SocketTimeoutException e) {
+			LogUtils.failWithoutStackTrace(
+					"Request timeout reached. Consider setting a higher timeout value using the '--timeout' option.",
 					e);
 		}
 

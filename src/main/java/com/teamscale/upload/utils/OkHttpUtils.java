@@ -39,10 +39,11 @@ public class OkHttpUtils {
 	 * @param trustStorePassword
 	 *            May be null if no trust store should be used.
 	 */
-	public static OkHttpClient createClient(boolean validateSsl, String trustStorePath, String trustStorePassword) {
+	public static OkHttpClient createClient(boolean validateSsl, String trustStorePath, String trustStorePassword,
+			long timeoutInSeconds) {
 		OkHttpClient.Builder builder = new OkHttpClient.Builder();
 
-		setSensibleTimeouts(builder);
+		setTimeouts(builder, timeoutInSeconds);
 		builder.followRedirects(false).followSslRedirects(false);
 
 		if (trustStorePath != null) {
@@ -141,10 +142,10 @@ public class OkHttpUtils {
 		builder.hostnameVerifier((hostName, session) -> true);
 	}
 
-	private static void setSensibleTimeouts(okhttp3.OkHttpClient.Builder builder) {
-		builder.connectTimeout(60L, TimeUnit.SECONDS);
-		builder.readTimeout(60L, TimeUnit.SECONDS);
-		builder.writeTimeout(60L, TimeUnit.SECONDS);
+	private static void setTimeouts(okhttp3.OkHttpClient.Builder builder, long timeoutInSeconds) {
+		builder.connectTimeout(timeoutInSeconds, TimeUnit.SECONDS);
+		builder.readTimeout(timeoutInSeconds, TimeUnit.SECONDS);
+		builder.writeTimeout(timeoutInSeconds, TimeUnit.SECONDS);
 	}
 
 	private static class TrustAllCertificatesManager implements X509TrustManager {

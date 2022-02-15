@@ -6,6 +6,10 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 
+# 2.5.0
+
+- [feature] new `--timeout` command line argument for specifying request timeouts in seconds
+
 # 2.4.0
 
 - [feature] if a revision exists in multiple repositories the correct repository can be passed using `--repository`

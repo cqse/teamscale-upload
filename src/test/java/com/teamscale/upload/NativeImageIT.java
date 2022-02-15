@@ -99,6 +99,28 @@ public class NativeImageIT {
 		});
 	}
 
+	@Test
+	public void timeoutToSmall() {
+		ProcessUtils.ProcessResult result = runUploader(
+				new Arguments().withUrl("http://localhost:9999").withTimeoutInSeconds("0"));
+		assertSoftlyThat(softly -> {
+			softly.assertThat(result.exitCode).isNotZero();
+			softly.assertThat(result.stdoutAndStdErr).contains("The timeout in seconds")
+					.contains("must be an integer greater").contains("than 0.");
+		});
+	}
+
+	@Test
+	public void timeoutIsNotANumber() {
+		ProcessUtils.ProcessResult result = runUploader(
+				new Arguments().withUrl("http://localhost:9999").withTimeoutInSeconds("foo"));
+		assertSoftlyThat(softly -> {
+			softly.assertThat(result.exitCode).isNotZero();
+			softly.assertThat(result.stdoutAndStdErr).contains("The timeout in seconds")
+					.contains("must be an integer greater").contains("than 0.");
+		});
+	}
+
 	/**
 	 * TS-28014: Sending an unknown revision also results in a 404 status code,
 	 * which used to display a misleading error message saying "the project ID is
@@ -160,6 +182,25 @@ public class NativeImageIT {
 				.isEqualTo("NativeImageIT external analysis results uploaded at DATE" + "\n\nuploaded from HOSTNAME"
 						+ "\nfor revision: master:HEAD" + "\nincludes data in the following formats: SIMPLE"
 						+ "\nBuild ID: 1234");
+	}
+
+	@Test
+	public void testTimeoutSmallerThanRequestTime() {
+		try (TeamscaleMockServer ignored = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 2)) {
+			ProcessUtils.ProcessResult result = runUploader(
+					new Arguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withTimeoutInSeconds("1"));
+			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isNotZero();
+			assertThat(result.stdoutAndStdErr).contains("Request timeout reached.");
+		}
+	}
+
+	@Test
+	public void testTimeoutGreaterThanRequestTime() {
+		try (TeamscaleMockServer ignored = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 2)) {
+			ProcessUtils.ProcessResult result = runUploader(
+					new Arguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withTimeoutInSeconds("3"));
+			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isZero();
+		}
 	}
 
 	@Test
@@ -364,6 +405,7 @@ public class NativeImageIT {
 		private boolean stackTrace = false;
 		private String stdinFilePath = null;
 		private boolean moveToLastCommit = false;
+		private String timeoutInSeconds = null;
 
 		private Arguments withFormat(String format) {
 			this.format = format;
@@ -467,6 +509,11 @@ public class NativeImageIT {
 			return this;
 		}
 
+		private Arguments withTimeoutInSeconds(String timeoutInSeconds) {
+			this.timeoutInSeconds = timeoutInSeconds;
+			return this;
+		}
+
 		private String[] toStringArray() {
 			List<String> arguments = new ArrayList<>(
 					Arrays.asList("-s", url, "-u", user, "-f", format, "-p", project, "-t", partition));
@@ -508,6 +555,10 @@ public class NativeImageIT {
 			if (repository != null) {
 				arguments.add("--repository");
 				arguments.add(repository);
+			}
+			if (timeoutInSeconds != null) {
+				arguments.add("--timeout");
+				arguments.add(timeoutInSeconds);
 			}
 
 			return arguments.toArray(new String[0]);
