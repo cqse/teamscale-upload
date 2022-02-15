@@ -6,6 +6,11 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 
+# 2.5.0
+
+- [feature] support for faster coverage extraction from XCResult bundles with [XCode 13.3 command line tools](https://developer.apple.com/documentation/xcode-release-notes/xcode-13_3-release-notes) (see 82004604)
+- [feature] release for MacOS
+
 # 2.4.0
 
 - [feature] if a revision exists in multiple repositories the correct repository can be passed using `--repository`

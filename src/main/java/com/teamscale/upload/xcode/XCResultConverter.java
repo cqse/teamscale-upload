@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.gson.Gson;
 import com.teamscale.upload.autodetect_revision.ProcessUtils;
+import com.teamscale.upload.autodetect_revision.ProcessUtils.ProcessResult;
 import com.teamscale.upload.report.testwise_coverage.TestInfo;
 import com.teamscale.upload.report.testwise_coverage.TestwiseCoverageReport;
 import com.teamscale.upload.report.xcode.ActionRecord;
@@ -105,8 +106,6 @@ public class XCResultConverter {
 	 */
 	private static void writeConversionResults(Queue<Future<ConversionResult>> conversionResults, File convertedReport)
 			throws InterruptedException, ExecutionException, IOException {
-		FileSystemUtils.ensureEmptyFile(convertedReport);
-
 		while (!conversionResults.isEmpty()) {
 			ConversionResult conversionResult = conversionResults.remove().get();
 			if (conversionResult == null) {
@@ -125,9 +124,9 @@ public class XCResultConverter {
 	 * Returns a sorted list of source files contained in the XCResult bundle
 	 * directory.
 	 */
-	private static List<String> getSourceFiles(File reportDirectory) throws IOException, InterruptedException {
+	private static List<String> getSourceFiles(File reportDirectory) {
 		String output = ProcessUtils.run("xcrun", "xccov", "view", "--archive", "--file-list",
-				reportDirectory.getAbsolutePath()).stdoutAndStdErr;
+				reportDirectory.getAbsolutePath()).output;
 		return output.lines().sorted().collect(toList());
 	}
 
@@ -162,6 +161,8 @@ public class XCResultConverter {
 							actionsInvocationRecord)) {
 						convertedReports.add(extractCoverageData(report, convertToXccovArchive));
 					}
+				} else {
+					LogUtils.info("XCResult bundle doesn't contain any coverage data. Only uploading test results.");
 				}
 			}
 
@@ -223,7 +224,7 @@ public class XCResultConverter {
 	private ActionsInvocationRecord getActionsInvocationRecord(File reportDirectory)
 			throws IOException, InterruptedException {
 		String actionsInvocationRecordJson = ProcessUtils.run("xcrun", "xcresulttool", "get", "--path",
-				reportDirectory.getAbsolutePath(), "--format", "json").stdoutAndStdErr;
+				reportDirectory.getAbsolutePath(), "--format", "json").output;
 		return new Gson().fromJson(actionsInvocationRecordJson, ActionsInvocationRecord.class);
 	}
 
@@ -238,7 +239,7 @@ public class XCResultConverter {
 			}
 
 			String json = ProcessUtils.run("xcrun", "xcresulttool", "get", "--path", reportDirectory.getAbsolutePath(),
-					"--format", "json", "--id", testsRef.id).stdoutAndStdErr;
+					"--format", "json", "--id", testsRef.id).output;
 			ActionTestPlanRunSummaries actionTestPlanRunSummaries = new Gson().fromJson(json,
 					ActionTestPlanRunSummaries.class);
 
@@ -276,17 +277,30 @@ public class XCResultConverter {
 	private ConvertedReport extractCoverageData(File report, File reportDirectory)
 			throws IOException, InterruptedException, ExecutionException {
 		List<String> sourceFiles = getSourceFiles(reportDirectory);
-
-		LogUtils.info(String.format("Extracting coverage for %d source files using %d threads from XCResult bundle %s.",
-				sourceFiles.size(), CONVERSION_THREAD_COUNT, report.getAbsolutePath()));
-
+		File convertedCoverageReport = new File(report.getAbsolutePath() + XCCOV_REPORT_FILE_EXTENSION);
 		long startTime = System.currentTimeMillis();
 
-		Queue<Future<ConversionResult>> conversionResults = submitConversionTasks(reportDirectory, sourceFiles);
-		File convertedCoverageReport = new File(report.getAbsolutePath() + XCCOV_REPORT_FILE_EXTENSION);
+		LogUtils.info(String.format("Converting XCResult bundle %s containing %d source files.",
+				report.getAbsolutePath(), sourceFiles.size()));
+		ProcessResult result = ProcessUtils.run("xcrun", "xccov", "view", "--archive",
+				reportDirectory.getAbsolutePath());
+		FileSystemUtils.ensureEmptyFile(convertedCoverageReport);
 
-		writeConversionResults(conversionResults, convertedCoverageReport);
-		waitForRunningProcessesToFinish();
+		/*
+		 * With XCode 13.3 and newer the coverage of all source files can be exported
+		 * with the command above which offers the best performance. We try this first
+		 * and if it doesn't work we fall back to the slower legacy mechanism that
+		 * iterates over each source file.
+		 */
+		if (result.wasSuccessful()) {
+			Files.writeString(convertedCoverageReport.toPath(), result.output, StandardOpenOption.WRITE);
+		} else {
+			LogUtils.info(String.format("Using legacy conversion with %d threads.", CONVERSION_THREAD_COUNT));
+			Queue<Future<ConversionResult>> conversionResults = submitConversionTasks(reportDirectory, sourceFiles);
+
+			writeConversionResults(conversionResults, convertedCoverageReport);
+			waitForRunningProcessesToFinish();
+		}
 
 		LogUtils.info(String.format("Coverage extraction finished after %d seconds.",
 				(System.currentTimeMillis() - startTime) / 1000));

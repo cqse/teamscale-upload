@@ -18,18 +18,18 @@ public class GitChecker {
 
 		ProcessUtils.ProcessResult result = ProcessUtils.run("git", "rev-parse", "HEAD");
 		if (result.wasSuccessful()) {
-			String sha1 = result.stdoutAndStdErr.trim();
+			String sha1 = result.output.trim();
 			System.out.println("Using Git commit " + sha1);
 			return sha1;
 		}
 
-		System.out.println("Failed to read checked-out Git commit. git rev-parse returned: " + result.stdoutAndStdErr);
+		System.out.println("Failed to read checked-out Git commit. git rev-parse returned: " + result.errorOutput);
 		return null;
 	}
 
 	private static boolean isInsideGit() {
 		ProcessUtils.ProcessResult result = ProcessUtils.run("git", "rev-parse", "--is-inside-work-tree");
-		return result.wasSuccessful() && result.stdoutAndStdErr.trim().equalsIgnoreCase("true");
+		return result.wasSuccessful() && result.output.trim().equalsIgnoreCase("true");
 	}
 
 }
