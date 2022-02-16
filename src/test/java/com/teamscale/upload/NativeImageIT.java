@@ -100,7 +100,7 @@ public class NativeImageIT {
 	}
 
 	@Test
-	public void timeoutToSmall() {
+	public void timeoutTooSmall() {
 		ProcessUtils.ProcessResult result = runUploader(
 				new Arguments().withUrl("http://localhost:9999").withTimeoutInSeconds("0"));
 		assertSoftlyThat(softly -> {
