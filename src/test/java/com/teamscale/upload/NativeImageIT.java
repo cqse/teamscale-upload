@@ -295,12 +295,9 @@ public class NativeImageIT {
 					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withAutoDetectCommit());
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 			assertThat(server.sessions).hasSize(1);
-			assertThat(server.uploadedReportsByName).hasSize(2);
-			for (String expectedFile : List.of("output.xcresult.tar.gz.testwisecoverage.json",
-					"output.xcresult.tar.gz.xccov")) {
-				assertThat(server.uploadedReportsByName.get(expectedFile))
-						.containsExactly(readResource(expectedFile + ".expected"));
-			}
+			assertThat(server.uploadedReportsByName).hasSize(1);
+			assertThat(server.uploadedReportsByName.get("output.xcresult.tar.gz.xccov"))
+					.containsExactly(readResource("output.xcresult.tar.gz.xccov.expected"));
 		}
 	}
 

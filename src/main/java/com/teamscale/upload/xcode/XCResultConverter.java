@@ -8,7 +8,6 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -21,15 +20,8 @@ import java.util.concurrent.TimeUnit;
 import com.google.gson.Gson;
 import com.teamscale.upload.autodetect_revision.ProcessUtils;
 import com.teamscale.upload.autodetect_revision.ProcessUtils.ProcessResult;
-import com.teamscale.upload.report.testwise_coverage.TestInfo;
-import com.teamscale.upload.report.testwise_coverage.TestwiseCoverageReport;
 import com.teamscale.upload.report.xcode.ActionRecord;
-import com.teamscale.upload.report.xcode.ActionTest;
-import com.teamscale.upload.report.xcode.ActionTestPlanRunSummaries;
-import com.teamscale.upload.report.xcode.ActionTestPlanRunSummary;
-import com.teamscale.upload.report.xcode.ActionTestableSummary;
 import com.teamscale.upload.report.xcode.ActionsInvocationRecord;
-import com.teamscale.upload.report.xcode.XCResultObjectIdReference;
 import com.teamscale.upload.utils.FileSystemUtils;
 import com.teamscale.upload.utils.LogUtils;
 
@@ -45,11 +37,6 @@ public class XCResultConverter {
 	public static final String XCODE_REPORT_FORMAT = "XCODE";
 
 	/**
-	 * The enum name of the Testwise Coverage report format.
-	 */
-	private static final String TESTWISE_COVERAGE_REPORT_FORMAT = "TESTWISE_COVERAGE";
-
-	/**
 	 * The number of conversion threads to run in parallel for faster conversion. By
 	 * default, we use the number of available processors to distribute work since
 	 * this setting was most performant when testing locally.
@@ -61,11 +48,6 @@ public class XCResultConverter {
 	 * File extension used for converted XCResult bundles.
 	 */
 	private static final String XCCOV_REPORT_FILE_EXTENSION = ".xccov";
-
-	/**
-	 * File extension used for converted XCResult bundles.
-	 */
-	private static final String TESTWISE_COVERAGE_REPORT_FILE_EXTENSION = ".testwisecoverage.json";
 
 	private final File workingDirectory;
 
@@ -140,8 +122,7 @@ public class XCResultConverter {
 
 	/**
 	 * Converts the report and writes the conversion result to a file with the same
-	 * path and the {@link #XCCOV_REPORT_FILE_EXTENSION} or
-	 * {@link #TESTWISE_COVERAGE_REPORT_FILE_EXTENSION} as an added file extension.
+	 * path and the {@link #XCCOV_REPORT_FILE_EXTENSION} as an added file extension.
 	 */
 	public List<ConvertedReport> convert(File report) throws ConversionException {
 		try {
@@ -154,7 +135,6 @@ public class XCResultConverter {
 				convertedReports.add(extractCoverageData(report, reportDirectory));
 			} else {
 				ActionsInvocationRecord actionsInvocationRecord = getActionsInvocationRecord(reportDirectory);
-				convertedReports.add(extractTestResults(report, reportDirectory, actionsInvocationRecord));
 
 				if (actionsInvocationRecord.hasCoverageData()) {
 					for (File convertToXccovArchive : convertToXccovArchives(reportDirectory,
@@ -162,7 +142,7 @@ public class XCResultConverter {
 						convertedReports.add(extractCoverageData(report, convertToXccovArchive));
 					}
 				} else {
-					LogUtils.info("XCResult bundle doesn't contain any coverage data. Only uploading test results.");
+					LogUtils.warn("XCResult bundle doesn't contain any coverage data.");
 				}
 			}
 
@@ -226,52 +206,6 @@ public class XCResultConverter {
 		String actionsInvocationRecordJson = ProcessUtils.run("xcrun", "xcresulttool", "get", "--path",
 				reportDirectory.getAbsolutePath(), "--format", "json").output;
 		return new Gson().fromJson(actionsInvocationRecordJson, ActionsInvocationRecord.class);
-	}
-
-	private ConvertedReport extractTestResults(File report, File reportDirectory,
-			ActionsInvocationRecord actionsInvocationRecord) throws IOException, InterruptedException {
-		List<TestInfo> tests = new ArrayList<>();
-
-		for (ActionRecord action : actionsInvocationRecord.actions) {
-			XCResultObjectIdReference testsRef = action.actionResult.testsRef;
-			if (testsRef == null) {
-				continue;
-			}
-
-			String json = ProcessUtils.run("xcrun", "xcresulttool", "get", "--path", reportDirectory.getAbsolutePath(),
-					"--format", "json", "--id", testsRef.id).output;
-			ActionTestPlanRunSummaries actionTestPlanRunSummaries = new Gson().fromJson(json,
-					ActionTestPlanRunSummaries.class);
-
-			for (ActionTestPlanRunSummary summary : actionTestPlanRunSummaries.summaries) {
-				for (ActionTestableSummary testableSummary : summary.testableSummaries) {
-					for (ActionTest test : testableSummary.tests) {
-						extractTests(test, tests);
-					}
-				}
-			}
-		}
-
-		File testwiseCoverageReportFile = new File(report.getAbsolutePath() + TESTWISE_COVERAGE_REPORT_FILE_EXTENSION);
-
-		tests.sort(Comparator.comparing(testInfo -> testInfo.uniformPath));
-		TestwiseCoverageReport testwiseCoverageReport = new TestwiseCoverageReport(tests);
-
-		FileSystemUtils.ensureEmptyFile(testwiseCoverageReportFile);
-		Files.writeString(testwiseCoverageReportFile.toPath(), new Gson().toJson(testwiseCoverageReport));
-
-		return new ConvertedReport(TESTWISE_COVERAGE_REPORT_FORMAT, testwiseCoverageReportFile);
-	}
-
-	private void extractTests(ActionTest actionTest, List<TestInfo> tests) {
-		if (actionTest.subTests == null) {
-			TestInfo.create(actionTest).ifPresent(tests::add);
-			return;
-		}
-
-		for (ActionTest subTest : actionTest.subTests) {
-			extractTests(subTest, tests);
-		}
 	}
 
 	private ConvertedReport extractCoverageData(File report, File reportDirectory)

@@ -150,6 +150,10 @@ public class TeamscaleUpload {
 
 	private static void performUpload(OkHttpClient client, Map<String, Set<File>> formatToFiles,
 			CommandLine commandLine) throws IOException {
+		if (formatToFiles.isEmpty()) {
+			LogUtils.warn("There are no files to upload. Skipping upload.");
+			return;
+		}
 		String sessionId = openSession(client, commandLine, formatToFiles.keySet());
 		for (String format : formatToFiles.keySet()) {
 			Set<File> filesFormFormat = formatToFiles.get(format);
