@@ -100,6 +100,28 @@ public class NativeImageIT {
 		});
 	}
 
+	@Test
+	public void timeoutTooSmall() {
+		ProcessUtils.ProcessResult result = runUploader(
+				new Arguments().withUrl("http://localhost:9999").withTimeoutInSeconds("0"));
+		assertSoftlyThat(softly -> {
+			softly.assertThat(result.exitCode).isNotZero();
+			softly.assertThat(result.getOutputAndErrorOutput()).contains("The timeout in seconds")
+					.contains("must be an integer greater").contains("than 0.");
+		});
+	}
+
+	@Test
+	public void timeoutIsNotANumber() {
+		ProcessUtils.ProcessResult result = runUploader(
+				new Arguments().withUrl("http://localhost:9999").withTimeoutInSeconds("foo"));
+		assertSoftlyThat(softly -> {
+			softly.assertThat(result.exitCode).isNotZero();
+			softly.assertThat(result.getOutputAndErrorOutput()).contains("The timeout in seconds")
+					.contains("must be an integer greater").contains("than 0.");
+		});
+	}
+
 	/**
 	 * TS-28014: Sending an unknown revision also results in a 404 status code,
 	 * which used to display a misleading error message saying "the project ID is
@@ -133,8 +155,7 @@ public class NativeImageIT {
 				new Arguments().withUser("has-no-permissions").withAccessKey("SU2nfdkpcsoOXK2zDVf2DLEQiDaMD8fM"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			softly.assertThat(result.errorOutput)
-					.contains("is not allowed to upload data to the Teamscale project");
+			softly.assertThat(result.errorOutput).contains("is not allowed to upload data to the Teamscale project");
 		});
 	}
 
@@ -164,10 +185,31 @@ public class NativeImageIT {
 	}
 
 	@Test
+	public void testTimeoutSmallerThanRequestTime() {
+		try (TeamscaleMockServer ignored = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 2)) {
+			ProcessUtils.ProcessResult result = runUploader(
+					new Arguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withTimeoutInSeconds("1"));
+			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
+					.isNotZero();
+			assertThat(result.getOutputAndErrorOutput()).contains("Request timeout reached.");
+		}
+	}
+
+	@Test
+	public void testTimeoutGreaterThanRequestTime() {
+		try (TeamscaleMockServer ignored = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 2)) {
+			ProcessUtils.ProcessResult result = runUploader(
+					new Arguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withTimeoutInSeconds("3"));
+			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
+		}
+	}
+
+	@Test
 	public void mustRejectTimestampPassedInSeconds() {
 		ProcessUtils.ProcessResult result = runUploader(new Arguments().withTimestamp("master:1606764633"));
 		assertSoftlyThat(softly -> {
-			softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isNotZero();
+			softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
+					.isNotZero();
 			softly.assertThat(result.errorOutput).contains("seconds").contains("milliseconds").contains("1970")
 					.contains("2020");
 		});
@@ -361,6 +403,7 @@ public class NativeImageIT {
 		private boolean stackTrace = false;
 		private File stdinFile = null;
 		private boolean moveToLastCommit = false;
+		private String timeoutInSeconds = null;
 
 		private Arguments withFormat(String format) {
 			this.format = format;
@@ -464,6 +507,11 @@ public class NativeImageIT {
 			return this;
 		}
 
+		private Arguments withTimeoutInSeconds(String timeoutInSeconds) {
+			this.timeoutInSeconds = timeoutInSeconds;
+			return this;
+		}
+
 		private String[] toCommand(String executable) {
 			List<String> command = new ArrayList<>(
 					Arrays.asList(executable, "-s", url, "-u", user, "-f", format, "-p", project, "-t", partition));
@@ -505,6 +553,10 @@ public class NativeImageIT {
 			if (repository != null) {
 				command.add("--repository");
 				command.add(repository);
+			}
+			if (timeoutInSeconds != null) {
+				command.add("--timeout");
+				command.add(timeoutInSeconds);
 			}
 
 			return command.toArray(new String[0]);
