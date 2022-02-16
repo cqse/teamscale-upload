@@ -47,14 +47,26 @@ public class TeamscaleMockServer implements AutoCloseable {
 	 * The raw report by the filename of the uploaded report.
 	 */
 	public final Map<String, byte[]> uploadedReportsByName = new HashMap<>();
+
 	private final Service spark;
+
+	/**
+	 * Time in seconds to wait in the {@link #openSession(Request, Response)}
+	 * handler to simulate slow Teamscale request processing.
+	 */
+	private final long openSessionRequestTimeInSeconds;
 
 	public TeamscaleMockServer(int port) {
 		this(port, false);
 	}
 
 	public TeamscaleMockServer(int port, boolean useSelfSignedCertificate) {
+		this(port, useSelfSignedCertificate, 0L);
+	}
+
+	public TeamscaleMockServer(int port, boolean useSelfSignedCertificate, long openSessionRequestTimeInSeconds) {
 		this.spark = Service.ignite();
+		this.openSessionRequestTimeInSeconds = openSessionRequestTimeInSeconds;
 
 		if (useSelfSignedCertificate) {
 			spark.secure(KEYSTORE.getAbsolutePath(), "password", null, null);
@@ -70,7 +82,18 @@ public class TeamscaleMockServer implements AutoCloseable {
 		spark.awaitInitialization();
 	}
 
+	private void simulateRequestTime() {
+		if (openSessionRequestTimeInSeconds > 0) {
+			try {
+				Thread.sleep(openSessionRequestTimeInSeconds * 1000);
+			} catch (InterruptedException e) {
+				throw new RuntimeException("Unable to simulate request time: " + e.getMessage(), e);
+			}
+		}
+	}
+
 	private String openSession(Request request, Response response) {
+		simulateRequestTime();
 		String message = request.queryParams("message");
 		String revisionOrTimestamp = request.queryParams("revision");
 		if (revisionOrTimestamp == null) {

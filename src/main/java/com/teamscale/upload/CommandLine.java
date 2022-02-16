@@ -18,6 +18,7 @@ import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
 
 /**
  * Parses and validates the command line arguments.
@@ -109,6 +110,11 @@ public class CommandLine {
 	 * Whether to print stack traces for handled exceptions.
 	 */
 	public final boolean printStackTrace;
+	/**
+	 * The timeout in seconds for TCP connect, read and write of the
+	 * {@link OkHttpClient} used for requests. Defaults to 60 seconds.
+	 */
+	public final String timeoutInSecondsAsString;
 
 	private final String keystorePathAndPassword;
 
@@ -128,6 +134,7 @@ public class CommandLine {
 		this.keystorePathAndPassword = namespace.getString("trusted_keystore");
 		this.validateSsl = !namespace.getBoolean("insecure");
 		this.additionalMessageLines = getListSafe(namespace, "append_to_message");
+		this.timeoutInSecondsAsString = namespace.getString("timeout");
 		this.printStackTrace = namespace.getBoolean("stacktrace");
 
 		String inputFilePath = namespace.getString("input");
@@ -256,6 +263,9 @@ public class CommandLine {
 		parser.addArgument("--stacktrace").action(Arguments.storeTrue()).required(false)
 				.help("Enables printing stack traces in all cases where errors occur." //
 						+ " Used for debugging.");
+		parser.addArgument("--timeout").metavar("TIMEOUT_IN_SECONDS").required(false)
+				.help("Sets the timeout in seconds for TCP connect, read and write for HTTP requests. "
+						+ "Defaults to 60 seconds.");
 		parser.epilog("For general usage help and alternative upload methods, please check our online"
 				+ " documentation at:" + "\nhttp://cqse.eu/tsu-docs" + "\n\nTARGET COMMIT"
 				+ "\n\nBy default, teamscale-upload tries to automatically detect the code commit"
@@ -311,6 +321,16 @@ public class CommandLine {
 	}
 
 	/**
+	 * Returns the timeout in seconds as a {@link Long}.
+	 */
+	public long getTimeoutInSeconds() {
+		if (timeoutInSecondsAsString == null) {
+			return 60L;
+		}
+		return Long.parseLong(timeoutInSecondsAsString);
+	}
+
+	/**
 	 * Checks the validity of the command line arguments and throws an exception if
 	 * any invalid configuration is detected.
 	 */
@@ -319,6 +339,7 @@ public class CommandLine {
 			throw new ArgumentParserException("You provided an invalid URL in the --server option", parser);
 		}
 
+		validateTimeoutInSeconds(parser);
 		validateKeystoreSettings(parser);
 		validateAccessKey(parser);
 
@@ -345,6 +366,21 @@ public class CommandLine {
 		}
 
 		validateBranchAndTimestamp(parser);
+	}
+
+	private void validateTimeoutInSeconds(ArgumentParser parser) throws ArgumentParserException {
+		if (timeoutInSecondsAsString == null) {
+			return;
+		}
+		try {
+			long timeoutInSeconds = Long.parseLong(timeoutInSecondsAsString);
+			if (timeoutInSeconds <= 0L) {
+				throw new ArgumentParserException("The timeout in seconds must be an integer greater than 0.",
+						parser);
+			}
+		} catch (NumberFormatException e) {
+			throw new ArgumentParserException("The timeout in seconds must be an integer greater than 0.", parser);
+		}
 	}
 
 	private void validateKeystoreSettings(ArgumentParser parser) throws ArgumentParserException {
