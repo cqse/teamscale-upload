@@ -14,7 +14,6 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import org.assertj.core.api.SoftAssertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.EnabledOnOs;
@@ -250,11 +249,7 @@ public class NativeImageIT {
 				softly.assertThat(result.errorOutput).contains("--stacktrace");
 			});
 		}
-	}
 
-	@Disabled("This seems to cause the windows build to get stuck after the change to the ProcessBuilder API in TS-29179")
-	@Test
-	public void printStackTraceForKnownErrorsOnlyWhenRequested2() {
 		try (TeamscaleMockServer ignored = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
 			ProcessUtils.ProcessResult result = runUploader(
 					new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT).withStackTrace());
@@ -378,7 +373,7 @@ public class NativeImageIT {
 	}
 
 	private ProcessUtils.ProcessResult runUploader(Arguments arguments) {
-		return ProcessUtils.run(arguments.stdinFile, arguments.toCommand("./target/teamscale-upload"));
+		return ProcessUtils.runWithStdIn(arguments.stdinFile, arguments.toCommand("./target/teamscale-upload"));
 	}
 
 	private static String getAccessKeyFromCi() {

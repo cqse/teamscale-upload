@@ -2,6 +2,7 @@ package com.teamscale.upload.autodetect_revision;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 
 import com.teamscale.upload.utils.FileSystemUtils;
 
@@ -10,6 +11,12 @@ import com.teamscale.upload.utils.FileSystemUtils;
  */
 public class ProcessUtils {
 
+	/**
+	 * Return code that we expect for Processes that were terminated with Ctrl-C by
+	 * a user (check against {@link ProcessResult#exitCode}.
+	 */
+	public static final int EXIT_CODE_CTRL_C_TERMINATED = 130;
+
 	private static final int EXIT_CODE_SUCCESS = 0;
 
 	/**
@@ -17,7 +24,7 @@ public class ProcessUtils {
 	 * {@link ProcessResult}.
 	 */
 	public static ProcessResult run(String... command) {
-		return run(null, command);
+		return runWithStdIn(null, command);
 	}
 
 	/**
@@ -26,24 +33,74 @@ public class ProcessUtils {
 	 * input to stdin of the command. The parameter stdinFile may be null to
 	 * indicate that no stdin should be used.
 	 */
-	public static ProcessResult run(File stdInFile, String... command) {
+	public static ProcessResult runWithStdIn(File stdInFile, String... command) {
 		try {
 			ProcessBuilder processBuilder = new ProcessBuilder(command);
 			if (stdInFile != null) {
 				processBuilder.redirectInput(stdInFile);
 			}
 			Process process = processBuilder.start();
-			String output = FileSystemUtils.getInputAsString(process.getInputStream());
-			String errorOutput = FileSystemUtils.getInputAsString(process.getErrorStream());
+
+			/*
+			 * Both input streams need to be drained in separate threads since reading
+			 * either stream can be a blocking operation if the other stream has reached the
+			 * platform dependent buffer limit for standard output.
+			 *
+			 * See https://stackoverflow.com/a/7562321.
+			 */
+			ProcessOutputReader inputStreamReader = new ProcessOutputReader(process.getInputStream());
+			ProcessOutputReader errorStreamReader = new ProcessOutputReader(process.getErrorStream());
+			Thread inputStreamReaderThread = new Thread(inputStreamReader);
+			Thread errorStreamReaderThread = new Thread(errorStreamReader);
+			inputStreamReaderThread.start();
+			errorStreamReaderThread.start();
+
 			int exitCode = process.waitFor();
 
-			if (exitCode != EXIT_CODE_SUCCESS) {
-				return new ProcessResult(exitCode, output, errorOutput, null);
-			}
+			/*
+			 * Ensure that both threads have finished execution if the process terminates
+			 * earlier than the threads.
+			 */
+			inputStreamReaderThread.join();
+			errorStreamReaderThread.join();
+			inputStreamReader.rethrowCaughtException();
+			errorStreamReader.rethrowCaughtException();
 
-			return new ProcessResult(exitCode, output, errorOutput, null);
+			return new ProcessResult(exitCode, inputStreamReader.result, errorStreamReader.result, null);
 		} catch (IOException | InterruptedException e) {
-			return new ProcessResult(-1, null, "Error while executing process: " + e.getMessage(), e);
+			return new ProcessResult(-1, "", e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Runnable for reading the input stream asynchronously from a separate thread
+	 * to prevent a deadlock due to blocking read operations.
+	 */
+	private static class ProcessOutputReader implements Runnable {
+
+		private final InputStream inputStream;
+
+		private IOException exception;
+
+		private String result;
+
+		private ProcessOutputReader(InputStream inputStream) {
+			this.inputStream = inputStream;
+		}
+
+		@Override
+		public void run() {
+			try {
+				result = FileSystemUtils.getInputAsString(inputStream);
+			} catch (IOException e) {
+				exception = e;
+			}
+		}
+
+		private void rethrowCaughtException() throws IOException {
+			if (exception != null) {
+				throw exception;
+			}
 		}
 	}
 
@@ -97,7 +154,7 @@ public class ProcessUtils {
 		 * Returns true if the processed exited successfully.
 		 */
 		public boolean wasSuccessful() {
-			return exception == null && exitCode == 0;
+			return exception == null && exitCode == EXIT_CODE_SUCCESS;
 		}
 	}
 }
