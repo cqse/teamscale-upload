@@ -25,12 +25,15 @@ class ConversionTask implements Callable<ConversionResult> {
 	public ConversionResult call() {
 		ProcessResult result = ProcessUtils.run("xcrun", "xccov", "view", "--archive",
 				reportDirectory.getAbsolutePath(), "--file", sourceFile);
-
 		if (result.wasSuccessful()) {
 			return new ConversionResult(sourceFile, result.output);
+		} else if (result.exitCode == ProcessUtils.EXIT_CODE_CTRL_C_TERMINATED) {
+			// Drop exception since this only occurs if the user terminates the application
+			// with Ctrl+C.
+			return null;
+		} else {
+			LogUtils.warn("Error while exporting coverage for source file " + sourceFile + ": " + result.errorOutput);
+			return null;
 		}
-
-		LogUtils.warn("Error while exporting coverage for source file " + sourceFile + ": " + result.errorOutput);
-		return null;
 	}
 }
