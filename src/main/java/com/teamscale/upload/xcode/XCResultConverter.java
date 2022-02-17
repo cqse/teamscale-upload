@@ -106,10 +106,15 @@ public class XCResultConverter {
 	 * Returns a sorted list of source files contained in the XCResult bundle
 	 * directory.
 	 */
-	private static List<String> getSourceFiles(File reportDirectory) {
-		String output = ProcessUtils.run("xcrun", "xccov", "view", "--archive", "--file-list",
-				reportDirectory.getAbsolutePath()).output;
-		return output.lines().sorted().collect(toList());
+	private static List<String> getSourceFiles(File reportDirectory) throws ConversionException {
+		ProcessResult result = ProcessUtils.run("xcrun", "xccov", "view", "--archive", "--file-list",
+				reportDirectory.getAbsolutePath());
+		if (!result.wasSuccessful()) {
+			throw new ConversionException(
+					"Error while obtaining file list from XCResult archive " + reportDirectory.getAbsolutePath(),
+					result.exception);
+		}
+		return result.output.lines().sorted().collect(toList());
 	}
 
 	private static void validateCommandLineTools() throws IOException, InterruptedException, ConversionException {
@@ -147,11 +152,7 @@ public class XCResultConverter {
 			}
 
 			return convertedReports;
-		} catch (IOException e) {
-			LogUtils.warn(
-					String.format("Error while converting report %s: %s", report.getAbsolutePath(), e.getMessage()));
-			return Collections.emptyList();
-		} catch (InterruptedException | ExecutionException e) {
+		} catch (IOException | InterruptedException | ExecutionException e) {
 			throw new ConversionException(
 					String.format("Error while converting report %s: %s", report.getAbsolutePath(), e.getMessage()), e);
 		}
@@ -202,14 +203,19 @@ public class XCResultConverter {
 	}
 
 	private ActionsInvocationRecord getActionsInvocationRecord(File reportDirectory)
-			throws IOException, InterruptedException {
-		String actionsInvocationRecordJson = ProcessUtils.run("xcrun", "xcresulttool", "get", "--path",
-				reportDirectory.getAbsolutePath(), "--format", "json").output;
+			throws InterruptedException, ConversionException {
+		ProcessResult result = ProcessUtils.run("xcrun", "xcresulttool", "get", "--path",
+				reportDirectory.getAbsolutePath(), "--format", "json");
+		if (!result.wasSuccessful()) {
+			throw new ConversionException("Error while obtaining ActionInvocationsRecord from XCResult archive "
+					+ reportDirectory.getAbsolutePath(), result.exception);
+		}
+		String actionsInvocationRecordJson = result.output;
 		return new Gson().fromJson(actionsInvocationRecordJson, ActionsInvocationRecord.class);
 	}
 
 	private ConvertedReport extractCoverageData(File report, File reportDirectory)
-			throws IOException, InterruptedException, ExecutionException {
+			throws IOException, InterruptedException, ExecutionException, ConversionException {
 		List<String> sourceFiles = getSourceFiles(reportDirectory);
 		File convertedCoverageReport = new File(report.getAbsolutePath() + XCCOV_REPORT_FILE_EXTENSION);
 		long startTime = System.currentTimeMillis();
@@ -255,19 +261,25 @@ public class XCResultConverter {
 		return conversionResults;
 	}
 
-	private void waitForRunningProcessesToFinish() throws InterruptedException {
-		if (executorService != null && !executorService.isTerminated()) {
+	private void waitForRunningProcessesToFinish() throws ConversionException {
+		if (executorService == null || executorService.isTerminated()) {
+			return;
+		}
+		try {
 			if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
 				LogUtils.warn("Processes took too long to terminate. Forcing shutdown.");
 				executorService.shutdownNow();
 			}
+		} catch (InterruptedException e) {
+			throw new ConversionException(
+					"Error occurred while waiting for conversion processes to finish: " + e.getMessage(), e);
 		}
 	}
 
 	/**
 	 * Stops the conversion processes and ensures that all processes have finished.
 	 */
-	public void stopProcesses() throws InterruptedException, IOException {
+	public void stopProcesses() throws ConversionException {
 		if (executorService != null) {
 			if (!executorService.isTerminated()) {
 				executorService.shutdownNow();
@@ -281,11 +293,11 @@ public class XCResultConverter {
 	 */
 	public static class ConversionException extends Exception {
 
-		private ConversionException(String message) {
+		public ConversionException(String message) {
 			super(message);
 		}
 
-		private ConversionException(String message, Exception e) {
+		public ConversionException(String message, Exception e) {
 			super(message, e);
 		}
 	}
