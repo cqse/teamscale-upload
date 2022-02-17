@@ -60,21 +60,6 @@
     "allDeclaredFields": true
   },
   {
-    "name": "com.teamscale.upload.report.xcode.ActionTestPlanRunSummaries",
-    "allDeclaredConstructors": true,
-    "allDeclaredFields": true
-  },
-  {
-    "name": "com.teamscale.upload.report.xcode.ActionTestPlanRunSummary",
-    "allDeclaredConstructors": true,
-    "allDeclaredFields": true
-  },
-  {
-    "name": "com.teamscale.upload.report.xcode.ActionTestableSummary",
-    "allDeclaredConstructors": true,
-    "allDeclaredFields": true
-  },
-  {
     "name": "com.teamscale.upload.report.xcode.ActionTest",
     "allDeclaredConstructors": true,
     "allDeclaredFields": true

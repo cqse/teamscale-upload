@@ -1,24 +1,5 @@
 package com.teamscale.upload;
 
-import com.teamscale.upload.autodetect_revision.AutodetectCommitUtils;
-import com.teamscale.upload.resolve.ReportPatternUtils;
-import com.teamscale.upload.utils.LogUtils;
-import com.teamscale.upload.utils.MessageUtils;
-import com.teamscale.upload.utils.OkHttpUtils;
-import com.teamscale.upload.utils.SafeResponse;
-import com.teamscale.upload.xcode.XCResultConverter;
-import com.teamscale.upload.xcode.XCResultConverter.ConversionException;
-import okhttp3.Credentials;
-import okhttp3.HttpUrl;
-import okhttp3.MediaType;
-import okhttp3.MultipartBody;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
-import org.apache.commons.io.FileUtils;
-
-import javax.net.ssl.SSLHandshakeException;
 import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
@@ -29,6 +10,28 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import javax.net.ssl.SSLHandshakeException;
+
+import org.apache.commons.io.FileUtils;
+
+import com.teamscale.upload.autodetect_revision.AutodetectCommitUtils;
+import com.teamscale.upload.resolve.ReportPatternUtils;
+import com.teamscale.upload.utils.LogUtils;
+import com.teamscale.upload.utils.MessageUtils;
+import com.teamscale.upload.utils.OkHttpUtils;
+import com.teamscale.upload.utils.SafeResponse;
+import com.teamscale.upload.xcode.XCResultConverter;
+import com.teamscale.upload.xcode.XCResultConverter.ConversionException;
+
+import okhttp3.Credentials;
+import okhttp3.HttpUrl;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 /**
  * Main class of the teamscale-upload project.
@@ -48,7 +51,11 @@ public class TeamscaleUpload {
 		Map<String, Set<File>> formatToFiles = ReportPatternUtils.resolveInputFilePatterns(commandLine.inputFile,
 				commandLine.files, commandLine.format);
 
-		convertXCodeReports(formatToFiles);
+		try {
+			convertXCodeReports(formatToFiles);
+		} catch (ConversionException e) {
+			LogUtils.failWithoutStackTrace(e.getMessage(), e);
+		}
 
 		OkHttpClient client = OkHttpUtils.createClient(commandLine.validateSsl, commandLine.getKeyStorePath(),
 				commandLine.getKeyStorePassword(), commandLine.getTimeoutInSeconds());
@@ -68,8 +75,7 @@ public class TeamscaleUpload {
 	 * Converts the reports from the internal binary XCode format to a readable
 	 * report that can be uploaded to Teamscale.
 	 */
-	private static void convertXCodeReports(Map<String, Set<File>> formatToFiles)
-			throws IOException, ConversionException {
+	private static void convertXCodeReports(Map<String, Set<File>> formatToFiles) throws ConversionException {
 		if (!formatToFiles.containsKey(XCResultConverter.XCODE_REPORT_FORMAT)) {
 			return;
 		}
@@ -83,7 +89,7 @@ public class TeamscaleUpload {
 				continue;
 			}
 
-			File workingDirectory = Files.createTempDirectory(null).toFile();
+			File workingDirectory = createTemporaryWorkingDirectory();
 			XCResultConverter converter = new XCResultConverter(workingDirectory);
 
 			// Cleanup hook to ensure temporarily created files and directories are deleted
@@ -92,11 +98,10 @@ public class TeamscaleUpload {
 			Thread cleanupHook = new Thread(() -> {
 				try {
 					converter.stopProcesses();
-					FileUtils.deleteDirectory(workingDirectory);
-				} catch (IOException | InterruptedException e) {
-					LogUtils.warn("Unable to delete temporary working directory " + workingDirectory.getAbsolutePath()
-							+ ": " + e.getMessage());
+				} catch (ConversionException e) {
+					LogUtils.warn(e.getMessage());
 				}
+				deleteWorkingDirectory(workingDirectory);
 			});
 
 			try {
@@ -107,9 +112,27 @@ public class TeamscaleUpload {
 							.add(convertedReport.report);
 				});
 			} finally {
-				FileUtils.deleteDirectory(workingDirectory);
+				deleteWorkingDirectory(workingDirectory);
 				Runtime.getRuntime().removeShutdownHook(cleanupHook);
 			}
+		}
+	}
+
+	private static void deleteWorkingDirectory(File workingDirectory) {
+		try {
+			FileUtils.deleteDirectory(workingDirectory);
+		} catch (IOException e) {
+			LogUtils.warn("Unable to delete temporary working directory " + workingDirectory.getAbsolutePath() + ": "
+					+ e.getMessage());
+		}
+	}
+
+	private static File createTemporaryWorkingDirectory() throws ConversionException {
+		try {
+			return Files.createTempDirectory(null).toFile();
+		} catch (IOException e) {
+			throw new ConversionException(
+					"Error occurred when trying to create temporary working directory:" + e.getMessage(), e);
 		}
 	}
 
@@ -151,6 +174,10 @@ public class TeamscaleUpload {
 
 	private static void performUpload(OkHttpClient client, Map<String, Set<File>> formatToFiles,
 			CommandLine commandLine) throws IOException {
+		if (formatToFiles.isEmpty()) {
+			LogUtils.warn("There are no files to upload. Skipping upload.");
+			return;
+		}
 		String sessionId = openSession(client, commandLine, formatToFiles.keySet());
 		for (String format : formatToFiles.keySet()) {
 			Set<File> filesFormFormat = formatToFiles.get(format);

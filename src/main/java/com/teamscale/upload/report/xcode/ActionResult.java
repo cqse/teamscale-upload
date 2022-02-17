@@ -11,14 +11,7 @@ public class ActionResult {
 	 */
 	public final CodeCoverageInfo coverage;
 
-	/**
-	 * The reference to the test object that can be used to load the corresponding
-	 * {@link ActionTestPlanRunSummaries}.
-	 */
-	public final XCResultObjectIdReference testsRef;
-
-	public ActionResult(CodeCoverageInfo coverage, XCResultObjectIdReference testsRef) {
+	public ActionResult(CodeCoverageInfo coverage) {
 		this.coverage = coverage;
-		this.testsRef = testsRef;
 	}
 }

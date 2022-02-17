@@ -18,19 +18,19 @@ public class SvnChecker {
 
 		ProcessUtils.ProcessResult result = ProcessUtils.run("svn", "info", "--show-item", "revision");
 		if (result.wasSuccessful()) {
-			String revision = result.stdoutAndStdErr.trim();
+			String revision = result.output.trim();
 			System.out.println("Using SVN revision " + revision);
 			return revision;
 		}
 
 		System.out.println("Failed to read checked-out SVN revision. svn info --show-item revision returned: "
-				+ result.stdoutAndStdErr);
+				+ result.errorOutput);
 		return null;
 	}
 
 	private static boolean isInsideSvn() {
 		ProcessUtils.ProcessResult result = ProcessUtils.run("svn", "info");
-		return result.wasSuccessful() && result.stdoutAndStdErr.contains("URL:");
+		return result.wasSuccessful() && result.output.contains("URL:");
 	}
 
 }

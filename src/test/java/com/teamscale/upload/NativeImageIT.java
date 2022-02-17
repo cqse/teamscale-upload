@@ -2,6 +2,7 @@ package com.teamscale.upload;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,7 +46,7 @@ public class NativeImageIT {
 		ProcessUtils.ProcessResult result = runUploader(new Arguments().withAccessKey("wrong-accesskey_"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			softly.assertThat(result.stdoutAndStdErr).contains("You provided incorrect credentials");
+			softly.assertThat(result.errorOutput).contains("You provided incorrect credentials");
 		});
 	}
 
@@ -57,7 +58,7 @@ public class NativeImageIT {
 			// the command line library we use adjusts the word spacing based on the
 			// terminal width so on different machines the output may contain a different
 			// number of spaces. This behaviour can unfortunately not be disabled
-			softly.assertThat(result.stdoutAndStdErr)
+			softly.assertThat(result.errorOutput)
 					.matches(Pattern.compile(".*You +provided +an +invalid +URL.*", Pattern.DOTALL));
 		});
 	}
@@ -67,7 +68,7 @@ public class NativeImageIT {
 		ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("http://domain.invalid:9999"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			softly.assertThat(result.stdoutAndStdErr).contains("could not be resolved");
+			softly.assertThat(result.errorOutput).contains("could not be resolved");
 		});
 	}
 
@@ -76,7 +77,7 @@ public class NativeImageIT {
 		ProcessUtils.ProcessResult result = runUploader(new Arguments().withUrl("http://localhost:9999"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			softly.assertThat(result.stdoutAndStdErr).contains("refused a connection");
+			softly.assertThat(result.errorOutput).contains("refused a connection");
 		});
 	}
 
@@ -85,7 +86,7 @@ public class NativeImageIT {
 		ProcessUtils.ProcessResult result = runUploader(new Arguments().withUser("wrong-user_"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			softly.assertThat(result.stdoutAndStdErr).contains("You provided incorrect credentials");
+			softly.assertThat(result.errorOutput).contains("You provided incorrect credentials");
 		});
 	}
 
@@ -94,7 +95,7 @@ public class NativeImageIT {
 		ProcessUtils.ProcessResult result = runUploader(new Arguments().withProject("wrong-project_"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			softly.assertThat(result.stdoutAndStdErr).contains("The project")
+			softly.assertThat(result.errorOutput).contains("The project")
 					.contains("does not seem to exist in Teamscale");
 		});
 	}
@@ -105,7 +106,7 @@ public class NativeImageIT {
 				new Arguments().withUrl("http://localhost:9999").withTimeoutInSeconds("0"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			softly.assertThat(result.stdoutAndStdErr).contains("The timeout in seconds")
+			softly.assertThat(result.errorOutput).contains("The timeout in seconds")
 					.contains("must be an integer greater").contains("than 0.");
 		});
 	}
@@ -116,7 +117,7 @@ public class NativeImageIT {
 				new Arguments().withUrl("http://localhost:9999").withTimeoutInSeconds("foo"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			softly.assertThat(result.stdoutAndStdErr).contains("The timeout in seconds")
+			softly.assertThat(result.errorOutput).contains("The timeout in seconds")
 					.contains("must be an integer greater").contains("than 0.");
 		});
 	}
@@ -131,7 +132,7 @@ public class NativeImageIT {
 		ProcessUtils.ProcessResult result = runUploader(new Arguments().withCommit("doesnt-exist"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			softly.assertThat(result.stdoutAndStdErr).doesNotContain("The project")
+			softly.assertThat(result.errorOutput).doesNotContain("The project")
 					.doesNotContain("does not seem to exist in Teamscale")
 					.doesNotContain("project ID or the project alias").contains("The revision")
 					.contains("is not known to Teamscale or the version control system(s) you configured");
@@ -143,7 +144,7 @@ public class NativeImageIT {
 		ProcessUtils.ProcessResult result = runUploader(new Arguments().withPattern("**/matches.nothing"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			softly.assertThat(result.stdoutAndStdErr).contains("The pattern")
+			softly.assertThat(result.errorOutput).contains("The pattern")
 					.contains("could not be resolved to any files");
 		});
 	}
@@ -154,22 +155,21 @@ public class NativeImageIT {
 				new Arguments().withUser("has-no-permissions").withAccessKey("SU2nfdkpcsoOXK2zDVf2DLEQiDaMD8fM"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			softly.assertThat(result.stdoutAndStdErr)
-					.contains("is not allowed to upload data to the Teamscale project");
+			softly.assertThat(result.errorOutput).contains("is not allowed to upload data to the Teamscale project");
 		});
 	}
 
 	@Test
 	public void successfulSingleFormatUpload() {
 		ProcessUtils.ProcessResult result = runUploader(new Arguments());
-		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isZero();
+		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 	}
 
 	@Test
 	public void successfulMultiFormatUpload() {
 		ProcessUtils.ProcessResult result = runUploader(
 				new Arguments().withInput("src/test/resources/coverage_files/input_file"));
-		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isZero();
+		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 	}
 
 	@Test
@@ -177,7 +177,7 @@ public class NativeImageIT {
 		TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT);
 		ProcessUtils.ProcessResult result = runUploader(new Arguments()
 				.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withAdditionalMessageLine("Build ID: 1234"));
-		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isZero();
+		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 		assertThat(server.sessions).hasSize(1).first().extracting(this::extractNormalizedMessage)
 				.isEqualTo("NativeImageIT external analysis results uploaded at DATE" + "\n\nuploaded from HOSTNAME"
 						+ "\nfor revision: master:HEAD" + "\nincludes data in the following formats: SIMPLE"
@@ -189,8 +189,9 @@ public class NativeImageIT {
 		try (TeamscaleMockServer ignored = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 2)) {
 			ProcessUtils.ProcessResult result = runUploader(
 					new Arguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withTimeoutInSeconds("1"));
-			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isNotZero();
-			assertThat(result.stdoutAndStdErr).contains("Request timeout reached.");
+			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
+					.isNotZero();
+			assertThat(result.errorOutput).contains("Request timeout reached.");
 		}
 	}
 
@@ -199,7 +200,7 @@ public class NativeImageIT {
 		try (TeamscaleMockServer ignored = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 2)) {
 			ProcessUtils.ProcessResult result = runUploader(
 					new Arguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withTimeoutInSeconds("3"));
-			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isZero();
+			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 		}
 	}
 
@@ -207,8 +208,9 @@ public class NativeImageIT {
 	public void mustRejectTimestampPassedInSeconds() {
 		ProcessUtils.ProcessResult result = runUploader(new Arguments().withTimestamp("master:1606764633"));
 		assertSoftlyThat(softly -> {
-			softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isNotZero();
-			softly.assertThat(result.stdoutAndStdErr).contains("seconds").contains("milliseconds").contains("1970")
+			softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
+					.isNotZero();
+			softly.assertThat(result.errorOutput).contains("seconds").contains("milliseconds").contains("1970")
 					.contains("2020");
 		});
 	}
@@ -218,7 +220,7 @@ public class NativeImageIT {
 		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
 			ProcessUtils.ProcessResult result = runUploader(
 					new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT).withInsecure());
-			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isZero();
+			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 			assertThat(server.sessions).hasSize(1);
 		}
 	}
@@ -229,9 +231,9 @@ public class NativeImageIT {
 			ProcessUtils.ProcessResult result = runUploader(
 					new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT));
 			assertSoftlyThat(softly -> {
-				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
 						.isNotZero();
-				softly.assertThat(result.stdoutAndStdErr).contains("self-signed").contains("--insecure");
+				softly.assertThat(result.errorOutput).contains("self-signed").contains("--insecure");
 			});
 		}
 	}
@@ -242,9 +244,9 @@ public class NativeImageIT {
 			ProcessUtils.ProcessResult result = runUploader(
 					new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT));
 			assertSoftlyThat(softly -> {
-				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
 						.isNotZero();
-				softly.assertThat(result.stdoutAndStdErr).contains("--stacktrace");
+				softly.assertThat(result.errorOutput).contains("--stacktrace");
 			});
 		}
 
@@ -252,9 +254,9 @@ public class NativeImageIT {
 			ProcessUtils.ProcessResult result = runUploader(
 					new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT).withStackTrace());
 			assertSoftlyThat(softly -> {
-				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr)
+				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
 						.isNotZero();
-				softly.assertThat(result.stdoutAndStdErr).contains("\tat com.teamscale.upload.TeamscaleUpload")
+				softly.assertThat(result.errorOutput).contains("\tat com.teamscale.upload.TeamscaleUpload")
 						.doesNotContain("--stacktrace");
 			});
 		}
@@ -265,7 +267,7 @@ public class NativeImageIT {
 		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
 			ProcessUtils.ProcessResult result = runUploader(
 					new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT).withKeystore());
-			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isZero();
+			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 			assertThat(server.sessions).hasSize(1);
 		}
 	}
@@ -275,7 +277,7 @@ public class NativeImageIT {
 		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
 			ProcessUtils.ProcessResult result = runUploader(
 					new Arguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withAutoDetectCommit());
-			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isZero();
+			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 			assertThat(server.sessions).hasSize(1);
 			assertThat(server.sessions.get(0).revisionOrTimestamp).hasSize(40); // size of a git SHA1
 		}
@@ -294,7 +296,7 @@ public class NativeImageIT {
 			Files.writeString(file, System.getenv(CommandLine.TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE));
 
 			ProcessUtils.ProcessResult result = runUploader(new Arguments().withAccessKeyViaStdin(temporaryFileName));
-			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isZero();
+			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
@@ -311,7 +313,7 @@ public class NativeImageIT {
 				new Arguments().withAccessKeyViaStdin("src/test/resources/incorrect_access_key.txt"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			softly.assertThat(result.stdoutAndStdErr).contains("You provided incorrect credentials");
+			softly.assertThat(result.errorOutput).contains("You provided incorrect credentials");
 		});
 	}
 
@@ -322,7 +324,7 @@ public class NativeImageIT {
 	@Test
 	public void testCorrectAccessWithKeyFromEnvironmentVariable() {
 		ProcessUtils.ProcessResult result = runUploader(new Arguments().withoutAccessKeyInOption());
-		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isZero();
+		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 
 	}
 
@@ -333,14 +335,11 @@ public class NativeImageIT {
 			ProcessUtils.ProcessResult result = runUploader(new Arguments()
 					.withPattern("src/test/resources/coverage_files/output.xcresult.tar.gz").withFormat("XCODE")
 					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withAutoDetectCommit());
-			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isZero();
+			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 			assertThat(server.sessions).hasSize(1);
-			assertThat(server.uploadedReportsByName).hasSize(2);
-			for (String expectedFile : List.of("output.xcresult.tar.gz.testwisecoverage.json",
-					"output.xcresult.tar.gz.xccov")) {
-				assertThat(server.uploadedReportsByName.get(expectedFile))
-						.containsExactly(readResource(expectedFile + ".expected"));
-			}
+			assertThat(server.uploadedReportsByName).hasSize(1);
+			assertThat(server.uploadedReportsByName.get("output.xcresult.tar.gz.xccov"))
+					.containsExactly(readResource("output.xcresult.tar.gz.xccov.expected"));
 		}
 	}
 
@@ -349,13 +348,13 @@ public class NativeImageIT {
 		ProcessUtils.ProcessResult result = runUploader(
 				new Arguments().withRepository("cqse/teamscale-upload").withPartition("NativeImageIT > TestRepository")
 						.withCommit("ef7367b45614e92433c3489ad57323f3b98063f4"));
-		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isZero();
+		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.errorOutput).isZero();
 	}
 
 	@Test
 	public void successfulUploadWithMoveToLastCommit() {
 		ProcessUtils.ProcessResult result = runUploader(new Arguments().withMoveToLastCommit());
-		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.stdoutAndStdErr).isZero();
+		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.errorOutput).isZero();
 	}
 
 	private byte[] readResource(String name) throws IOException {
@@ -374,8 +373,7 @@ public class NativeImageIT {
 	}
 
 	private ProcessUtils.ProcessResult runUploader(Arguments arguments) {
-		return ProcessUtils.runWithStdin("./target/teamscale-upload", arguments.stdinFilePath,
-				arguments.toStringArray());
+		return ProcessUtils.runWithStdIn(arguments.stdinFile, arguments.toCommand("./target/teamscale-upload"));
 	}
 
 	private static String getAccessKeyFromCi() {
@@ -403,7 +401,7 @@ public class NativeImageIT {
 		private String repository = null;
 		private String additionalMessageLine = null;
 		private boolean stackTrace = false;
-		private String stdinFilePath = null;
+		private File stdinFile = null;
 		private boolean moveToLastCommit = false;
 		private String timeoutInSeconds = null;
 
@@ -480,7 +478,7 @@ public class NativeImageIT {
 			this.accessKey = "-";
 			// If the access key is set to '-', we need to pipe the key from a file via
 			// stdin.
-			this.stdinFilePath = stdinFilePath;
+			this.stdinFile = new File(stdinFilePath);
 			return this;
 		}
 
@@ -514,54 +512,54 @@ public class NativeImageIT {
 			return this;
 		}
 
-		private String[] toStringArray() {
-			List<String> arguments = new ArrayList<>(
-					Arrays.asList("-s", url, "-u", user, "-f", format, "-p", project, "-t", partition));
+		private String[] toCommand(String executable) {
+			List<String> command = new ArrayList<>(
+					Arrays.asList(executable, "-s", url, "-u", user, "-f", format, "-p", project, "-t", partition));
 			if (accessKey != null) {
-				arguments.add("-a");
-				arguments.add(accessKey);
+				command.add("-a");
+				command.add(accessKey);
 			}
 			if (input != null) {
-				arguments.add("-i");
-				arguments.add(input);
+				command.add("-i");
+				command.add(input);
 			}
-			arguments.add(pattern);
+			command.add(pattern);
 			if (insecure) {
-				arguments.add("--insecure");
+				command.add("--insecure");
 			}
 			if (useKeystore) {
-				arguments.add("--trusted-keystore");
-				arguments.add(TeamscaleMockServer.TRUSTSTORE.getAbsolutePath() + ";password");
+				command.add("--trusted-keystore");
+				command.add(TeamscaleMockServer.TRUSTSTORE.getAbsolutePath() + ";password");
 			}
 			if (additionalMessageLine != null) {
-				arguments.add("--append-to-message");
-				arguments.add(additionalMessageLine);
+				command.add("--append-to-message");
+				command.add(additionalMessageLine);
 			}
 			if (stackTrace) {
-				arguments.add("--stacktrace");
+				command.add("--stacktrace");
 			}
 			if (moveToLastCommit) {
-				arguments.add("--move-to-last-commit");
+				command.add("--move-to-last-commit");
 			}
 
 			if (commit != null) {
-				arguments.add("--commit");
-				arguments.add(commit);
+				command.add("--commit");
+				command.add(commit);
 			} else if (!autoDetectCommit) {
-				arguments.add("--branch-and-timestamp");
-				arguments.add(timestamp);
+				command.add("--branch-and-timestamp");
+				command.add(timestamp);
 			}
 
 			if (repository != null) {
-				arguments.add("--repository");
-				arguments.add(repository);
+				command.add("--repository");
+				command.add(repository);
 			}
 			if (timeoutInSeconds != null) {
-				arguments.add("--timeout");
-				arguments.add(timeoutInSeconds);
+				command.add("--timeout");
+				command.add(timeoutInSeconds);
 			}
 
-			return arguments.toArray(new String[0]);
+			return command.toArray(new String[0]);
 		}
 	}
 
