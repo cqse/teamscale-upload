@@ -6,6 +6,8 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 
+- [feature] add `--debug` to enable more detailled logging in case of problems
+
 # 2.5.0
 
 - [feature] new `--timeout` command line argument for specifying request timeouts in seconds
