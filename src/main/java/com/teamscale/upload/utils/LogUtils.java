@@ -73,6 +73,14 @@ public class LogUtils {
 	}
 
 	/**
+	 * Print a warning message to stderr and log the given throwable.
+	 */
+	public static void warn(String message, Throwable throwable) {
+		warn(message);
+		throwable.printStackTrace();
+	}
+
+	/**
 	 * Print an info message to stdout.
 	 * <p>
 	 * Use sparingly and only if the information is helpful and actionable to the

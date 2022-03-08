@@ -133,8 +133,7 @@ public class OkHttpUtils {
 			sslContext.init(null, new TrustManager[] { TrustAllCertificatesManager.INSTANCE }, new SecureRandom());
 			sslSocketFactory = sslContext.getSocketFactory();
 		} catch (GeneralSecurityException e) {
-			System.err.println("Could not disable SSL certificate validation. Leaving it enabled");
-			e.printStackTrace();
+			LogUtils.warn("Could not disable SSL certificate validation. Leaving it enabled", e);
 			return;
 		}
 

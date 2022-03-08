@@ -175,11 +175,11 @@ public class CommandLine {
 		}
 
 		if (accessKeyViaOption.equals("-")) {
-			System.out.print("Reading access key from standard input: ");
+			LogUtils.debug("Reading access key from standard input");
 			Scanner inputScanner = new Scanner(System.in);
 			String accessKeyViaStdin = inputScanner.nextLine();
 			inputScanner.close();
-			System.out.println("\nSuccessfully read access key");
+			LogUtils.debug("Successfully read access key");
 			return accessKeyViaStdin;
 		}
 

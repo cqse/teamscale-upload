@@ -3,6 +3,8 @@ package com.teamscale.upload.autodetect_revision;
 import java.util.Arrays;
 import java.util.List;
 
+import com.teamscale.upload.utils.LogUtils;
+
 /**
  * Checks well-known environment variables for commit infos.
  */
@@ -48,13 +50,12 @@ public class EnvironmentVariableChecker {
 		for (String variable : COMMIT_ENVIRONMENT_VARIABLES) {
 			String commit = System.getenv(variable);
 			if (commit != null) {
-				System.out.println(
-						"Using commit/revision/changeset " + commit + " from environment variable " + variable);
+				LogUtils.info("Using commit/revision/changeset " + commit + " from environment variable " + variable);
 				return commit;
 			}
 		}
 
-		System.out.println("Found no commit/revision/changeset info in any environment variables.");
+		LogUtils.info("Found no commit/revision/changeset info in any environment variables.");
 		return null;
 	}
 
