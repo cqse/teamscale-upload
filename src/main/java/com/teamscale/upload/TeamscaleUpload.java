@@ -44,6 +44,9 @@ public class TeamscaleUpload {
 	public static void main(String[] args) throws Exception {
 		CommandLine commandLine = CommandLine.parseArguments(args);
 
+		if (commandLine.debugLogEnabled) {
+			LogUtils.enableDebugLogging();
+		}
 		if (commandLine.printStackTrace) {
 			LogUtils.enableStackTracePrintingForKnownErrors();
 		}
@@ -215,12 +218,12 @@ public class TeamscaleUpload {
 				.header("Authorization", Credentials.basic(commandLine.username, commandLine.accessKey)).url(url)
 				.post(OkHttpUtils.EMPTY_BODY).build();
 
-		System.out.println("Opening upload session");
+		LogUtils.debug("Opening upload session");
 		String sessionId = sendRequest(client, commandLine, url, request);
 		if (sessionId == null) {
 			LogUtils.fail("Could not open session.");
 		}
-		System.out.println("Session ID: " + sessionId);
+		LogUtils.debug("Session ID: " + sessionId);
 		return sessionId;
 	}
 
@@ -267,7 +270,7 @@ public class TeamscaleUpload {
 		Request request = new Request.Builder()
 				.header("Authorization", Credentials.basic(commandLine.username, commandLine.accessKey)).url(url)
 				.post(OkHttpUtils.EMPTY_BODY).build();
-		System.out.println("Closing upload session");
+		LogUtils.debug("Closing upload session");
 		sendRequest(client, commandLine, url, request);
 	}
 
@@ -292,7 +295,7 @@ public class TeamscaleUpload {
 				.header("Authorization", Credentials.basic(commandLine.username, commandLine.accessKey)).url(url)
 				.post(requestBody).build();
 
-		System.out.println("Uploading reports for format " + format);
+		LogUtils.info("Uploading reports for format " + format);
 		sendRequest(client, commandLine, url, request);
 	}
 
@@ -302,7 +305,7 @@ public class TeamscaleUpload {
 		try (Response response = client.newCall(request).execute()) {
 			SafeResponse safeResponse = new SafeResponse(response);
 			handleErrors(safeResponse, commandLine);
-			System.out.println("Successful");
+			LogUtils.info("Request was successful");
 			return safeResponse.body;
 		} catch (UnknownHostException e) {
 			LogUtils.failWithoutStackTrace(

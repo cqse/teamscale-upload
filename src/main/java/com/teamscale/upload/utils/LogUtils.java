@@ -7,6 +7,7 @@ package com.teamscale.upload.utils;
 public class LogUtils {
 
 	private static boolean printStackTracesForKnownErrors = false;
+	private static boolean debugLogEnabled = false;
 
 	/**
 	 * Enables printing stack traces even when the error is known and explicitly
@@ -78,8 +79,31 @@ public class LogUtils {
 	 * user. Logging too many implementation details is confusing to the user and
 	 * may lead to them skipping over important information. CLI output should be
 	 * concise.
+	 * 
+	 * Use {@link #debug(String)} instead for implementation details and information
+	 * that is only helpful when debugging unforseen errors.
 	 */
 	public static void info(String message) {
 		System.out.println("INFO: " + message);
+	}
+
+	/**
+	 * Print a debug message to stdout.
+	 * <p>
+	 * Use to log information that is not useful during normal operations but
+	 * helpful when something goes wrong.
+	 */
+	public static void debug(String message) {
+		if (debugLogEnabled) {
+			System.out.println("DEBUG: " + message);
+		}
+	}
+
+	/**
+	 * Enables debug logging and all stack traces.
+	 */
+	public static void enableDebugLogging() {
+		debugLogEnabled = true;
+		printStackTracesForKnownErrors = true;
 	}
 }
