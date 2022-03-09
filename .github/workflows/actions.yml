@@ -51,11 +51,6 @@ jobs:
         env:
           TEAMSCALE_ACCESS_KEY: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
         run: mvn clean verify
-      - name: Reduce Image Size
-        uses: crazy-max/ghaction-upx@v1
-        with:
-          version: latest
-          file: ./target/teamscale-upload
       - name: 'Upload Artifact'
         if: ${{ always() }}
         uses: actions/upload-artifact@v2
