@@ -111,6 +111,10 @@ public class CommandLine {
 	 */
 	public final boolean printStackTrace;
 	/**
+	 * Whether to print debug log output.
+	 */
+	public final boolean debugLogEnabled;
+	/**
 	 * The timeout in seconds for TCP connect, read and write of the
 	 * {@link OkHttpClient} used for requests. Defaults to 60 seconds.
 	 */
@@ -136,6 +140,7 @@ public class CommandLine {
 		this.additionalMessageLines = getListSafe(namespace, "append_to_message");
 		this.timeoutInSecondsAsString = namespace.getString("timeout");
 		this.printStackTrace = namespace.getBoolean("stacktrace");
+		this.debugLogEnabled = namespace.getBoolean("debug");
 
 		String inputFilePath = namespace.getString("input");
 		if (inputFilePath != null) {
@@ -170,11 +175,11 @@ public class CommandLine {
 		}
 
 		if (accessKeyViaOption.equals("-")) {
-			System.out.print("Reading access key from standard input: ");
+			LogUtils.debug("Reading access key from standard input");
 			Scanner inputScanner = new Scanner(System.in);
 			String accessKeyViaStdin = inputScanner.nextLine();
 			inputScanner.close();
-			System.out.println("\nSuccessfully read access key");
+			LogUtils.debug("Successfully read access key");
 			return accessKeyViaStdin;
 		}
 
@@ -261,8 +266,9 @@ public class CommandLine {
 				.help("Path(s) or pattern(s) of the report files to upload. Alternatively, you may"
 						+ " provide input files via -i or --input");
 		parser.addArgument("--stacktrace").action(Arguments.storeTrue()).required(false)
-				.help("Enables printing stack traces in all cases where errors occur." //
-						+ " Used for debugging.");
+				.help("Enables printing stack traces in all cases where errors occur. Used for debugging.");
+		parser.addArgument("--debug").action(Arguments.storeTrue()).required(false)
+				.help("Enables printing debug log output. This automatically enables --stacktrace.");
 		parser.addArgument("--timeout").metavar("TIMEOUT_IN_SECONDS").required(false)
 				.help("Sets the timeout in seconds for TCP connect, read and write for HTTP requests. "
 						+ "Defaults to 60 seconds.");
@@ -375,8 +381,7 @@ public class CommandLine {
 		try {
 			long timeoutInSeconds = Long.parseLong(timeoutInSecondsAsString);
 			if (timeoutInSeconds <= 0L) {
-				throw new ArgumentParserException("The timeout in seconds must be an integer greater than 0.",
-						parser);
+				throw new ArgumentParserException("The timeout in seconds must be an integer greater than 0.", parser);
 			}
 		} catch (NumberFormatException e) {
 			throw new ArgumentParserException("The timeout in seconds must be an integer greater than 0.", parser);

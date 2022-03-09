@@ -118,7 +118,7 @@ Thus, if you or one of your dependencies uses reflection, classes may be missing
 ### Running Tests in IntelliJ
 
 Running the integration tests from IntelliJ (classes ending in `IT`) requires that you first build a native image via `./mvnw package`.
-To run them locally, you'll furthermore need to define environment variable `ACCESS_KEY` that contains the access key to https://demo.teamscale.com project `teamscale-upload` for the `teamscale-upload-build-test-user` user.
+To run them locally, you'll furthermore need to define environment variable `TEAMSCALE_ACCESS_KEY` that contains the access key to https://demo.teamscale.com project `teamscale-upload` for the `teamscale-upload-build-test-user` user.
 The access key is stored in 1password.
 This key is used during the integration tests (stored as Github Secret) to simulate uploads.
 

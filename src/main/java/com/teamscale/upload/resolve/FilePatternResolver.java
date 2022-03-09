@@ -3,6 +3,7 @@ package com.teamscale.upload.resolve;
 import com.teamscale.upload.utils.CollectionUtils;
 import com.teamscale.upload.utils.AntPatternUtils;
 import com.teamscale.upload.utils.FileSystemUtils;
+import com.teamscale.upload.utils.LogUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -145,11 +146,11 @@ public class FilePatternResolver {
 		 * Returns all matched paths after the resolution.
 		 */
 		private List<Path> getAllMatchingPaths() {
-			if (this.matchingPaths.isEmpty()) {
-				System.err.println("The pattern " + this.suffixPattern + " in " + this.basePath.toString()
+			if (matchingPaths.isEmpty()) {
+				LogUtils.warn("The pattern " + suffixPattern + " in " + basePath.toString()
 						+ " for option " + optionName + " did not match any file!");
 			}
-			System.out.println("Resolved " + pattern + " to " + this.matchingPaths.size() + " files");
+			LogUtils.info("Resolved " + pattern + " to " + matchingPaths.size() + " files");
 			return this.matchingPaths;
 		}
 	}
