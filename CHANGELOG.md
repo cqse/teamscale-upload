@@ -7,6 +7,7 @@ We use [semantic versioning](http://semver.org/):
 # Next Release
 
 - [feature] add `--debug` to enable more detailled logging in case of problems
+- [fix] links in error messages were encoded incorrectly and thus not always clickable
 
 # 2.5.0
 
