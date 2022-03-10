@@ -40,7 +40,7 @@ public class CommandLine {
 	public static final String TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE = "TEAMSCALE_ACCESS_KEY";
 
 	/**
-	 * The Teamscale project ID or alias.
+	 * The Teamscale project ID.
 	 */
 	public final String project;
 	/**
@@ -204,7 +204,7 @@ public class CommandLine {
 		parser.addArgument("-s", "--server").metavar("URL").required(true)
 				.help("The url under which the Teamscale server can be reached.");
 		parser.addArgument("-p", "--project").metavar("PROJECT").required(true)
-				.help("The project ID or alias (NOT the project name!) to which to upload the data.");
+				.help("The project ID (NOT the project name!) to which to upload the data.");
 		parser.addArgument("-u", "--user").metavar("USER").required(true)
 				.help("The username used to perform the upload. Must have the"
 						+ " 'Perform External Uploads' permission for the given Teamscale project.");

@@ -134,7 +134,7 @@ public class NativeImageIT {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).doesNotContain("The project")
 					.doesNotContain("does not seem to exist in Teamscale")
-					.doesNotContain("project ID or the project alias").contains("The revision")
+					.doesNotContain("project ID").contains("The revision")
 					.contains("is not known to Teamscale or the version control system(s) you configured");
 		});
 	}
