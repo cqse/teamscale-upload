@@ -21,6 +21,7 @@ import com.teamscale.upload.utils.LogUtils;
 import com.teamscale.upload.utils.MessageUtils;
 import com.teamscale.upload.utils.OkHttpUtils;
 import com.teamscale.upload.utils.SafeResponse;
+import com.teamscale.upload.utils.TeamscaleUrlUtils;
 import com.teamscale.upload.xcode.XCResultConverter;
 import com.teamscale.upload.xcode.XCResultConverter.ConversionException;
 
@@ -338,24 +339,20 @@ public class TeamscaleUpload {
 		}
 
 		if (response.unsafeResponse.code() == 401) {
-			HttpUrl editUserUrl = commandLine.url.newBuilder().addPathSegments("admin.html#users")
-					.addQueryParameter("action", "edit").addQueryParameter("username", commandLine.username).build();
+			String editUserUrl = TeamscaleUrlUtils.getEditUserUrl(commandLine.url, commandLine.username);
 			LogUtils.fail("You provided incorrect credentials." + " Either the user '" + commandLine.username
 					+ "' does not exist in Teamscale" + " or the access key you provided is incorrect."
-					+ " Please check both the username and access key in Teamscale under Admin > Users:" + " "
+					+ " Please check both the username and access key in Teamscale under Admin > Users: "
 					+ editUserUrl + "\nPlease use the user's access key, not their password.", response);
 		}
 
 		if (response.unsafeResponse.code() == 403) {
-			// can't include a URL to the corresponding Teamscale screen since that page
-			// does not support aliases
-			// and the user may have provided an alias, so we'd be directing them to a red
-			// error page in that case
+			String projectPermissionUrl = TeamscaleUrlUtils.getProjectPermissionUrl(commandLine.url, commandLine.project);
 			LogUtils.fail("The user user '" + commandLine.username
 					+ "' is not allowed to upload data to the Teamscale project '" + commandLine.project + "'."
 					+ " Please grant this user the 'Perform External Uploads' permission in Teamscale"
-					+ " under Project Configuration > Projects by clicking on the button showing three"
-					+ " persons next to project '" + commandLine.project + "'.", response);
+					+ " under Project Configuration > Projects: " + projectPermissionUrl
+					+ "\nE.g. by assigning them the 'Build' role for that project.", response);
 		}
 
 		if (response.unsafeResponse.code() == 404) {
@@ -378,10 +375,10 @@ public class TeamscaleUpload {
 					+ " (e.g. your Git commit has been pushed).", response);
 		}
 
-		HttpUrl projectPerspectiveUrl = commandLine.url.newBuilder().addPathSegments("project.html").build();
-		LogUtils.fail("The project with ID or alias '" + commandLine.project + "' does not seem to exist in Teamscale."
-				+ " Please ensure that you used the project ID or the project alias, NOT the project name."
-				+ " You can see the IDs of all projects at " + projectPerspectiveUrl
+		LogUtils.fail("The project with ID '" + commandLine.project + "' does not seem to exist in Teamscale."
+				+ " Please ensure that you used one of the project IDs, NOT the project name."
+				+ " You can see the IDs of all projects at "
+				+ TeamscaleUrlUtils.getProjectPerspectiveUrl(commandLine.url)
 				+ "\nPlease also ensure that the Teamscale URL is correct and no proxy is required to access it.",
 				response);
 	}
