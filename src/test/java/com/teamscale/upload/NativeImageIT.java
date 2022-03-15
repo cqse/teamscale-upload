@@ -152,7 +152,7 @@ public class NativeImageIT {
 	@Test
 	public void insufficientPermissions() {
 		ProcessUtils.ProcessResult result = runUploader(
-				new Arguments().withUser("has-no-permissions").withAccessKey("SU2nfdkpcsoOXK2zDVf2DLEQiDaMD8fM"));
+				new Arguments().withUser("teamscale-upload-build-test-user-no-permissions").withAccessKey("FsREWP0ZKJVckwWsa8QntqO886SmxpHf"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).contains("is not allowed to upload data to the Teamscale project");
