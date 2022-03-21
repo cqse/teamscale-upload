@@ -46,4 +46,9 @@ public class SafeResponse {
 		}
 	}
 
+	@Override
+	public String toString() {
+		// we do not want to include the potentially huge body here
+		return unsafeResponse.toString();
+	}
 }
