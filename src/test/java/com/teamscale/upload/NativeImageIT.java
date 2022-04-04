@@ -21,21 +21,24 @@ import org.junit.jupiter.api.condition.OS;
 
 import com.teamscale.upload.autodetect_revision.ProcessUtils;
 import com.teamscale.upload.test_utils.TeamscaleMockServer;
+import com.teamscale.upload.utils.SecretUtils;
 
 /**
  * Runs the Maven-generated native image in different scenarios.
  *
  * Before you can run the test, you will need to generate the native image,
- * please refer to the repository README.md for instructions.
+ * please refer to the repository's README.md for instructions.
  *
- * You will also need to specify the access key for the test user for
- * https://demo.teamscale.com in the environment variable
- * {@link CommandLine#TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE}. If you don't
- * have the access key for the 'teamscale-upload-build-test-user' user on
- * demo.teamscale.com, it is stored in 1password as
- * "teamscale-upload-build-test-user".
+ * You will also need to specify the access key for user name
+ * "teamscale-upload-build-test-user" on https://demo.teamscale.com. The user
+ * has report-upload permission for project "teamscale-upload" and is used for
+ * testing in the GitHub Project https://github.com/cqse/teamscale-upload. The
+ * access token is stored as a "Secret" in GitHub. For local testing you will
+ * need to set the environment variable
+ * {@link SecretUtils#TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE}. It is stored
+ * in 1password as "teamscale-upload-build-test-user".
  */
-@EnabledIfEnvironmentVariable(named = CommandLine.TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE, matches = ".*")
+@EnabledIfEnvironmentVariable(named = SecretUtils.TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE, matches = ".*")
 public class NativeImageIT {
 
 	private static final int MOCK_TEAMSCALE_PORT = 24398;
@@ -286,22 +289,20 @@ public class NativeImageIT {
 	/** Tests that passing the access key via stdin works as expected (TS-28611). */
 	@Test
 	public void testCorrectAccessKeyFromStdIn() throws IOException {
-		Path file = null;
+		Path tempFilePath = null;
 		try {
 			// We create a temporary file where we write the correct access key from the
 			// environment variable to test the input via stdin. We do not commit this file
 			// as we do not want to leak the access key as plain string in the repository.
 			String temporaryFileName = "temporary_access_key.txt";
-			file = Paths.get(temporaryFileName);
-			Files.writeString(file, System.getenv(CommandLine.TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE));
+			tempFilePath = Paths.get(temporaryFileName);
+			Files.writeString(tempFilePath, System.getenv(SecretUtils.TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE));
 
 			ProcessUtils.ProcessResult result = runUploader(new Arguments().withAccessKeyViaStdin(temporaryFileName));
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
-		} catch (IOException e) {
-			e.printStackTrace();
 		} finally {
-			if (file != null && Files.exists(file)) {
-				Files.delete(file);
+			if (tempFilePath != null && Files.exists(tempFilePath)) {
+				Files.delete(tempFilePath);
 			}
 		}
 	}
@@ -377,7 +378,7 @@ public class NativeImageIT {
 	}
 
 	private static String getAccessKeyFromCi() {
-		String accessKey = System.getenv(CommandLine.TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE);
+		String accessKey = System.getenv(SecretUtils.TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE);
 		if (accessKey == null) {
 			return "not-a-ci-build";
 		}

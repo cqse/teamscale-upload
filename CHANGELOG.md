@@ -8,6 +8,7 @@ We use [semantic versioning](http://semver.org/):
 
 - [feature] add `--debug` to enable more detailled logging in case of problems
 - [fix] links in error messages were encoded incorrectly and thus not always clickable
+- [fix] handle empty stdin gracefully when `--accesskey -` is given instead of crashing
 
 # 2.5.0
 
