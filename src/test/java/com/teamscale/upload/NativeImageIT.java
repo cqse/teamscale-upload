@@ -136,8 +136,8 @@ public class NativeImageIT {
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).doesNotContain("The project")
-					.doesNotContain("does not seem to exist in Teamscale")
-					.doesNotContain("project ID").contains("The revision")
+					.doesNotContain("does not seem to exist in Teamscale").doesNotContain("project ID")
+					.contains("The revision")
 					.contains("is not known to Teamscale or the version control system(s) you configured");
 		});
 	}
@@ -155,7 +155,8 @@ public class NativeImageIT {
 	@Test
 	public void insufficientPermissions() {
 		ProcessUtils.ProcessResult result = runUploader(
-				new Arguments().withUser("teamscale-upload-build-test-user-no-permissions").withAccessKey("FsREWP0ZKJVckwWsa8QntqO886SmxpHf"));
+				new Arguments().withUser("teamscale-upload-build-test-user-no-permissions")
+						.withAccessKey("FsREWP0ZKJVckwWsa8QntqO886SmxpHf"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).contains("is not allowed to upload data to the Teamscale project");
@@ -348,7 +349,7 @@ public class NativeImageIT {
 	public void successfulUploadWithRepository() {
 		ProcessUtils.ProcessResult result = runUploader(
 				new Arguments().withRepository("cqse/teamscale-upload").withPartition("NativeImageIT > TestRepository")
-						.withCommit("ef7367b45614e92433c3489ad57323f3b98063f4"));
+						.withCommit("2d53b76ab80b57fb07cbd58ca8fbcac65c37229d"));
 		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.errorOutput).isZero();
 	}
 

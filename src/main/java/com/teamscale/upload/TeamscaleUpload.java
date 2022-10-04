@@ -342,12 +342,13 @@ public class TeamscaleUpload {
 			String editUserUrl = TeamscaleUrlUtils.getEditUserUrl(commandLine.url, commandLine.username);
 			LogUtils.fail("You provided incorrect credentials." + " Either the user '" + commandLine.username
 					+ "' does not exist in Teamscale" + " or the access key you provided is incorrect."
-					+ " Please check both the username and access key in Teamscale under Admin > Users: "
-					+ editUserUrl + "\nPlease use the user's access key, not their password.", response);
+					+ " Please check both the username and access key in Teamscale under Admin > Users: " + editUserUrl
+					+ "\nPlease use the user's access key, not their password.", response);
 		}
 
 		if (response.unsafeResponse.code() == 403) {
-			String projectPermissionUrl = TeamscaleUrlUtils.getProjectPermissionUrl(commandLine.url, commandLine.project);
+			String projectPermissionUrl = TeamscaleUrlUtils.getProjectPermissionUrl(commandLine.url,
+					commandLine.project);
 			LogUtils.fail("The user user '" + commandLine.username
 					+ "' is not allowed to upload data to the Teamscale project '" + commandLine.project + "'."
 					+ " Please grant this user the 'Perform External Uploads' permission in Teamscale"
