@@ -164,6 +164,13 @@ public class XCResultConverter {
 
 		for (int i = 0; i < actionsInvocationRecord.actions.length; i++) {
 			ActionRecord action = actionsInvocationRecord.actions[i];
+			if(action == null ||
+					action.actionResult == null ||
+					action.actionResult.coverage == null ||
+					action.actionResult.coverage.archiveRef == null ||
+					action.actionResult.coverage.archiveRef.id == null){
+				continue;
+			}
 			File tempDirectory = Files.createTempDirectory(workingDirectory.toPath(), null).toFile();
 			File xccovArchive = new File(tempDirectory, reportDirectory.getName() + "." + i + ".xccovarchive");
 			String archiveRef = action.actionResult.coverage.archiveRef.id;
