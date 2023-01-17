@@ -19,4 +19,3 @@ Run `teamscale-upload --help` to see all available options.
 
 [Developer Documentation](README_DEV_SETUP.md)
 
-
