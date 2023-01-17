@@ -30,7 +30,7 @@ import com.teamscale.upload.utils.SecretUtils;
  * please refer to the repository's README.md for instructions.
  *
  * You will also need to specify the access key for user name
- * "teamscale-upload-build-test-user" on https://demo.teamscale.com. The user
+ * "teamscale-upload-build-test-user" on https://cqse.teamscale.io/. The user
  * has report-upload permission for project "teamscale-upload" and is used for
  * testing in the GitHub Project https://github.com/cqse/teamscale-upload. The
  * access token is stored as a "Secret" in GitHub. For local testing you will
@@ -155,7 +155,7 @@ public class NativeImageIT {
 	@Test
 	public void insufficientPermissions() {
 		ProcessUtils.ProcessResult result = runUploader(
-				new Arguments().withUser("teamscale-upload-build-test-user-no-permissions").withAccessKey("FsREWP0ZKJVckwWsa8QntqO886SmxpHf"));
+				new Arguments().withUser("teamscale-upload-build-test-user-no-permissions").withAccessKey("ruG8MKMbLunyLooB7SlfkEATCISSWDKy"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).contains("is not allowed to upload data to the Teamscale project");
@@ -387,7 +387,7 @@ public class NativeImageIT {
 
 	private static class Arguments {
 		private String partition = "NativeImageIT";
-		private String url = "https://demo.teamscale.com";
+		private String url = "https://cqse.teamscale.io/";
 		private String user = TEAMSCALE_TEST_USER;
 		private String accessKey = getAccessKeyFromCi();
 		private String project = "teamscale-upload";
