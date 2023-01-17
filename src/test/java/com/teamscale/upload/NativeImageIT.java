@@ -348,7 +348,7 @@ public class NativeImageIT {
 	public void successfulUploadWithRepository() {
 		ProcessUtils.ProcessResult result = runUploader(
 				new Arguments().withRepository("cqse/teamscale-upload").withPartition("NativeImageIT > TestRepository")
-						.withCommit("ef7367b45614e92433c3489ad57323f3b98063f4"));
+						.withCommit("b80faaa9fba686debfc410eb34a564dc30510b7d"));
 		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.errorOutput).isZero();
 	}
 
