@@ -21,7 +21,8 @@ public class LogUtils {
 	 * Print error message and server response, then exit program
 	 */
 	public static void fail(String message, SafeResponse response) {
-		fail("Upload to Teamscale failed:\n\n" + message + "\n\nTeamscale's response:\n" + response.toString() + "\n"
+		String url = response.unsafeResponse.request().url().toString();
+		fail("Upload to Teamscale failed:\n\n" + message + "\n\nTeamscale's response:\n" + url + "\n"
 				+ response.body);
 	}
 
