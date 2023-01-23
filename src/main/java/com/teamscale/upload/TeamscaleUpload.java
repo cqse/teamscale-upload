@@ -1,6 +1,7 @@
 package com.teamscale.upload;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
@@ -321,6 +322,11 @@ public class TeamscaleUpload {
 		} catch (SocketTimeoutException e) {
 			LogUtils.failWithoutStackTrace(
 					"Request timeout reached. Consider setting a higher timeout value using the '--timeout' option.",
+					e);
+		} catch (FileNotFoundException e) {
+			LogUtils.failWithoutStackTrace(
+					"Could not find the specified report file for uploading. Please ensure that you have no typo"
+							+ " in the file path and that the specified report file is readable." ,
 					e);
 		}
 
