@@ -41,6 +41,11 @@ public class ReportPatternUtils {
 		Map<String, Set<String>> formatToFilePatterns = new HashMap<>();
 
 		if (inputFile != null) {
+			// Check if the specified input file via --input exists.
+			if(!inputFile.toFile().exists()) {
+				LogUtils.fail("Could not find the specified input file: '" + inputFile
+						+ "'. Please ensure that you have no typo in the file path.");
+			}
 			formatToFilePatterns = parsePatternsFromInputFile(inputFile);
 		}
 		parseFilePatternsForFormatOnCommandLine(formatToFilePatterns, commandLineFilePatterns, commandLineFormat);
