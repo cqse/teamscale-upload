@@ -6,6 +6,10 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 
+# 2.7.0
+- [fix] response message contained object identifier instead of meaningful information
+- [fix] error message on file-access problems contained stack trace
+
 # 2.6.0
 
 - [feature] add `--debug` to enable more detailed logging in case of problems
