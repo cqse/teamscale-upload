@@ -22,6 +22,9 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
+// This branch is just to have a target for a commit-based test upload.
+// If we would upload a report to a commit on master, that could cause unintended rollbacks.
+
 public class TeamscaleUpload {
 
     private static class Input {
