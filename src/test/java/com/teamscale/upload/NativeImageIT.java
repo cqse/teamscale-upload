@@ -344,11 +344,20 @@ public class NativeImageIT {
 		}
 	}
 
+	/**
+	 * This test uploads a report to our Teamscale server using a commit hash as upload target.
+	 * <p>
+	 * Since the hash must be a real commit hash and we keep adding new commits to the project, this commit will get "old". New uploads to the old commit will cause rollbacks.
+	 * We used a commit on master (hash b80faaa9fba686debfc410eb34a564dc30510b7d from 26.Aug 2020), therefore these rollbacks were a problem.
+	 * Now we use a commit on an extra branch that was created from the commit above.
+	 * The new commit is 3758a3a6c2d62ab787574f869b2352480c6f0c10 on branch "branch_for_upload_test".
+	 * Uploads will roll back the new branch, but that should not be a problem since there are no further commits on this branch.
+	 */
 	@Test
 	public void successfulUploadWithRepository() {
 		ProcessUtils.ProcessResult result = runUploader(
 				new Arguments().withRepository("cqse/teamscale-upload").withPartition("NativeImageIT > TestRepository")
-						.withCommit("b80faaa9fba686debfc410eb34a564dc30510b7d"));
+						.withCommit("3758a3a6c2d62ab787574f869b2352480c6f0c10"));
 		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.errorOutput).isZero();
 	}
 
