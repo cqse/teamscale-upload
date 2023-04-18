@@ -6,6 +6,9 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 
+# 2.7.1
+- [fix] restore compatibility with Ubuntu 20.04 LTS
+
 # 2.7.0
 - [fix] response message contained object identifier instead of meaningful information
 - [fix] error message on file-access problems contained stack trace
