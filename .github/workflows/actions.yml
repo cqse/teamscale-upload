@@ -10,7 +10,8 @@ on:
 jobs:
   build-linux:
     name: Linux Build
-    runs-on: ubuntu-latest
+    # Build against a fixed version, as it determines or minimal Glibc requirements.
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - name: Set up GraalVM
@@ -24,6 +25,8 @@ jobs:
           TEAMSCALE_ACCESS_KEY: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
         run: mvn clean verify
       - name: Reduce Image Size
+        # As `upx` creates a statically-linked executable, the `runs-on` image
+        # above determines the minimally required version of Glibc.
         uses: crazy-max/ghaction-upx@v1
         with:
           version: latest
