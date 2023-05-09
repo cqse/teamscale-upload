@@ -1,5 +1,14 @@
 package com.teamscale.upload.utils;
 
+import okhttp3.OkHttpClient;
+import okhttp3.RequestBody;
+import org.jetbrains.nativecerts.NativeTrustedCertificates;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -10,19 +19,12 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
-
-import org.jetbrains.nativecerts.NativeTrustedCertificates;
-
-import okhttp3.OkHttpClient;
-import okhttp3.RequestBody;
+import java.util.stream.Collectors;
 
 /**
  * Utilities for creating an {@link OkHttpClient}
@@ -43,7 +45,7 @@ public class OkHttpUtils {
 	 *            May be null if no trust store should be used.
 	 */
 	public static OkHttpClient createClient(boolean validateSsl, String trustStorePath, String trustStorePassword,
-			long timeoutInSeconds) {
+											long timeoutInSeconds) {
 		OkHttpClient.Builder builder = new OkHttpClient.Builder();
 
 		setTimeouts(builder, timeoutInSeconds);
@@ -62,22 +64,27 @@ public class OkHttpUtils {
 	 * {@link OkHttpClient} will accept the certificates stored in the keystore.
 	 */
 	private static void configureTrustStore(OkHttpClient.Builder builder, String trustStorePath,
-			String trustStorePassword) {
+											String trustStorePassword) {
 
-		KeyStore keyStore = getKeyStore(trustStorePath, trustStorePassword);
+		KeyStore keyStore = getCustomKeyStore(trustStorePath, trustStorePassword);
 
 		try {
 			SSLContext sslContext = SSLContext.getInstance("SSL");
 			TrustManagerFactory trustManagerFactory = TrustManagerFactory
 					.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 			trustManagerFactory.init(keyStore);
-			sslContext.init(null, trustManagerFactory.getTrustManagers(), new SecureRandom());
 
-			if (trustManagerFactory.getTrustManagers().length == 0) {
-				LogUtils.fail("No trust managers found. This is a bug. Please report it to CQSE.");
+			List<TrustManager> trustManagers = new ArrayList<>(List.of(trustManagerFactory.getTrustManagers()));
+
+			if (trustManagers.size() == 0) {
+				LogUtils.fail("No custom trust managers found. This is a bug. Please report it to CQSE.");
 			}
 
-			applySslContextAndTrustManager(builder, sslContext, trustManagerFactory);
+			// Add the trust manager of the JVM
+			trustManagers.add(0, getDefaultTrustManager());
+
+			sslContext.init(null, trustManagers.toArray(new TrustManager[0]), new SecureRandom());
+			builder.sslSocketFactory(sslContext.getSocketFactory(), new MultiTrustManager(trustManagers));
 		} catch (NoSuchAlgorithmException e) {
 			LogUtils.failWithStackTrace("Failed to instantiate an SSLContext or TrustManagerFactory."
 					+ "\nThis is a bug. Please report it to CQSE.", e);
@@ -87,21 +94,23 @@ public class OkHttpUtils {
 		} catch (KeyManagementException e) {
 			LogUtils.failWithStackTrace("Failed to initialize the SSLContext with the trust managers."
 					+ "\nThis is a bug. Please report it to CQSE.", e);
-		}
-	}
-
-	private static void applySslContextAndTrustManager(OkHttpClient.Builder builder, SSLContext sslContext,
-			TrustManagerFactory trustManagerFactory) {
-		try {
-			X509TrustManager x509TrustManager = (X509TrustManager) trustManagerFactory.getTrustManagers()[0];
-			builder.sslSocketFactory(sslContext.getSocketFactory(), x509TrustManager);
 		} catch (ClassCastException e) {
 			LogUtils.failWithStackTrace(
 					"Trust manager is not of X509 format." + "\nThis is a bug. Please report it to CQSE.", e);
 		}
 	}
 
-	private static KeyStore getKeyStore(String keystorePath, String keystorePassword) {
+	/**
+	 * Returns the {@link TrustManager} of the JVM.
+	 */
+	private static TrustManager getDefaultTrustManager() throws NoSuchAlgorithmException, KeyStoreException {
+		TrustManagerFactory factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+		factory.init((KeyStore) null);
+
+		return factory.getTrustManagers()[0];
+	}
+
+	private static KeyStore getCustomKeyStore(String keystorePath, String keystorePassword) {
 		try  {
 			KeyStore keyStore;
 			if (keystorePath != null) {
@@ -110,6 +119,7 @@ public class OkHttpUtils {
 					keyStore.load(stream, keystorePassword.toCharArray());
 				}
 			} else {
+				// Create an empty keystore
 				keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
 				keyStore.load(null);
 			}
@@ -189,4 +199,57 @@ public class OkHttpUtils {
 		}
 	}
 
+	/**
+	 * Combines multiple {@link X509TrustManager}.
+	 * If one of the managers trust the certificate chain, the {@link MultiTrustManager} will trust the certificate.
+	 */
+	private static class MultiTrustManager implements X509TrustManager {
+
+		private final List<X509TrustManager> trustManagers;
+
+		private MultiTrustManager(List<TrustManager> managers) {
+			trustManagers = managers.stream().map(manager -> (X509TrustManager) manager).collect(Collectors.toList());
+		}
+
+		@Override
+		public X509Certificate[] getAcceptedIssuers() {
+			return trustManagers.stream().flatMap(manager -> Arrays.stream(manager.getAcceptedIssuers())).toArray(X509Certificate[]::new);
+		}
+
+
+		@Override
+		public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+			checkAll(manager -> manager.checkClientTrusted(chain, authType));
+		}
+
+		@Override
+		public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+			checkAll(manager -> manager.checkServerTrusted(chain, authType));
+		}
+
+		private void checkAll(ConsumerWithException<X509TrustManager, CertificateException> check) throws CertificateException {
+			Collection<CertificateException> exceptions = new ArrayList<>();
+
+			for (int i = 0; i < trustManagers.size(); i++) {
+				try {
+					check.accept(trustManagers.get(i));
+					// We have found one manager which trusts the certificate
+					return;
+				} catch (CertificateException e) {
+					if (i == trustManagers.size() - 1) {
+						// No manager trusts the certificate
+						exceptions.forEach(e::addSuppressed);
+						throw e;
+					} else {
+						exceptions.add(e);
+					}
+				}
+			}
+		}
+	}
+
+	private interface ConsumerWithException<T, E extends Exception> {
+
+		void accept(T t) throws E;
+	}
 }
