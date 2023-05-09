@@ -10,6 +10,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLContext;
@@ -143,9 +144,10 @@ public class OkHttpUtils {
 	 * to the given {@link KeyStore}
 	 */
 	private static void addOsSpecificCertificates(KeyStore keyStore) throws KeyStoreException {
-		int counter = 0;
-		for (X509Certificate certificate : NativeTrustedCertificates.getCustomOsSpecificTrustedCertificates()) {
-			keyStore.setCertificateEntry("os-trusted-certificate-" + ++counter, certificate);
+		Collection<X509Certificate> osCertificates = NativeTrustedCertificates.getCustomOsSpecificTrustedCertificates();
+		LogUtils.debug(String.format("Imported %s certificates from the operating system", osCertificates.size()));
+		for (X509Certificate certificate : osCertificates) {
+			keyStore.setCertificateEntry(certificate.getSubjectX500Principal().getName(), certificate);
 		}
 	}
 
