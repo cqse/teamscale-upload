@@ -18,6 +18,8 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
+import org.jetbrains.nativecerts.NativeTrustedCertificates;
+
 import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
 
@@ -46,9 +48,7 @@ public class OkHttpUtils {
 		setTimeouts(builder, timeoutInSeconds);
 		builder.followRedirects(false).followSslRedirects(false);
 
-		if (trustStorePath != null) {
-			configureTrustStore(builder, trustStorePath, trustStorePassword);
-		}
+		configureTrustStore(builder, trustStorePath, trustStorePassword);
 		if (!validateSsl) {
 			disableSslValidation(builder);
 		}
@@ -62,7 +62,9 @@ public class OkHttpUtils {
 	 */
 	private static void configureTrustStore(OkHttpClient.Builder builder, String trustStorePath,
 			String trustStorePassword) {
-		KeyStore keyStore = readKeyStore(trustStorePath, trustStorePassword);
+
+		KeyStore keyStore = getKeyStore(trustStorePath, trustStorePassword);
+
 		try {
 			SSLContext sslContext = SSLContext.getInstance("SSL");
 			TrustManagerFactory trustManagerFactory = TrustManagerFactory
@@ -98,10 +100,20 @@ public class OkHttpUtils {
 		}
 	}
 
-	private static KeyStore readKeyStore(String keystorePath, String keystorePassword) {
-		try (FileInputStream stream = new FileInputStream(keystorePath)) {
-			KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-			keyStore.load(stream, keystorePassword.toCharArray());
+	private static KeyStore getKeyStore(String keystorePath, String keystorePassword) {
+		try  {
+			KeyStore keyStore;
+			if (keystorePath != null) {
+				try (FileInputStream stream = new FileInputStream(keystorePath)) {
+					keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+					keyStore.load(stream, keystorePassword.toCharArray());
+				}
+			} else {
+				keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+				keyStore.load(null);
+			}
+			addOsSpecificCertificates(keyStore);
+
 			return keyStore;
 		} catch (IOException e) {
 			LogUtils.failWithoutStackTrace("Failed to read keystore file " + keystorePath
@@ -111,12 +123,12 @@ public class OkHttpUtils {
 					+ "\nkeytool -list -keystore " + keystorePath, e);
 		} catch (CertificateException e) {
 			LogUtils.failWithoutStackTrace("Failed to load one of the certificates in the keystore file " + keystorePath
-					+ "\nPlease make sure that the certificate is stored correctly and the certificate version and encoding are supported.",
+							+ "\nPlease make sure that the certificate is stored correctly and the certificate version and encoding are supported.",
 					e);
 		} catch (NoSuchAlgorithmException e) {
 			LogUtils.failWithoutStackTrace("Failed to verify the integrity of the keystore file " + keystorePath
-					+ " because it uses an unsupported hashing algorithm."
-					+ "\nPlease change the keystore so it uses a supported algorithm (e.g. the default used by `keytool` is supported).",
+							+ " because it uses an unsupported hashing algorithm."
+							+ "\nPlease change the keystore so it uses a supported algorithm (e.g. the default used by `keytool` is supported).",
 					e);
 		} catch (KeyStoreException e) {
 			LogUtils.failWithStackTrace(
@@ -124,6 +136,17 @@ public class OkHttpUtils {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Adds the {@link NativeTrustedCertificates#getCustomOsSpecificTrustedCertificates() OS trusted certificates}
+	 * to the given {@link KeyStore}
+	 */
+	private static void addOsSpecificCertificates(KeyStore keyStore) throws KeyStoreException {
+		int counter = 0;
+		for (X509Certificate certificate : NativeTrustedCertificates.getCustomOsSpecificTrustedCertificates()) {
+			keyStore.setCertificateEntry("os-trusted-certificate-" + ++counter, certificate);
+		}
 	}
 
 	private static void disableSslValidation(OkHttpClient.Builder builder) {
