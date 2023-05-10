@@ -37,7 +37,7 @@ public class OkHttpUtils {
 	/**
 	 * An empty request body that can be reused.
 	 */
-	public static final RequestBody EMPTY_BODY = RequestBody.create(null, new byte[0]);
+	public static final RequestBody EMPTY_BODY = RequestBody.create(new byte[0], null);
 
 	/**
 	 * Creates the {@link OkHttpClient} based on the given connection settings.
@@ -155,11 +155,16 @@ public class OkHttpUtils {
 	 */
 	private static List<TrustManager> getOSTrustManagers() {
 		try {
+			Collection<X509Certificate> osCertificates = NativeTrustedCertificates.getCustomOsSpecificTrustedCertificates();
+
+			if (osCertificates.isEmpty()) {
+				LogUtils.debug("Certificates from the operating system could not be imported.");
+				return Collections.emptyList();
+			}
+
 			// Create an empty keystore
 			KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
 			keyStore.load(null);
-			Collection<X509Certificate> osCertificates = NativeTrustedCertificates.getCustomOsSpecificTrustedCertificates();
-			LogUtils.debug(String.format("Imported %s certificates from the operating system", osCertificates.size()));
 			for (X509Certificate certificate : osCertificates) {
 				keyStore.setCertificateEntry(certificate.getSubjectX500Principal().getName(), certificate);
 			}
@@ -168,6 +173,7 @@ public class OkHttpUtils {
 					.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 			trustManagerFactory.init(keyStore);
 
+			LogUtils.debug(String.format("Imported %s certificates from the operating system", osCertificates.size()));
 			return List.of(trustManagerFactory.getTrustManagers());
 
 		} catch (CertificateException | KeyStoreException | IOException | NoSuchAlgorithmException e) {
