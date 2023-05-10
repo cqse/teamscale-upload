@@ -13,6 +13,7 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -68,22 +69,15 @@ public class OkHttpUtils {
 	private static void configureTrustStore(OkHttpClient.Builder builder, String trustStorePath,
 											String trustStorePassword) {
 
-		KeyStore keyStore = getCustomKeyStore(trustStorePath, trustStorePassword);
-
 		try {
 			SSLContext sslContext = SSLContext.getInstance("SSL");
-			TrustManagerFactory trustManagerFactory = TrustManagerFactory
-					.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-			trustManagerFactory.init(keyStore);
 
-			List<TrustManager> trustManagers = new ArrayList<>(List.of(trustManagerFactory.getTrustManagers()));
-
-			if (trustManagers.size() == 0) {
-				LogUtils.fail("No custom trust managers found. This is a bug. Please report it to CQSE.");
+			List<TrustManager> trustManagers = new ArrayList<>();
+			trustManagers.addAll(getJVMTrustManagers());
+			trustManagers.addAll(getOSTrustManagers());
+			if (trustStorePath != null) {
+				trustManagers.addAll(getExternalTrustManagers(trustStorePath, trustStorePassword));
 			}
-
-			// Add the trust manager of the JVM
-			trustManagers.addAll(getDefaultTrustManagers());
 
 			MultiTrustManager multiTrustManager = new MultiTrustManager(trustManagers);
 
@@ -91,9 +85,6 @@ public class OkHttpUtils {
 			builder.sslSocketFactory(sslContext.getSocketFactory(), multiTrustManager);
 		} catch (NoSuchAlgorithmException e) {
 			LogUtils.failWithStackTrace("Failed to instantiate an SSLContext or TrustManagerFactory."
-					+ "\nThis is a bug. Please report it to CQSE.", e);
-		} catch (KeyStoreException e) {
-			LogUtils.failWithStackTrace("Failed to initialize the TrustManagerFactory with the keystore."
 					+ "\nThis is a bug. Please report it to CQSE.", e);
 		} catch (KeyManagementException e) {
 			LogUtils.failWithStackTrace("Failed to initialize the SSLContext with the trust managers."
@@ -104,64 +95,84 @@ public class OkHttpUtils {
 		}
 	}
 
-	/**
-	 * Returns the {@link TrustManager trust managers} of the JVM.
-	 */
-	private static List<TrustManager> getDefaultTrustManagers() throws NoSuchAlgorithmException, KeyStoreException {
-		TrustManagerFactory factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-		factory.init((KeyStore) null);
-
-		return List.of(factory.getTrustManagers());
-	}
-
-	private static KeyStore getCustomKeyStore(String keystorePath, String keystorePassword) {
-		try  {
+	private static List<TrustManager> getExternalTrustManagers(String keystorePath, String keystorePassword) {
+		try {
 			KeyStore keyStore;
-			if (keystorePath != null) {
-				try (FileInputStream stream = new FileInputStream(keystorePath)) {
-					keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-					keyStore.load(stream, keystorePassword.toCharArray());
-				}
-			} else {
-				// Create an empty keystore
+			try (FileInputStream stream = new FileInputStream(keystorePath)) {
 				keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-				keyStore.load(null);
+				keyStore.load(stream, keystorePassword.toCharArray());
 			}
-			addOsSpecificCertificates(keyStore);
 
-			return keyStore;
+			TrustManagerFactory trustManagerFactory = TrustManagerFactory
+					.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+			trustManagerFactory.init(keyStore);
+
+			List<TrustManager> trustManagers = List.of(trustManagerFactory.getTrustManagers());
+
+			if (trustManagers.size() == 0) {
+				LogUtils.fail("No custom trust managers found. This is a bug. Please report it to CQSE.");
+			}
+
+			return trustManagers;
+
+		} catch (NoSuchAlgorithmException e) {
+			LogUtils.failWithStackTrace("Failed to instantiate an SSLContext or TrustManagerFactory."
+					+ "\nThis is a bug. Please report it to CQSE.", e);
 		} catch (IOException e) {
 			LogUtils.failWithoutStackTrace("Failed to read keystore file " + keystorePath
 					+ "\nPlease make sure that file exists and is readable and that you provided the correct password."
 					+ " Please also make sure that the keystore file is a valid Java keystore."
 					+ " You can use the program `keytool` from your JVM installation to check this:"
 					+ "\nkeytool -list -keystore " + keystorePath, e);
+		} catch (KeyStoreException e) {
+			LogUtils.failWithStackTrace("Failed to initialize the TrustManagerFactory with the keystore."
+					+ "\nThis is a bug. Please report it to CQSE.", e);
 		} catch (CertificateException e) {
 			LogUtils.failWithoutStackTrace("Failed to load one of the certificates in the keystore file " + keystorePath
 							+ "\nPlease make sure that the certificate is stored correctly and the certificate version and encoding are supported.",
 					e);
-		} catch (NoSuchAlgorithmException e) {
-			LogUtils.failWithoutStackTrace("Failed to verify the integrity of the keystore file " + keystorePath
-							+ " because it uses an unsupported hashing algorithm."
-							+ "\nPlease change the keystore so it uses a supported algorithm (e.g. the default used by `keytool` is supported).",
-					e);
-		} catch (KeyStoreException e) {
-			LogUtils.failWithStackTrace(
-					"Failed to instantiate an in-memory keystore." + "\nThis is a bug. Please report it to CQSE.", e);
 		}
-
-		return null;
+		return Collections.emptyList();
 	}
 
 	/**
-	 * Adds the {@link NativeTrustedCertificates#getCustomOsSpecificTrustedCertificates() OS trusted certificates}
-	 * to the given {@link KeyStore}
+	 * Returns the {@link TrustManager trust managers} of the JVM.
 	 */
-	private static void addOsSpecificCertificates(KeyStore keyStore) throws KeyStoreException {
-		Collection<X509Certificate> osCertificates = NativeTrustedCertificates.getCustomOsSpecificTrustedCertificates();
-		LogUtils.debug(String.format("Imported %s certificates from the operating system", osCertificates.size()));
-		for (X509Certificate certificate : osCertificates) {
-			keyStore.setCertificateEntry(certificate.getSubjectX500Principal().getName(), certificate);
+	private static List<TrustManager> getJVMTrustManagers() {
+		try {
+			TrustManagerFactory factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+			factory.init((KeyStore) null);
+
+			return List.of(factory.getTrustManagers());
+		} catch (KeyStoreException | NoSuchAlgorithmException e) {
+			return Collections.emptyList();
+		}
+
+	}
+
+	/**
+	 * Returns the {@link TrustManager trust managers} of the OS.
+	 */
+	private static List<TrustManager> getOSTrustManagers() {
+		try {
+			// Create an empty keystore
+			KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+			keyStore.load(null);
+			Collection<X509Certificate> osCertificates = NativeTrustedCertificates.getCustomOsSpecificTrustedCertificates();
+			LogUtils.debug(String.format("Imported %s certificates from the operating system", osCertificates.size()));
+			for (X509Certificate certificate : osCertificates) {
+				keyStore.setCertificateEntry(certificate.getSubjectX500Principal().getName(), certificate);
+			}
+
+			TrustManagerFactory trustManagerFactory = TrustManagerFactory
+					.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+			trustManagerFactory.init(keyStore);
+
+			return List.of(trustManagerFactory.getTrustManagers());
+
+		} catch (CertificateException | KeyStoreException | IOException | NoSuchAlgorithmException e) {
+			LogUtils.debug("Certificates from the operating system could not be imported.");
+			return Collections.emptyList();
 		}
 	}
 
