@@ -16,6 +16,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLContext;
@@ -258,26 +259,31 @@ public class OkHttpUtils {
 		private void checkAll(ConsumerWithException<X509TrustManager, CertificateException> check) throws CertificateException {
 			Collection<CertificateException> exceptions = new ArrayList<>();
 
-			for (int i = 0; i < trustManagers.size(); i++) {
+			for (X509TrustManager trustManager : trustManagers) {
 				try {
-					check.accept(trustManagers.get(i));
+					check.accept(trustManager);
 					// We have found one manager which trusts the certificate
 					return;
 				} catch (CertificateException e) {
-					if (i == trustManagers.size() - 1) {
-						// No manager trusts the certificate
-						exceptions.forEach(e::addSuppressed);
-						throw e;
-					} else {
-						exceptions.add(e);
-					}
+					exceptions.add(e);
 				}
 			}
+			CertificateException certificateException = new CertificateException();
+			exceptions.forEach(certificateException::addSuppressed);
+			throw certificateException;
 		}
 	}
 
+	/**
+	 * Consumer which can throw an exception
+	 *
+	 * @see Consumer
+	 */
 	private interface ConsumerWithException<T, E extends Exception> {
 
+		/**
+		 * @see Consumer#accept(Object)
+		 */
 		void accept(T t) throws E;
 	}
 }

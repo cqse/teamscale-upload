@@ -647,5 +647,101 @@
   {
     "name":"sun.security.x509.SubjectKeyIdentifierExtension",
     "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+  },
+  {
+    "name":"apple.security.AppleProvider",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.sun.jna.CallbackProxy",
+    "methods":[{"name":"callback","parameterTypes":["java.lang.Object[]"] }]
+  },
+  {
+    "name":"com.sun.jna.platform.mac.CoreFoundation$CFIndex",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.sun.jna.platform.mac.CoreFoundation$CFStringRef",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.sun.jna.platform.mac.CoreFoundation$CFTypeID",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"java.lang.Object",
+    "methods":[
+      {"name":"equals","parameterTypes":["java.lang.Object"] },
+      {"name":"hashCode","parameterTypes":[] },
+      {"name":"toString","parameterTypes":[] }
+    ]
+  },
+  {
+    "name":"java.lang.Throwable",
+    "methods":[{"name":"addSuppressed","parameterTypes":["java.lang.Throwable"] }]
+  },
+  {
+    "name":"java.lang.invoke.MethodHandle",
+    "methods":[
+      {"name":"bindTo","parameterTypes":["java.lang.Object"] },
+      {"name":"invokeWithArguments","parameterTypes":["java.lang.Object[]"] }
+    ]
+  },
+  {
+    "name":"java.lang.invoke.MethodHandles",
+    "methods":[
+      {"name":"lookup","parameterTypes":[] },
+      {"name":"privateLookupIn","parameterTypes":["java.lang.Class","java.lang.invoke.MethodHandles$Lookup"] }
+    ]
+  },
+  {
+    "name":"java.lang.invoke.MethodHandles$Lookup",
+    "methods":[
+      {"name":"findSpecial","parameterTypes":["java.lang.Class","java.lang.String","java.lang.invoke.MethodType","java.lang.Class"] },
+      {"name":"in","parameterTypes":["java.lang.Class"] },
+      {"name":"unreflectSpecial","parameterTypes":["java.lang.reflect.Method","java.lang.Class"] }
+    ]
+  },
+  {
+    "name":"java.lang.invoke.MethodType",
+    "methods":[{"name":"methodType","parameterTypes":["java.lang.Class","java.lang.Class[]"] }]
+  },
+  {
+    "name":"java.lang.reflect.Method",
+    "methods":[
+      {"name":"isDefault","parameterTypes":[] },
+      {"name":"isVarArgs","parameterTypes":[] }
+    ]
+  },
+  {
+    "name":"java.nio.Buffer"
+  },
+  {
+    "name":"org.jetbrains.nativecerts.mac.CFArrayRefByReference",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"org.jetbrains.nativecerts.mac.SecurityFramework$OSStatus",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"org.jetbrains.nativecerts.mac.SecurityFramework$SecTrustSettingsDomain",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.provider.JavaKeyStore$JKS",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.x509.IssuerAlternativeNameExtension",
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+  },
+  {
+    "name":"sun.security.x509.NetscapeCertTypeExtension",
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+  },
+  {
+    "name":"sun.security.x509.PrivateKeyUsageExtension",
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
   }
 ]
