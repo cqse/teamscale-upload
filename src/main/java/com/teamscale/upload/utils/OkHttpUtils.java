@@ -34,6 +34,8 @@ import okhttp3.RequestBody;
  */
 public class OkHttpUtils {
 
+	private static final String PROTOCOL = "TLS";
+
 	/**
 	 * An empty request body that can be reused.
 	 */
@@ -70,7 +72,7 @@ public class OkHttpUtils {
 											String trustStorePassword) {
 
 		try {
-			SSLContext sslContext = SSLContext.getInstance("SSL");
+			SSLContext sslContext = SSLContext.getInstance(PROTOCOL);
 
 			List<TrustManager> trustManagers = new ArrayList<>();
 			trustManagers.addAll(getJVMTrustManagers());
@@ -158,7 +160,7 @@ public class OkHttpUtils {
 			Collection<X509Certificate> osCertificates = NativeTrustedCertificates.getCustomOsSpecificTrustedCertificates();
 
 			if (osCertificates.isEmpty()) {
-				LogUtils.debug("Certificates from the operating system could not be imported.");
+				LogUtils.warn("Certificates from the operating system could not be imported.");
 				return Collections.emptyList();
 			}
 
@@ -185,7 +187,7 @@ public class OkHttpUtils {
 	private static void disableSslValidation(OkHttpClient.Builder builder) {
 		SSLSocketFactory sslSocketFactory;
 		try {
-			SSLContext sslContext = SSLContext.getInstance("TLS");
+			SSLContext sslContext = SSLContext.getInstance(PROTOCOL);
 			sslContext.init(null, new TrustManager[] { TrustAllCertificatesManager.INSTANCE }, new SecureRandom());
 			sslSocketFactory = sslContext.getSocketFactory();
 		} catch (GeneralSecurityException e) {
