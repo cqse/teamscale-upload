@@ -25,14 +25,14 @@ import com.teamscale.upload.utils.SecretUtils;
 
 /**
  * Runs the Maven-generated native image in different scenarios.
- *
+ * <p>
  * Before you can run the test, you will need to generate the native image,
  * please refer to the repository's README.md for instructions.
- *
+ * <p>
  * You will also need to specify the access key for user name
- * "teamscale-upload-build-test-user" on https://cqse.teamscale.io/. The user
+ * "teamscale-upload-build-test-user" on <a href="https://cqse.teamscale.io/">dogfood</a>. The user
  * has report-upload permission for project "teamscale-upload" and is used for
- * testing in the GitHub Project https://github.com/cqse/teamscale-upload. The
+ * testing in the GitHub Project <a href="https://github.com/cqse/teamscale-upload">teamscale upload</a>. The
  * access token is stored as a "Secret" in GitHub. For local testing you will
  * need to set the environment variable
  * {@link SecretUtils#TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE}. It is stored
@@ -269,7 +269,7 @@ public class NativeImageIT {
 	public void selfSignedCertificateShouldBeAcceptedWhenKeystoreIsUsed() {
 		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
 			ProcessUtils.ProcessResult result = runUploader(
-					new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT).withKeystore());
+					new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT).withKeystore().withStackTrace());
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 			assertThat(server.sessions).hasSize(1);
 		}
@@ -394,7 +394,7 @@ public class NativeImageIT {
 		return accessKey;
 	}
 
-	private static class Arguments {
+	static class Arguments {
 		private String partition = "NativeImageIT";
 		private String url = "https://cqse.teamscale.io/";
 		private String user = TEAMSCALE_TEST_USER;
@@ -460,7 +460,7 @@ public class NativeImageIT {
 			return this;
 		}
 
-		private Arguments withUrl(String url) {
+		Arguments withUrl(String url) {
 			this.url = url;
 			return this;
 		}
@@ -522,9 +522,18 @@ public class NativeImageIT {
 			return this;
 		}
 
-		private String[] toCommand(String executable) {
+		String[] toCommand(String executable) {
+			String[] args = toArgs();
+			String[] command = new String[args.length + 1];
+			command[0] = executable;
+			System.arraycopy(args, 0, command, 1, args.length);
+
+			return command;
+		}
+
+		String[] toArgs() {
 			List<String> command = new ArrayList<>(
-					Arrays.asList(executable, "-s", url, "-u", user, "-f", format, "-p", project, "-t", partition));
+					Arrays.asList("-s", url, "-u", user, "-f", format, "-p", project, "-t", partition));
 			if (accessKey != null) {
 				command.add("-a");
 				command.add(accessKey);

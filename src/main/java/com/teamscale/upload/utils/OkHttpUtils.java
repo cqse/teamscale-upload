@@ -1,14 +1,5 @@
 package com.teamscale.upload.utils;
 
-import okhttp3.OkHttpClient;
-import okhttp3.RequestBody;
-import org.jetbrains.nativecerts.NativeTrustedCertificates;
-
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -25,6 +16,17 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
+
+import org.jetbrains.nativecerts.NativeTrustedCertificates;
+
+import okhttp3.OkHttpClient;
+import okhttp3.RequestBody;
 
 /**
  * Utilities for creating an {@link OkHttpClient}
@@ -81,10 +83,12 @@ public class OkHttpUtils {
 			}
 
 			// Add the trust manager of the JVM
-			trustManagers.add(0, getDefaultTrustManager());
+			trustManagers.addAll(getDefaultTrustManagers());
 
-			sslContext.init(null, trustManagers.toArray(new TrustManager[0]), new SecureRandom());
-			builder.sslSocketFactory(sslContext.getSocketFactory(), new MultiTrustManager(trustManagers));
+			MultiTrustManager multiTrustManager = new MultiTrustManager(trustManagers);
+
+			sslContext.init(null, new TrustManager[]{multiTrustManager}, new SecureRandom());
+			builder.sslSocketFactory(sslContext.getSocketFactory(), multiTrustManager);
 		} catch (NoSuchAlgorithmException e) {
 			LogUtils.failWithStackTrace("Failed to instantiate an SSLContext or TrustManagerFactory."
 					+ "\nThis is a bug. Please report it to CQSE.", e);
@@ -101,13 +105,13 @@ public class OkHttpUtils {
 	}
 
 	/**
-	 * Returns the {@link TrustManager} of the JVM.
+	 * Returns the {@link TrustManager trust managers} of the JVM.
 	 */
-	private static TrustManager getDefaultTrustManager() throws NoSuchAlgorithmException, KeyStoreException {
+	private static List<TrustManager> getDefaultTrustManagers() throws NoSuchAlgorithmException, KeyStoreException {
 		TrustManagerFactory factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 		factory.init((KeyStore) null);
 
-		return factory.getTrustManagers()[0];
+		return List.of(factory.getTrustManagers());
 	}
 
 	private static KeyStore getCustomKeyStore(String keystorePath, String keystorePassword) {
