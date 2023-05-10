@@ -175,7 +175,12 @@ public class OkHttpUtils {
 					.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 			trustManagerFactory.init(keyStore);
 
-			LogUtils.debug(String.format("Imported %s certificates from the operating system", osCertificates.size()));
+			LogUtils.info(String.format("Imported %s certificates from the operating system", osCertificates.size()));
+
+			for (X509Certificate certificate : osCertificates) {
+				LogUtils.debug(String.format("Imported %s", certificate.getSubjectX500Principal().getName()));
+			}
+
 			return List.of(trustManagerFactory.getTrustManagers());
 
 		} catch (CertificateException | KeyStoreException | IOException | NoSuchAlgorithmException e) {
