@@ -743,5 +743,35 @@
   {
     "name":"sun.security.x509.PrivateKeyUsageExtension",
     "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+  },
+  {
+    "name":"[B"
+  },
+  {
+    "name":"[Ljava.lang.String;"
+  },
+  {
+    "name":"com.sun.jna.platform.mac.CoreFoundation$CFArrayRef",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.sun.jna.platform.mac.CoreFoundation$CFDataRef",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"org.bouncycastle.jcajce.provider.asymmetric.ec.SignatureSpi$ecDSA384",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"org.bouncycastle.jcajce.provider.asymmetric.rsa.DigestSignatureSpi$SHA256",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"org.bouncycastle.jcajce.provider.asymmetric.rsa.DigestSignatureSpi$SHA384",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"org.jetbrains.nativecerts.mac.SecurityFramework$SecCertificateRef",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
   }
 ]
