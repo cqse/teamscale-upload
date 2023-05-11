@@ -773,5 +773,74 @@
   {
     "name":"org.jetbrains.nativecerts.mac.SecurityFramework$SecCertificateRef",
     "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.sun.jna.platform.win32.WTypes$LPSTR",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.sun.jna.platform.win32.WTypes$LPWSTR",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.sun.jna.platform.win32.WinBase$FILETIME",
+    "allDeclaredFields":true,
+    "queryAllPublicConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["com.sun.jna.Pointer"] }]
+  },
+  {
+    "name":"com.sun.jna.platform.win32.WinCrypt$CERT_CONTEXT",
+    "allDeclaredFields":true
+  },
+  {
+    "name":"com.sun.jna.platform.win32.WinCrypt$CERT_CONTEXT$ByReference",
+    "allDeclaredFields":true,
+    "queryAllPublicConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.sun.jna.platform.win32.WinCrypt$CERT_INFO",
+    "allDeclaredFields":true
+  },
+  {
+    "name":"com.sun.jna.platform.win32.WinCrypt$CERT_INFO$ByReference",
+    "allDeclaredFields":true,
+    "queryAllPublicConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.sun.jna.platform.win32.WinCrypt$CERT_PUBLIC_KEY_INFO",
+    "allDeclaredFields":true,
+    "queryAllPublicConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.sun.jna.platform.win32.WinCrypt$CRYPT_ALGORITHM_IDENTIFIER",
+    "allDeclaredFields":true,
+    "queryAllPublicConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.sun.jna.platform.win32.WinCrypt$CRYPT_BIT_BLOB",
+    "allDeclaredFields":true,
+    "queryAllPublicConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.sun.jna.platform.win32.WinCrypt$DATA_BLOB",
+    "allDeclaredFields":true,
+    "queryAllPublicConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["com.sun.jna.Pointer"] }]
+  },
+  {
+    "name":"com.sun.jna.platform.win32.WinCrypt$HCERTSTORE",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.sun.jna.platform.win32.WinCrypt$HCRYPTPROV_LEGACY",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.sun.jna.win32.DLLCallback"
   }
 ]
