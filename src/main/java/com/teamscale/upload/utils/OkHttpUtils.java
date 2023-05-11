@@ -35,6 +35,9 @@ import okhttp3.RequestBody;
  */
 public class OkHttpUtils {
 
+	/**
+	 * The ssl-protocol used in all clients
+	 */
 	private static final String PROTOCOL = "TLS";
 
 	/**
