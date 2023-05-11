@@ -163,6 +163,7 @@
 						--no-fallback
 						--enable-http
 						--enable-https
+						--allow-incomplete-classpath
 					</buildArgs>
 				</configuration>
 				<executions>
