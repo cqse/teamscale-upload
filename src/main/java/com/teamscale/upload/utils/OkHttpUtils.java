@@ -99,12 +99,9 @@ public class OkHttpUtils {
 	}
 
 	private static List<TrustManager> getExternalTrustManagers(String keystorePath, String keystorePassword) {
-		try {
-			KeyStore keyStore;
-			try (FileInputStream stream = new FileInputStream(keystorePath)) {
-				keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-				keyStore.load(stream, keystorePassword.toCharArray());
-			}
+		try (FileInputStream stream = new FileInputStream(keystorePath)) {
+			KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+			keyStore.load(stream, keystorePassword.toCharArray());
 
 			TrustManagerFactory trustManagerFactory = TrustManagerFactory
 					.getInstance(TrustManagerFactory.getDefaultAlgorithm());

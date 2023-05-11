@@ -394,7 +394,7 @@ public class NativeImageIT {
 		return accessKey;
 	}
 
-	static class Arguments {
+	private static class Arguments {
 		private String partition = "NativeImageIT";
 		private String url = "https://cqse.teamscale.io/";
 		private String user = TEAMSCALE_TEST_USER;
@@ -460,7 +460,7 @@ public class NativeImageIT {
 			return this;
 		}
 
-		Arguments withUrl(String url) {
+		private Arguments withUrl(String url) {
 			this.url = url;
 			return this;
 		}
@@ -522,18 +522,9 @@ public class NativeImageIT {
 			return this;
 		}
 
-		String[] toCommand(String executable) {
-			String[] args = toArgs();
-			String[] command = new String[args.length + 1];
-			command[0] = executable;
-			System.arraycopy(args, 0, command, 1, args.length);
-
-			return command;
-		}
-
-		String[] toArgs() {
+		private String[] toCommand(String executable) {
 			List<String> command = new ArrayList<>(
-					Arrays.asList("-s", url, "-u", user, "-f", format, "-p", project, "-t", partition));
+					Arrays.asList(executable, "-s", url, "-u", user, "-f", format, "-p", project, "-t", partition));
 			if (accessKey != null) {
 				command.add("-a");
 				command.add(accessKey);
