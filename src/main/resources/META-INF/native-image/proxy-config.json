@@ -1,0 +1,8 @@
+[
+  {
+    "interfaces":["com.sun.jna.platform.mac.CoreFoundation"]
+  },
+  {
+    "interfaces":["org.jetbrains.nativecerts.mac.SecurityFramework"]
+  }
+]
