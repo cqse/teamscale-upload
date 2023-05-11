@@ -1,4 +1,8 @@
 {
+  "resources":{
+    "includes":[{
+      "pattern":"\\Qcom/sun/jna/.*/libjnidispatch.jnilib\\E"
+    }]},
   "bundles": [
     {
       "name": "net.sourceforge.argparse4j.internal.ArgumentParserImpl"
