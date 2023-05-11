@@ -11,6 +11,9 @@
     ]
   },
   {
+    "name":"Ljava.lang.Object;"
+  },
+  {
     "name": "com.teamscale.upload.report.testwise_coverage.TestInfo",
     "allDeclaredFields": true
   },

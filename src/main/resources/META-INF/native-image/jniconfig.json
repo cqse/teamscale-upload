@@ -3,6 +3,9 @@
     "name":"com.sun.jna.Callback"
   },
   {
+    "name":"Ljava.lang.Object;"
+  },
+  {
     "name":"com.sun.jna.CallbackReference",
     "methods":[
       {"name":"getCallback","parameterTypes":["java.lang.Class","com.sun.jna.Pointer","boolean"] },
