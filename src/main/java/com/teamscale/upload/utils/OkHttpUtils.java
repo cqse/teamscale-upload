@@ -148,6 +148,7 @@ public class OkHttpUtils {
 
 			return List.of(factory.getTrustManagers());
 		} catch (KeyStoreException | NoSuchAlgorithmException e) {
+			LogUtils.warn("Could not import certificates from the JVM.", e);
 			return Collections.emptyList();
 		}
 
@@ -161,7 +162,7 @@ public class OkHttpUtils {
 			Collection<X509Certificate> osCertificates = NativeTrustedCertificates.getCustomOsSpecificTrustedCertificates();
 
 			if (osCertificates.isEmpty()) {
-				LogUtils.warn("Certificates from the operating system could not be imported.");
+				LogUtils.info("Imported zero certificates from the operating system.");
 				return Collections.emptyList();
 			}
 
@@ -176,7 +177,7 @@ public class OkHttpUtils {
 					.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 			trustManagerFactory.init(keyStore);
 
-			LogUtils.info(String.format("Imported %s certificates from the operating system", osCertificates.size()));
+			LogUtils.info(String.format("Imported %s certificates from the operating system.", osCertificates.size()));
 
 			for (X509Certificate certificate : osCertificates) {
 				LogUtils.debug(String.format("Imported %s", certificate.getSubjectX500Principal().getName()));
@@ -184,8 +185,10 @@ public class OkHttpUtils {
 
 			return List.of(trustManagerFactory.getTrustManagers());
 
-		} catch (CertificateException | KeyStoreException | IOException | NoSuchAlgorithmException e) {
-			LogUtils.debug("Certificates from the operating system could not be imported.");
+		} catch (Exception e) {
+			// There could be reflection calls which we are missing in GraalVM
+			// Make sure the program will still run
+			LogUtils.warn("Could not import certificates from the operating system.", e);
 			return Collections.emptyList();
 		}
 	}
