@@ -515,14 +515,6 @@
     "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
-    "name":"org.junit.jupiter.api.Test",
-    "queryAllPublicMethods":true
-  },
-  {
-    "name":"org.junit.platform.commons.annotation.Testable",
-    "queryAllPublicMethods":true
-  },
-  {
     "name":"sun.security.pkcs12.PKCS12KeyStore",
     "methods":[{"name":"<init>","parameterTypes":[] }]
   },
