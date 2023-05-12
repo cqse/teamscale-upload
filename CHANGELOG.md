@@ -6,6 +6,10 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 
+# 2.8.0
+
+- [feature] support for importing certificates from the operation system
+
 # 2.7.1
 - [fix] restore compatibility with Ubuntu 20.04 LTS
 
