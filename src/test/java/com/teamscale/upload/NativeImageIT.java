@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,8 +30,8 @@ import com.teamscale.upload.utils.SecretUtils;
  * Before you can run the test, you will need to generate the native image,
  * please refer to the repository's README.md for instructions.
  * <p>
- * You will also need to specify the access key for user name
- * "teamscale-upload-build-test-user" on <a href="https://cqse.teamscale.io/">dogfood</a>. The user
+ * You will also need to specify the access key for username
+ * "teamscale-upload-build-test-user" on <a href="https://cqse.teamscale.io/">cqse.teamscale.io</a>. The user
  * has report-upload permission for project "teamscale-upload" and is used for
  * testing in the GitHub Project <a href="https://github.com/cqse/teamscale-upload">teamscale upload</a>. The
  * access token is stored as a "Secret" in GitHub. For local testing you will
@@ -177,14 +178,15 @@ public class NativeImageIT {
 
 	@Test
 	public void testDefaultMessage() {
-		TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT);
-		ProcessUtils.ProcessResult result = runUploader(new Arguments()
-				.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withAdditionalMessageLine("Build ID: 1234"));
-		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
-		assertThat(server.sessions).hasSize(1).first().extracting(this::extractNormalizedMessage)
-				.isEqualTo("NativeImageIT external analysis results uploaded at DATE" + "\n\nuploaded from HOSTNAME"
-						+ "\nfor revision: master:HEAD" + "\nincludes data in the following formats: SIMPLE"
-						+ "\nBuild ID: 1234");
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
+			ProcessUtils.ProcessResult result = runUploader(new Arguments()
+					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withAdditionalMessageLine("Build ID: 1234"));
+			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
+			assertThat(server.sessions).hasSize(1).first().extracting(this::extractNormalizedMessage)
+					.isEqualTo("NativeImageIT external analysis results uploaded at DATE" + "\n\nuploaded from HOSTNAME"
+							+ "\nfor revision: master:HEAD" + "\nincludes data in the following formats: SIMPLE"
+							+ "\nBuild ID: 1234");
+		}
 	}
 
 	@Test
@@ -255,7 +257,7 @@ public class NativeImageIT {
 
 		try (TeamscaleMockServer ignored = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
 			ProcessUtils.ProcessResult result = runUploader(
-					new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT).withStackTrace());
+					new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT));
 			assertSoftlyThat(softly -> {
 				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
 						.isNotZero();
@@ -269,7 +271,7 @@ public class NativeImageIT {
 	public void selfSignedCertificateShouldBeAcceptedWhenKeystoreIsUsed() {
 		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
 			ProcessUtils.ProcessResult result = runUploader(
-					new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT).withKeystore().withStackTrace());
+					new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT).withKeystore());
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 			assertThat(server.sessions).hasSize(1);
 		}
@@ -368,7 +370,12 @@ public class NativeImageIT {
 	}
 
 	private byte[] readResource(String name) throws IOException {
-		return NativeImageIT.class.getResourceAsStream(name).readAllBytes();
+		try (InputStream stream = NativeImageIT.class.getResourceAsStream(name)) {
+			if (stream == null) {
+				return null;
+			}
+			return stream.readAllBytes();
+		}
 	}
 
 	private void assertSoftlyThat(Consumer<SoftAssertions> verifier) {

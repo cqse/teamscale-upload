@@ -81,27 +81,27 @@ public class OkHttpUtils {
 			List<TrustManager> trustManagers = new ArrayList<>();
 			trustManagers.addAll(getJVMTrustManagers());
 			trustManagers.addAll(getOSTrustManagers());
-			if (trustStorePath != null) {
-				trustManagers.addAll(getExternalTrustManagers(trustStorePath, trustStorePassword));
-			}
+			trustManagers.addAll(getExternalTrustManagers(trustStorePath, trustStorePassword));
 
 			MultiTrustManager multiTrustManager = new MultiTrustManager(trustManagers);
 
 			sslContext.init(null, new TrustManager[]{multiTrustManager}, new SecureRandom());
 			builder.sslSocketFactory(sslContext.getSocketFactory(), multiTrustManager);
 		} catch (NoSuchAlgorithmException e) {
-			LogUtils.failWithStackTrace("Failed to instantiate an SSLContext or TrustManagerFactory."
-					+ "\nThis is a bug. Please report it to CQSE.", e);
+			LogUtils.failWithStackTrace(e, "Failed to instantiate an SSLContext or TrustManagerFactory.");
 		} catch (KeyManagementException e) {
-			LogUtils.failWithStackTrace("Failed to initialize the SSLContext with the trust managers."
-					+ "\nThis is a bug. Please report it to CQSE.", e);
+			LogUtils.failWithStackTrace(e, "Failed to initialize the SSLContext with the trust managers.");
 		} catch (ClassCastException e) {
 			LogUtils.failWithStackTrace(
-					"Trust manager is not of X509 format." + "\nThis is a bug. Please report it to CQSE.", e);
+					e, "Trust manager is not of X509 format.");
 		}
 	}
 
 	private static List<TrustManager> getExternalTrustManagers(String keystorePath, String keystorePassword) {
+		if (keystorePath == null) {
+			return Collections.emptyList();
+		}
+
 		try (FileInputStream stream = new FileInputStream(keystorePath)) {
 			KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
 			keyStore.load(stream, keystorePassword.toCharArray());
@@ -112,15 +112,14 @@ public class OkHttpUtils {
 
 			List<TrustManager> trustManagers = List.of(trustManagerFactory.getTrustManagers());
 
-			if (trustManagers.size() == 0) {
-				LogUtils.fail("No custom trust managers found. This is a bug. Please report it to CQSE.");
+			if (trustManagers.isEmpty()) {
+				LogUtils.fail("No custom trust managers found. This is a bug. Please report it to CQSE (support@teamscale.com).");
 			}
 
 			return trustManagers;
 
 		} catch (NoSuchAlgorithmException e) {
-			LogUtils.failWithStackTrace("Failed to instantiate an SSLContext or TrustManagerFactory."
-					+ "\nThis is a bug. Please report it to CQSE.", e);
+			LogUtils.failWithStackTrace(e, "Failed to instantiate an SSLContext or TrustManagerFactory.");
 		} catch (IOException e) {
 			LogUtils.failWithoutStackTrace("Failed to read keystore file " + keystorePath
 					+ "\nPlease make sure that file exists and is readable and that you provided the correct password."
@@ -128,8 +127,7 @@ public class OkHttpUtils {
 					+ " You can use the program `keytool` from your JVM installation to check this:"
 					+ "\nkeytool -list -keystore " + keystorePath, e);
 		} catch (KeyStoreException e) {
-			LogUtils.failWithStackTrace("Failed to initialize the TrustManagerFactory with the keystore."
-					+ "\nThis is a bug. Please report it to CQSE.", e);
+			LogUtils.failWithStackTrace(e, "Failed to initialize the TrustManagerFactory with the keystore.");
 		} catch (CertificateException e) {
 			LogUtils.failWithoutStackTrace("Failed to load one of the certificates in the keystore file " + keystorePath
 							+ "\nPlease make sure that the certificate is stored correctly and the certificate version and encoding are supported.",
@@ -240,7 +238,7 @@ public class OkHttpUtils {
 		private final List<X509TrustManager> trustManagers;
 
 		private MultiTrustManager(List<TrustManager> managers) {
-			trustManagers = managers.stream().map(manager -> (X509TrustManager) manager).collect(Collectors.toList());
+			trustManagers = managers.stream().map(X509TrustManager.class::cast).collect(Collectors.toList());
 		}
 
 		@Override

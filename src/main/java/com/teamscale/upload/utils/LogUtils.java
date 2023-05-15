@@ -35,9 +35,9 @@ public class LogUtils {
 	 * where the stack trace is usually just noise we don't care about, please use
 	 * {@link #failWithoutStackTrace(String, Throwable)} instead.
 	 */
-	public static void failWithStackTrace(String message, Throwable throwable) {
+	public static void failWithStackTrace(Throwable throwable, String message) {
 		throwable.printStackTrace();
-		fail(message);
+		fail(message + "\nThis is a bug. Please report it to CQSE (support@teamscale.com).");
 	}
 
 	/**
@@ -52,7 +52,7 @@ public class LogUtils {
 		} else {
 			System.err.println("ERROR: " + throwable.getClass().getSimpleName() + ": " + throwable.getMessage());
 			System.err.println(
-					"Stack trace suppressed. Rerun this command with --stacktrace to see the stack trace." + "");
+					"Stack trace suppressed. Rerun this command with --stacktrace to see the stack trace.");
 		}
 		fail(message);
 	}
@@ -88,7 +88,7 @@ public class LogUtils {
 	 * user. Logging too many implementation details is confusing to the user and
 	 * may lead to them skipping over important information. CLI output should be
 	 * concise.
-	 * 
+	 * <p>
 	 * Use {@link #debug(String)} instead for implementation details and information
 	 * that is only helpful when debugging unforseen errors.
 	 */
