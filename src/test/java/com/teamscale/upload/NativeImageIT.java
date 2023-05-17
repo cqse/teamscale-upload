@@ -248,7 +248,6 @@ public class NativeImageIT {
 		try (TeamscaleMockServer ignored = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
 			ProcessUtils.ProcessResult result = runUploader(
 					new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT));
-			System.out.println(result.errorOutput);
 			assertSoftlyThat(softly -> {
 				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
 						.isNotZero();
@@ -259,7 +258,6 @@ public class NativeImageIT {
 		try (TeamscaleMockServer ignored = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
 			ProcessUtils.ProcessResult result = runUploader(
 					new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT).withStackTrace());
-			System.out.println(result.errorOutput);
 			assertSoftlyThat(softly -> {
 				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
 						.isNotZero();
