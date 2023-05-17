@@ -834,5 +834,67 @@
   },
   {
     "name":"com.sun.jna.win32.DLLCallback"
+  },
+  {
+    "name": "byte[]"
+  },
+  {
+    "name": "com.intellij.rt.execution.application.AppMainV2$Agent",
+    "methods": [{"name": "premain", "parameterTypes": ["java.lang.String", "java.lang.instrument.Instrumentation"]}]
+  },
+  {
+    "name": "com.sun.crypto.provider.TlsKeyMaterialGenerator",
+    "methods": [{"name": "<init>", "parameterTypes": []}]
+  },
+  {
+    "name": "com.sun.crypto.provider.TlsPrfGenerator$V12",
+    "methods": [{"name": "<init>", "parameterTypes": []}]
+  },
+  {
+    "name": "com.sun.jna.platform.mac.CoreFoundation$CFDictionaryRef",
+    "methods": [{"name": "<init>", "parameterTypes": []}]
+  },
+  {
+    "name": "com.sun.jna.platform.mac.CoreFoundation$CFNumberRef",
+    "methods": [{"name": "<init>", "parameterTypes": []}]
+  },
+  {
+    "name": "com.sun.jna.ptr.LongByReference",
+    "methods": [{"name": "<init>", "parameterTypes": []}]
+  },
+  {
+    "name": "java.lang.String[]"
+  },
+  {
+    "name": "java.security.cert.CertStoreParameters"
+  },
+  {
+    "name": "java.security.interfaces.ECPrivateKey"
+  },
+  {
+    "name": "java.security.interfaces.ECPublicKey"
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.rsa.DigestSignatureSpi$SHA1",
+    "methods": [{"name": "<init>", "parameterTypes": []}]
+  },
+  {
+    "name": "org.jetbrains.nativecerts.mac.SecurityFramework$SecPolicyRef",
+    "methods": [{"name": "<init>", "parameterTypes": []}]
+  },
+  {
+    "name": "sun.security.pkcs.SignerInfo[]"
+  },
+  {
+    "name": "sun.security.provider.certpath.CollectionCertStore",
+    "methods": [{"name": "<init>", "parameterTypes": ["java.security.cert.CertStoreParameters"]}]
+  },
+  {
+    "name": "sun.security.provider.certpath.SunCertPathBuilder",
+    "methods": [{"name": "<init>", "parameterTypes": []}]
+  },
+  {
+    "name": "sun.security.rsa.RSASignature$SHA512withRSA",
+    "methods": [{"name": "<init>", "parameterTypes": []}]
   }
 ]

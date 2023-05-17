@@ -269,5 +269,21 @@
       {"name":"loadClassAndCallPremain","parameterTypes":["java.lang.String","java.lang.String"] },
       {"name":"transform","parameterTypes":["java.lang.Module","java.lang.ClassLoader","java.lang.String","java.lang.Class","java.security.ProtectionDomain","byte[]","boolean"] }
     ]
+  },
+  {
+    "name": "java.lang.ClassLoader",
+    "methods": [
+      {"name": "getPlatformClassLoader", "parameterTypes": []},
+      {"name": "loadClass", "parameterTypes": ["java.lang.String"]}
+    ]
+  },
+  {
+    "name": "jdk.internal.loader.ClassLoaders$PlatformClassLoader"
+  },
+  {
+    "name": "org.graalvm.nativebridge.jni.JNIExceptionWrapperEntryPoints",
+    "methods": [
+      {"name": "getClassName", "parameterTypes": ["java.lang.Class"]}
+    ]
   }
 ]
