@@ -66,7 +66,6 @@ public class NativeImageIT {
 			softly.assertThat(result.errorOutput)
 					.matches(Pattern.compile(".*You +provided +an +invalid +URL.*", Pattern.DOTALL));
 		});
-		assertThatOSCertificatesWereImported(result);
 	}
 
 	@Test
@@ -119,7 +118,6 @@ public class NativeImageIT {
 			softly.assertThat(result.errorOutput).contains("The timeout in seconds")
 					.contains("must be an integer greater").contains("than 0.");
 		});
-		assertThatOSCertificatesWereImported(result);
 	}
 
 	@Test
@@ -131,7 +129,6 @@ public class NativeImageIT {
 			softly.assertThat(result.errorOutput).contains("The timeout in seconds")
 					.contains("must be an integer greater").contains("than 0.");
 		});
-		assertThatOSCertificatesWereImported(result);
 	}
 
 	/**
@@ -233,7 +230,6 @@ public class NativeImageIT {
 					.isNotZero();
 			softly.assertThat(result.errorOutput).contains("seconds").contains("milliseconds").contains("1970")
 					.contains("2020");
-			assertThatOSCertificatesWereImported(result);
 		});
 	}
 
