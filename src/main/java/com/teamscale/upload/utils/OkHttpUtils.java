@@ -14,7 +14,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -26,6 +28,11 @@ import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
 import org.jetbrains.nativecerts.NativeTrustedCertificates;
+import org.jetbrains.nativecerts.NativeTrustedRootsInternalUtils;
+import org.jetbrains.nativecerts.linux.LinuxTrustedCertificatesUtil;
+import org.jetbrains.nativecerts.mac.SecurityFramework;
+import org.jetbrains.nativecerts.mac.SecurityFrameworkUtil;
+import org.jetbrains.nativecerts.win32.Crypt32ExtUtil;
 
 import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
@@ -157,7 +164,7 @@ public class OkHttpUtils {
 	 */
 	private static List<TrustManager> getOSTrustManagers() {
 		try {
-			Collection<X509Certificate> osCertificates = NativeTrustedCertificates.getCustomOsSpecificTrustedCertificates();
+			Collection<X509Certificate> osCertificates = getCustomOsTrustedCertificates();
 
 			if (osCertificates.isEmpty()) {
 				LogUtils.info("Imported zero certificates from the operating system.");
@@ -186,8 +193,30 @@ public class OkHttpUtils {
 		} catch (Exception e) {
 			// There could be reflection calls which we are missing in GraalVM
 			// Make sure the program will still run
-			LogUtils.warn("Could not import certificates from the operating system.", e);
+			LogUtils.warn("Could not import certificates from the operating system." +
+					"\nThis is a bug. Please report it to CQSE (support@teamscale.com).", e);
 			return Collections.emptyList();
+		}
+	}
+
+	/**
+	 * Recreation of {@link NativeTrustedCertificates#getCustomOsSpecificTrustedCertificates()} without the error handling.
+	 * This enables us to use our own logging and exception handling.
+	 */
+	private static Collection<X509Certificate> getCustomOsTrustedCertificates() {
+		if (NativeTrustedRootsInternalUtils.isLinux) {
+			return LinuxTrustedCertificatesUtil.getSystemCertificates();
+		} else if (NativeTrustedRootsInternalUtils.isMac) {
+			List<X509Certificate> admin = SecurityFrameworkUtil.getTrustedRoots(SecurityFramework.SecTrustSettingsDomain.admin);
+			List<X509Certificate> user = SecurityFrameworkUtil.getTrustedRoots(SecurityFramework.SecTrustSettingsDomain.user);
+			Set<X509Certificate> result = new HashSet<>(admin);
+			result.addAll(user);
+			return result;
+		} else if (NativeTrustedRootsInternalUtils.isWindows) {
+			return Crypt32ExtUtil.getCustomTrustedRootCertificates();
+		} else {
+			LogUtils.warn("Could not import certificates from the operating system: unsupported system, not a Linux/Mac OS/Windows: " + System.getProperty("os.name"));
+			return Collections.emptySet();
 		}
 	}
 
