@@ -167,7 +167,7 @@ public class OkHttpUtils {
 			Collection<X509Certificate> osCertificates = getCustomOsTrustedCertificates();
 
 			if (osCertificates.isEmpty()) {
-				LogUtils.info("Imported zero certificates from the operating system.");
+				LogUtils.info("Imported 0 certificates from the operating system.");
 				return Collections.emptyList();
 			}
 

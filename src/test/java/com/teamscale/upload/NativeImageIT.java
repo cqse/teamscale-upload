@@ -376,7 +376,8 @@ public class NativeImageIT {
 	/**
 	 * This test uploads a report to our Teamscale server using a commit hash as upload target.
 	 * <p>
-	 * Since the hash must be a real commit hash and we keep adding new commits to the project, this commit will get "old". New uploads to the old commit will cause rollbacks.
+	 * Since the hash must be a real commit hash, and we keep adding new commits to the project, this commit will get "old".
+	 * New uploads to the old commit will cause rollbacks.
 	 * We used a commit on master (hash b80faaa9fba686debfc410eb34a564dc30510b7d from 26.Aug 2020), therefore these rollbacks were a problem.
 	 * Now we use a commit on an extra branch that was created from the commit above.
 	 * The new commit is 3758a3a6c2d62ab787574f869b2352480c6f0c10 on branch "branch_for_upload_test".
@@ -399,8 +400,11 @@ public class NativeImageIT {
 	}
 
 	private void assertThatOSCertificatesWereImported(ProcessUtils.ProcessResult result) {
-		assertSoftlyThat(softly -> softly.assertThat(result.errorOutput)
-				.doesNotContain("Could not import certificates from the operating system"));
+		assertSoftlyThat(softly -> {
+			softly.assertThat(result.errorOutput)
+					.doesNotContain("Could not import certificates from the operating system");
+			softly.assertThat(result.output).containsPattern(Pattern.compile("Imported \\d+ certificates from the operating system\\."));
+		});
 	}
 
 	private byte[] readResource(String name) throws IOException {
