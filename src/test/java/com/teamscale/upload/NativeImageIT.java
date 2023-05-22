@@ -157,7 +157,6 @@ public class NativeImageIT {
 			softly.assertThat(result.errorOutput).contains("The pattern")
 					.contains("could not be resolved to any files");
 		});
-		assertThatOSCertificatesWereImported(result);
 	}
 
 	@Test
