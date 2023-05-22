@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -25,14 +26,14 @@ import com.teamscale.upload.utils.SecretUtils;
 
 /**
  * Runs the Maven-generated native image in different scenarios.
- *
+ * <p>
  * Before you can run the test, you will need to generate the native image,
  * please refer to the repository's README.md for instructions.
- *
- * You will also need to specify the access key for user name
- * "teamscale-upload-build-test-user" on https://cqse.teamscale.io/. The user
+ * <p>
+ * You will also need to specify the access key for username
+ * "teamscale-upload-build-test-user" on <a href="https://cqse.teamscale.io/">cqse.teamscale.io</a>. The user
  * has report-upload permission for project "teamscale-upload" and is used for
- * testing in the GitHub Project https://github.com/cqse/teamscale-upload. The
+ * testing in the GitHub Project <a href="https://github.com/cqse/teamscale-upload">teamscale upload</a>. The
  * access token is stored as a "Secret" in GitHub. For local testing you will
  * need to set the environment variable
  * {@link SecretUtils#TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE}. It is stored
@@ -51,6 +52,7 @@ public class NativeImageIT {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).contains("You provided incorrect credentials");
 		});
+		assertThatOSCertificatesWereImported(result);
 	}
 
 	@Test
@@ -73,6 +75,7 @@ public class NativeImageIT {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).contains("could not be resolved");
 		});
+		assertThatOSCertificatesWereImported(result);
 	}
 
 	@Test
@@ -82,6 +85,7 @@ public class NativeImageIT {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).contains("refused a connection");
 		});
+		assertThatOSCertificatesWereImported(result);
 	}
 
 	@Test
@@ -91,6 +95,7 @@ public class NativeImageIT {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).contains("You provided incorrect credentials");
 		});
+		assertThatOSCertificatesWereImported(result);
 	}
 
 	@Test
@@ -101,6 +106,7 @@ public class NativeImageIT {
 			softly.assertThat(result.errorOutput).contains("The project")
 					.contains("does not seem to exist in Teamscale");
 		});
+		assertThatOSCertificatesWereImported(result);
 	}
 
 	@Test
@@ -140,6 +146,7 @@ public class NativeImageIT {
 					.doesNotContain("project ID").contains("The revision")
 					.contains("is not known to Teamscale or the version control system(s) you configured");
 		});
+		assertThatOSCertificatesWereImported(result);
 	}
 
 	@Test
@@ -160,12 +167,14 @@ public class NativeImageIT {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).contains("is not allowed to upload data to the Teamscale project");
 		});
+		assertThatOSCertificatesWereImported(result);
 	}
 
 	@Test
 	public void successfulSingleFormatUpload() {
 		ProcessUtils.ProcessResult result = runUploader(new Arguments());
 		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
+		assertThatOSCertificatesWereImported(result);
 	}
 
 	@Test
@@ -173,18 +182,21 @@ public class NativeImageIT {
 		ProcessUtils.ProcessResult result = runUploader(
 				new Arguments().withInput("src/test/resources/coverage_files/input_file"));
 		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
+		assertThatOSCertificatesWereImported(result);
 	}
 
 	@Test
 	public void testDefaultMessage() {
-		TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT);
-		ProcessUtils.ProcessResult result = runUploader(new Arguments()
-				.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withAdditionalMessageLine("Build ID: 1234"));
-		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
-		assertThat(server.sessions).hasSize(1).first().extracting(this::extractNormalizedMessage)
-				.isEqualTo("NativeImageIT external analysis results uploaded at DATE" + "\n\nuploaded from HOSTNAME"
-						+ "\nfor revision: master:HEAD" + "\nincludes data in the following formats: SIMPLE"
-						+ "\nBuild ID: 1234");
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
+			ProcessUtils.ProcessResult result = runUploader(new Arguments()
+					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withAdditionalMessageLine("Build ID: 1234"));
+			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
+			assertThat(server.sessions).hasSize(1).first().extracting(this::extractNormalizedMessage)
+					.isEqualTo("NativeImageIT external analysis results uploaded at DATE" + "\n\nuploaded from HOSTNAME"
+							+ "\nfor revision: master:HEAD" + "\nincludes data in the following formats: SIMPLE"
+							+ "\nBuild ID: 1234");
+			assertThatOSCertificatesWereImported(result);
+		}
 	}
 
 	@Test
@@ -195,6 +207,7 @@ public class NativeImageIT {
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
 					.isNotZero();
 			assertThat(result.errorOutput).contains("Request timeout reached.");
+			assertThatOSCertificatesWereImported(result);
 		}
 	}
 
@@ -204,6 +217,7 @@ public class NativeImageIT {
 			ProcessUtils.ProcessResult result = runUploader(
 					new Arguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withTimeoutInSeconds("3"));
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
+			assertThatOSCertificatesWereImported(result);
 		}
 	}
 
@@ -225,6 +239,7 @@ public class NativeImageIT {
 					new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT).withInsecure());
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 			assertThat(server.sessions).hasSize(1);
+			assertThatOSCertificatesWereImported(result);
 		}
 	}
 
@@ -238,6 +253,7 @@ public class NativeImageIT {
 						.isNotZero();
 				softly.assertThat(result.errorOutput).contains("self-signed").contains("--insecure");
 			});
+			assertThatOSCertificatesWereImported(result);
 		}
 	}
 
@@ -251,6 +267,7 @@ public class NativeImageIT {
 						.isNotZero();
 				softly.assertThat(result.errorOutput).contains("--stacktrace");
 			});
+			assertThatOSCertificatesWereImported(result);
 		}
 
 		try (TeamscaleMockServer ignored = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
@@ -262,6 +279,7 @@ public class NativeImageIT {
 				softly.assertThat(result.errorOutput).contains("\tat com.teamscale.upload.TeamscaleUpload")
 						.doesNotContain("--stacktrace");
 			});
+			assertThatOSCertificatesWereImported(result);
 		}
 	}
 
@@ -269,9 +287,10 @@ public class NativeImageIT {
 	public void selfSignedCertificateShouldBeAcceptedWhenKeystoreIsUsed() {
 		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
 			ProcessUtils.ProcessResult result = runUploader(
-					new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT).withKeystore());
+					new Arguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT).withKeystore().withStackTrace());
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 			assertThat(server.sessions).hasSize(1);
+			assertThatOSCertificatesWereImported(result);
 		}
 	}
 
@@ -283,6 +302,7 @@ public class NativeImageIT {
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 			assertThat(server.sessions).hasSize(1);
 			assertThat(server.sessions.get(0).revisionOrTimestamp).hasSize(40); // size of a git SHA1
+			assertThatOSCertificatesWereImported(result);
 		}
 	}
 
@@ -300,6 +320,7 @@ public class NativeImageIT {
 
 			ProcessUtils.ProcessResult result = runUploader(new Arguments().withAccessKeyViaStdin(temporaryFileName));
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
+			assertThatOSCertificatesWereImported(result);
 		} finally {
 			if (tempFilePath != null && Files.exists(tempFilePath)) {
 				Files.delete(tempFilePath);
@@ -316,6 +337,7 @@ public class NativeImageIT {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).contains("You provided incorrect credentials");
 		});
+		assertThatOSCertificatesWereImported(result);
 	}
 
 	/**
@@ -326,6 +348,7 @@ public class NativeImageIT {
 	public void testCorrectAccessWithKeyFromEnvironmentVariable() {
 		ProcessUtils.ProcessResult result = runUploader(new Arguments().withoutAccessKeyInOption());
 		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
+		assertThatOSCertificatesWereImported(result);
 
 	}
 
@@ -341,13 +364,15 @@ public class NativeImageIT {
 			assertThat(server.uploadedReportsByName).hasSize(1);
 			assertThat(server.uploadedReportsByName.get("output.xcresult.tar.gz.xccov"))
 					.containsExactly(readResource("output.xcresult.tar.gz.xccov.expected"));
+			assertThatOSCertificatesWereImported(result);
 		}
 	}
 
 	/**
 	 * This test uploads a report to our Teamscale server using a commit hash as upload target.
 	 * <p>
-	 * Since the hash must be a real commit hash and we keep adding new commits to the project, this commit will get "old". New uploads to the old commit will cause rollbacks.
+	 * Since the hash must be a real commit hash, and we keep adding new commits to the project, this commit will get "old".
+	 * New uploads to the old commit will cause rollbacks.
 	 * We used a commit on master (hash b80faaa9fba686debfc410eb34a564dc30510b7d from 26.Aug 2020), therefore these rollbacks were a problem.
 	 * Now we use a commit on an extra branch that was created from the commit above.
 	 * The new commit is 3758a3a6c2d62ab787574f869b2352480c6f0c10 on branch "branch_for_upload_test".
@@ -359,16 +384,31 @@ public class NativeImageIT {
 				new Arguments().withRepository("cqse/teamscale-upload").withPartition("NativeImageIT > TestRepository")
 						.withCommit("3758a3a6c2d62ab787574f869b2352480c6f0c10"));
 		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.errorOutput).isZero();
+		assertThatOSCertificatesWereImported(result);
 	}
 
 	@Test
 	public void successfulUploadWithMoveToLastCommit() {
 		ProcessUtils.ProcessResult result = runUploader(new Arguments().withMoveToLastCommit());
 		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.errorOutput).isZero();
+		assertThatOSCertificatesWereImported(result);
+	}
+
+	private void assertThatOSCertificatesWereImported(ProcessUtils.ProcessResult result) {
+		assertSoftlyThat(softly -> {
+			softly.assertThat(result.errorOutput)
+					.doesNotContain("Could not import certificates from the operating system");
+			softly.assertThat(result.output).containsPattern(Pattern.compile("Imported \\d+ certificates from the operating system\\."));
+		});
 	}
 
 	private byte[] readResource(String name) throws IOException {
-		return NativeImageIT.class.getResourceAsStream(name).readAllBytes();
+		try (InputStream stream = NativeImageIT.class.getResourceAsStream(name)) {
+			if (stream == null) {
+				return null;
+			}
+			return stream.readAllBytes();
+		}
 	}
 
 	private void assertSoftlyThat(Consumer<SoftAssertions> verifier) {

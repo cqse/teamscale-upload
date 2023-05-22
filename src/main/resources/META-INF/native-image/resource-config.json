@@ -1,4 +1,14 @@
 {
+  "resources":{
+    "includes":[
+      {
+        "pattern":"com/sun/jna/.*/libjnidispatch.jnilib"
+      },
+      {
+        "pattern":"com/sun/jna/.*/jnidispatch.dll"
+      }
+    ]
+  },
   "bundles": [
     {
       "name": "net.sourceforge.argparse4j.internal.ArgumentParserImpl"

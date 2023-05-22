@@ -1,0 +1,17 @@
+[
+  {
+    "interfaces":["com.sun.jna.platform.mac.CoreFoundation"]
+  },
+  {
+    "interfaces":["org.jetbrains.nativecerts.mac.CoreFoundationExt"]
+  },
+  {
+    "interfaces":["org.jetbrains.nativecerts.mac.SecurityFramework"]
+  },
+  {
+    "interfaces":["com.sun.jna.platform.win32.Crypt32"]
+  },
+  {
+    "interfaces":["org.jetbrains.nativecerts.win32.Crypt32Ext"]
+  }
+]

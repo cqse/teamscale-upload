@@ -17,8 +17,8 @@ jobs:
       - name: Set up GraalVM
         uses: ayltai/setup-graalvm@v1
         with:
-          java-version: 11
-          graalvm-version: 21.2.0
+          java-version: 17
+          graalvm-version: 22.3.1
           native-image: true
       - name: Build
         env:
@@ -47,8 +47,8 @@ jobs:
       - name: Set up GraalVM
         uses: ayltai/setup-graalvm@v1
         with:
-          java-version: 11
-          graalvm-version: 21.2.0
+          java-version: 17
+          graalvm-version: 22.3.1
           native-image: true
       - name: Build
         env:
@@ -70,18 +70,13 @@ jobs:
       - name: Set up GraalVM
         uses: ayltai/setup-graalvm@v1
         with:
-          java-version: 11
-          graalvm-version: 21.2.0
+          java-version: 17
+          graalvm-version: 22.3.1
           native-image: true
       - name: Build
         env:
           TEAMSCALE_ACCESS_KEY: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
         run: ./build-windows.bat
-      - name: Reduce Image Size
-        uses: crazy-max/ghaction-upx@v1
-        with:
-          version: latest
-          file: ./target/teamscale-upload.exe
       - name: 'Upload Artifact'
         if: ${{ always() }}
         uses: actions/upload-artifact@v2
