@@ -133,3 +133,4 @@ Then simply create a release in GitHub and paste the release notes from the CHAN
 GitHub Actions will automatically create and attach the binaries.
 
 Finally, also create a new release of the [GitHub Action](https://github.com/cqse/teamscale-upload-action) with the same version number.
+You need to adjust the version number in the [script](https://github.com/cqse/teamscale-upload-action/blob/master/src/run-teamscale-upload.sh).
