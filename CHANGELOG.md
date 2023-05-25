@@ -8,7 +8,7 @@ We use [semantic versioning](http://semver.org/):
 
 # 2.8.0
 
-- [feature] support for importing certificates from the operation system
+- [feature] add support for importing trusted certificates from the operating system
 
 # 2.7.1
 - [fix] restore compatibility with Ubuntu 20.04 LTS
