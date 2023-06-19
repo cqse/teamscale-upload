@@ -5,6 +5,7 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
+- [fix] Use versioned API endpoints to be more robust in case of API changes
 
 # 2.8.0
 

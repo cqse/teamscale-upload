@@ -40,6 +40,9 @@ import okhttp3.Response;
  */
 public class TeamscaleUpload {
 
+	/** The version against which the API requests are performed.  */
+	private static final String MINIMUM_REQUIRED_API_VERSION = "v8.2";
+
 	/**
 	 * This method serves as entry point to the teamscale-upload application.
 	 */
@@ -193,7 +196,8 @@ public class TeamscaleUpload {
 
 	private static String openSession(OkHttpClient client, CommandLine commandLine, Collection<String> formats)
 			throws IOException {
-		HttpUrl.Builder builder = commandLine.url.newBuilder().addPathSegments("api/projects")
+		HttpUrl.Builder builder = commandLine.url.newBuilder().addPathSegments("api")
+				.addPathSegments(MINIMUM_REQUIRED_API_VERSION).addPathSegments("projects")
 				.addPathSegment(commandLine.project).addPathSegments("external-analysis/session")
 				.addQueryParameter("partition", commandLine.partition);
 
@@ -263,7 +267,8 @@ public class TeamscaleUpload {
 
 	private static void closeSession(OkHttpClient client, CommandLine commandLine, String sessionId)
 			throws IOException {
-		HttpUrl.Builder builder = commandLine.url.newBuilder().addPathSegments("api/projects")
+		HttpUrl.Builder builder = commandLine.url.newBuilder().addPathSegments("api")
+				.addPathSegments(MINIMUM_REQUIRED_API_VERSION).addPathSegments("projects")
 				.addPathSegment(commandLine.project).addPathSegments("external-analysis/session")
 				.addPathSegment(sessionId);
 
@@ -287,7 +292,8 @@ public class TeamscaleUpload {
 
 		RequestBody requestBody = multipartBodyBuilder.build();
 
-		HttpUrl.Builder builder = commandLine.url.newBuilder().addPathSegments("api/projects")
+		HttpUrl.Builder builder = commandLine.url.newBuilder().addPathSegments("api")
+				.addPathSegments(MINIMUM_REQUIRED_API_VERSION).addPathSegments("projects")
 				.addPathSegment(commandLine.project).addPathSegments("external-analysis/session")
 				.addPathSegment(sessionId).addPathSegment("report").addQueryParameter("format", format);
 
@@ -326,7 +332,7 @@ public class TeamscaleUpload {
 		} catch (FileNotFoundException e) {
 			LogUtils.failWithoutStackTrace(
 					"Could not find the specified report file for uploading. Please ensure that you have no typo"
-							+ " in the file path and that the specified report file is readable." ,
+							+ " in the file path and that the specified report file is readable.",
 					e);
 		}
 
@@ -348,12 +354,13 @@ public class TeamscaleUpload {
 			String editUserUrl = TeamscaleUrlUtils.getEditUserUrl(commandLine.url, commandLine.username);
 			LogUtils.fail("You provided incorrect credentials." + " Either the user '" + commandLine.username
 					+ "' does not exist in Teamscale" + " or the access key you provided is incorrect."
-					+ " Please check both the username and access key in Teamscale under Admin > Users: "
-					+ editUserUrl + "\nPlease use the user's access key, not their password.", response);
+					+ " Please check both the username and access key in Teamscale under Admin > Users: " + editUserUrl
+					+ "\nPlease use the user's access key, not their password.", response);
 		}
 
 		if (response.unsafeResponse.code() == 403) {
-			String projectPermissionUrl = TeamscaleUrlUtils.getProjectPermissionUrl(commandLine.url, commandLine.project);
+			String projectPermissionUrl = TeamscaleUrlUtils.getProjectPermissionUrl(commandLine.url,
+					commandLine.project);
 			LogUtils.fail("The user user '" + commandLine.username
 					+ "' is not allowed to upload data to the Teamscale project '" + commandLine.project + "'."
 					+ " Please grant this user the 'Perform External Uploads' permission in Teamscale"
