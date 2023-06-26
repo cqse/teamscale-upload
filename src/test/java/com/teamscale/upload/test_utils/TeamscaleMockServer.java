@@ -72,9 +72,9 @@ public class TeamscaleMockServer implements AutoCloseable {
 			spark.secure(KEYSTORE.getAbsolutePath(), "password", null, null);
 		}
 		spark.port(port);
-		spark.post("/api/projects/:projectName/external-analysis/session", this::openSession);
-		spark.post("/api/projects/:projectName/external-analysis/session/:session", this::noOpHandler);
-		spark.post("/api/projects/:projectName/external-analysis/session/:session/report", this::receiveReportHandler);
+		spark.post("/api/v8.2/projects/:projectName/external-analysis/session", this::openSession);
+		spark.post("/api/v8.2/projects/:projectName/external-analysis/session/:session", this::noOpHandler);
+		spark.post("/api/v8.2/projects/:projectName/external-analysis/session/:session/report", this::receiveReportHandler);
 		spark.exception(Exception.class, (Exception exception, Request request, Response response) -> {
 			response.status(SC_INTERNAL_SERVER_ERROR);
 			response.body("Exception: " + exception.getMessage());
