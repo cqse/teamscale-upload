@@ -45,7 +45,7 @@ public class OkHttpUtils {
 	/**
 	 * The ssl-protocol used in all clients
 	 */
-	private static final String PROTOCOL = "TLS"; // replace with TLSv1.2
+	private static final String PROTOCOL = "TLS";
 
 	/**
 	 * An empty request body that can be reused.
