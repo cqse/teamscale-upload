@@ -128,6 +128,7 @@ You must manually invoke `./mvnw package`. (Or `package-windows.bat` in windows.
 ## Creating a Release
 
 Please update the CHANGELOG and consider semantic versioning when choosing the version number for your release.
+Wait until the build jobs are finished (they create distributables for windows/unix/mac). They take about 10 minutes.
 
 Then simply create a release in GitHub (`Draft a new release` on https://github.com/cqse/teamscale-upload/releases) and paste the release notes from the CHANGELOG into the release description.
 GitHub Actions will automatically create and attach the binaries.
