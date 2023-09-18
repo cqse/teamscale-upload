@@ -129,7 +129,7 @@ You must manually invoke `./mvnw package`. (Or `package-windows.bat` in windows.
 
 Please update the CHANGELOG and consider semantic versioning when choosing the version number for your release.
 
-Then simply create a release in GitHub and paste the release notes from the CHANGELOG into the release description.
+Then simply create a release in GitHub (`Draft a new release` on https://github.com/cqse/teamscale-upload/releases) and paste the release notes from the CHANGELOG into the release description.
 GitHub Actions will automatically create and attach the binaries.
 
 Finally, also create a new release of the [GitHub Action](https://github.com/cqse/teamscale-upload-action) with the same version number.
