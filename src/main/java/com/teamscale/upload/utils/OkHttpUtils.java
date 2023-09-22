@@ -86,9 +86,9 @@ public class OkHttpUtils {
 			SSLContext sslContext = SSLContext.getInstance(PROTOCOL);
 
 			List<TrustManager> trustManagers = new ArrayList<>();
+			trustManagers.addAll(getExternalTrustManagers(trustStorePath, trustStorePassword));
 			trustManagers.addAll(getJVMTrustManagers());
 			trustManagers.addAll(getOSTrustManagers());
-			trustManagers.addAll(getExternalTrustManagers(trustStorePath, trustStorePassword));
 
 			MultiTrustManager multiTrustManager = new MultiTrustManager(trustManagers);
 
