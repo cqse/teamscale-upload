@@ -175,7 +175,7 @@ public class OkHttpUtils {
 			KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
 			keyStore.load(null);
 			for (X509Certificate certificate : osCertificates) {
-				keyStore.setCertificateEntry(certificate.getSubjectX500Principal().getName(), certificate);
+				keyStore.setCertificateEntry(String.valueOf(certificate.hashCode()), certificate);
 			}
 
 			TrustManagerFactory trustManagerFactory = TrustManagerFactory
