@@ -11,6 +11,34 @@
     ]
   },
   {
+    "name": "java.lang.Thread",
+    "fields": [
+      {
+        "name": "threadLocalRandomProbe"
+      }
+    ]
+  },
+  {
+    "name": "java.util.concurrent.atomic.AtomicBoolean",
+    "fields": [
+      {
+        "name": "value"
+      }
+    ]
+  },
+  {
+    "name": "java.util.concurrent.atomic.AtomicReference",
+    "fields": [
+      {
+        "name": "value"
+      }
+    ]
+  },
+  {
+    "name": "java.util.concurrent.atomic.Striped64",
+    "allDeclaredFields": true
+  },
+  {
     "name": "com.teamscale.upload.report.testwise_coverage.TestInfo",
     "allDeclaredFields": true
   },
@@ -540,7 +568,10 @@
   },
   {
     "name":"sun.security.provider.NativePRNG",
-    "methods":[{"name":"<init>","parameterTypes":[] }]
+    "methods":[
+      {"name":"<init>","parameterTypes":[] },
+      {"name":"<init>","parameterTypes":["java.security.SecureRandomParameters"]}
+    ]
   },
   {
     "name":"sun.security.provider.SHA",
@@ -592,6 +623,22 @@
   },
   {
     "name":"sun.security.ssl.SSLContextImpl$TLSContext",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.ssl.SSLContextImpl$TLS10Context",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.ssl.SSLContextImpl$TLS11Context",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.ssl.SSLContextImpl$TLS12Context",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.ssl.SSLContextImpl$TLS13Context",
     "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
