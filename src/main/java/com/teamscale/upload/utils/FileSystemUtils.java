@@ -16,18 +16,19 @@
 +-------------------------------------------------------------------------*/
 package com.teamscale.upload.utils;
 
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
-import org.apache.commons.io.IOUtils;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.List;
+
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import org.apache.commons.io.IOUtils;
 
 /**
  * File system utilities.
@@ -99,8 +100,9 @@ public class FileSystemUtils {
 					continue;
 				}
 				File fileForEntry = new File(destination, entry.getName());
-				File parent = fileForEntry.getParentFile();
+				ensureFileIsInsideDirectory(fileForEntry, destination);
 
+				File parent = fileForEntry.getParentFile();
 				mkdirs(parent);
 
 				try (FileOutputStream output = new FileOutputStream(fileForEntry)) {
@@ -132,6 +134,25 @@ public class FileSystemUtils {
 		}
 		if (files.length > 0) {
 			throw new IOException("Expected directory to be empty: " + directory);
+		}
+	}
+
+	/**
+	 * Ensures that the file represents an empty directory. Creates the directory if
+	 * it doesn't exist yet.
+	 *
+	 * @throws IOException
+	 *             In case the file is not inside of the destination directory
+	 */
+	private static void ensureFileIsInsideDirectory(File file, File directory) throws IOException {
+		if (!directory.isDirectory()) {
+			throw new IOException("Expected directory but it's a file instead: " + directory);
+		}
+
+		final Path filePath = file.toPath().toAbsolutePath().normalize();
+		final Path directoryPath = directory.toPath().toAbsolutePath().normalize();
+		if (!filePath.startsWith(directoryPath)) {
+			throw new IOException("Expected file '" + filePath + "' to be inside directory '" + directoryPath + "'");
 		}
 	}
 
