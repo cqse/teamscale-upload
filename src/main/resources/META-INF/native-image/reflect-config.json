@@ -179,6 +179,9 @@
     "queryAllPublicMethods":true
   },
   {
+    "name": "javax.crypto.spec.DHParameterSpec"
+  },
+  {
     "name":"org.bouncycastle.jcajce.provider.asymmetric.COMPOSITE$Mappings",
     "methods":[{"name":"<init>","parameterTypes":[] }]
   },
@@ -541,6 +544,14 @@
   {
     "name":"org.bouncycastle.jcajce.provider.symmetric.Zuc$Mappings",
     "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name": "sun.security.provider.MD5",
+    "methods": [{"name": "<init>", "parameterTypes": []}]
+  },
+  {
+    "name": "sun.misc.Unsafe",
+    "allDeclaredFields": true
   },
   {
     "name":"sun.security.pkcs12.PKCS12KeyStore",
