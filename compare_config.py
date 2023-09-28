@@ -4,7 +4,7 @@ import os
 NEW_CONFIG_FOLDER="config-dir"
 CURRENT_CONFIG_FOLDER="src/main/resources/META-INF/native-image"
 
-PREFIX_FILTER = ["org.apache.maven"]
+PREFIX_FILTER = ["org.apache.maven", "org.sonatype.plexus", "org.eclipse.sisu", "org.eclipse.aether", "org.codehaus.plexus", "org.fusesource.jansi"]
 
 def compare(file_name, new_config_folder, current_config_folder):
 
