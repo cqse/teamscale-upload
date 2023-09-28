@@ -905,10 +905,6 @@
     "name": "byte[]"
   },
   {
-    "name": "com.intellij.rt.execution.application.AppMainV2$Agent",
-    "methods": [{"name": "premain", "parameterTypes": ["java.lang.String", "java.lang.instrument.Instrumentation"]}]
-  },
-  {
     "name": "com.sun.crypto.provider.TlsKeyMaterialGenerator",
     "methods": [{"name": "<init>", "parameterTypes": []}]
   },
@@ -964,20 +960,6 @@
     "methods": [{"name": "<init>", "parameterTypes": []}]
   },
 
-
-  {"name": "com.google.common.util.concurrent.AbstractFuture", "fields": [{"name": "listeners"}, {"name": "value"}, {"name": "waiters"}]},
-  {"name": "com.google.common.util.concurrent.AbstractFuture$Waiter", "fields": [{"name": "next"}, {"name": "thread"}]},
-  {"name": "com.google.inject.AbstractModule", "queryAllDeclaredMethods": true},
-  {"name": "com.google.inject.Binder", "methods": [{"name": "bindListener", "parameterTypes": ["com.google.inject.matcher.Matcher", "com.google.inject.spi.ProvisionListener[]"]}]},
-  {"name": "com.google.inject.internal.Annotations", "methods": [{"name": "determineWhetherToQuote", "parameterTypes": []}]},
-  {"name": "com.google.inject.internal.InjectorShell$RootModule", "queryAllDeclaredMethods": true},
-  {"name": "com.google.inject.matcher.AbstractMatcher", "queryAllDeclaredMethods": true},
-  {"name": "com.google.inject.name.Named", "queryAllDeclaredMethods": true},
-  {"name": "com.google.inject.spi.ElementSource", "methods": [{"name": "getDeclaringSource", "parameterTypes": []}]},
-  {"name": "com.google.inject.spi.ProviderInstanceBinding", "methods": [{"name": "getUserSuppliedProvider", "parameterTypes": []}]},
-  {"name": "com.google.inject.util.Modules$EmptyModule", "queryAllDeclaredMethods": true},
-  {"name": "com.google.inject.util.Providers$ConstantProvider", "allDeclaredFields": true, "queryAllDeclaredMethods": true},
-  {"name": "com.teamscale.upload.TeamscaleUpload", "methods": [{"name": "main", "parameterTypes": ["java.lang.String[]"]}]},
   {"name": "java.io.File", "methods": [{"name": "toPath", "parameterTypes": []}]},
   {"name": "java.lang.Boolean", "methods": [{"name": "parseBoolean", "parameterTypes": ["java.lang.String"]}]},
   {"name": "java.lang.Byte", "methods": [{"name": "parseByte", "parameterTypes": ["java.lang.String"]}]},
@@ -990,14 +972,10 @@
   {"name": "java.nio.file.Files", "methods": [{"name": "setPosixFilePermissions", "parameterTypes": ["java.nio.file.Path", "java.util.Set"]}]},
   {"name": "java.nio.file.Path"},
   {"name": "java.nio.file.attribute.PosixFilePermissions", "methods": [{"name": "fromString", "parameterTypes": ["java.lang.String"]}]},
-  {"name": "java.util.AbstractMap", "allDeclaredFields": true, "queryAllDeclaredMethods": true},
   {"name": "java.util.ArrayList", "methods": [{"name": "<init>", "parameterTypes": []}]},
-  {"name": "java.util.Collections$UnmodifiableMap", "allDeclaredFields": true, "queryAllDeclaredMethods": true},
   {"name": "java.util.HashMap", "methods": [{"name": "<init>", "parameterTypes": []}]},
   {"name": "java.util.List"},
   {"name": "java.util.Map"},
-  {"name": "java.util.concurrent.ForkJoinTask", "fields": [{"name": "aux"}, {"name": "status"}]},
-  {"name": "javax.inject.Named", "queryAllDeclaredMethods": true},
   {"name": "javax.net.SocketFactory"},
   {"name": "javax.net.ssl.HostnameVerifier"},
   {"name": "javax.net.ssl.SSLContext"},
