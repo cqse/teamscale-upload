@@ -30,6 +30,8 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.io.IOUtils;
 
+import com.google.common.annotations.VisibleForTesting;
+
 /**
  * File system utilities.
  */
@@ -144,7 +146,8 @@ public class FileSystemUtils {
 	 * @throws IOException
 	 *             In case 	the file is not located below the directory
 	 */
-	private static void ensureFileIsBelowDirectory(File file, File directory) throws IOException {
+	@VisibleForTesting
+	static void ensureFileIsBelowDirectory(File file, File directory) throws IOException {
 		final Path filePath = file.toPath().toAbsolutePath().normalize();
 		final Path directoryPath = directory.toPath().toAbsolutePath().normalize();
 		if (!filePath.startsWith(directoryPath)) {
