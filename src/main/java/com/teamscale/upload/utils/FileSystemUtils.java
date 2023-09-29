@@ -153,7 +153,7 @@ public class FileSystemUtils {
 		final Path filePath = file.toPath().toAbsolutePath().normalize();
 		final Path directoryPath = directory.toPath().toAbsolutePath().normalize();
 		if (!filePath.startsWith(directoryPath)) {
-			throw new IOException("Expected file '" + filePath + "' to be inside directory '" + directoryPath + "'");
+			throw new IOException("Expected file '" + filePath + "' to be below directory '" + directoryPath + "'");
 		}
 	}
 
