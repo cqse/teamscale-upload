@@ -142,14 +142,9 @@ public class FileSystemUtils {
 	 * {@link IOException} if not.
 	 *
 	 * @throws IOException
-	 *             In case the file given as directory is not a directory, or if the
-	 *             file is not located below the directory
+	 *             In case 	the file is not located below the directory
 	 */
 	private static void ensureFileIsBelowDirectory(File file, File directory) throws IOException {
-		if (!directory.isDirectory()) {
-			throw new IOException("Expected directory but it's a file instead: " + directory);
-		}
-
 		final Path filePath = file.toPath().toAbsolutePath().normalize();
 		final Path directoryPath = directory.toPath().toAbsolutePath().normalize();
 		if (!filePath.startsWith(directoryPath)) {
