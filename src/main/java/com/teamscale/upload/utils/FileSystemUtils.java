@@ -100,7 +100,7 @@ public class FileSystemUtils {
 					continue;
 				}
 				File fileForEntry = new File(destination, entry.getName());
-				ensureFileIsInsideDirectory(fileForEntry, destination);
+				ensureFileIsBelowDirectory(fileForEntry, destination);
 
 				File parent = fileForEntry.getParentFile();
 				mkdirs(parent);
@@ -138,13 +138,14 @@ public class FileSystemUtils {
 	}
 
 	/**
-	 * Ensures that the file represents an empty directory. Creates the directory if
-	 * it doesn't exist yet.
+	 * Ensures that the given file is located under the given directory. Throws an
+	 * {@link IOException} if not.
 	 *
 	 * @throws IOException
-	 *             In case the file is not inside of the destination directory
+	 *             In case the file given as directory is not a directory, or if the
+	 *             file is not located below the directory
 	 */
-	private static void ensureFileIsInsideDirectory(File file, File directory) throws IOException {
+	private static void ensureFileIsBelowDirectory(File file, File directory) throws IOException {
 		if (!directory.isDirectory()) {
 			throw new IOException("Expected directory but it's a file instead: " + directory);
 		}
