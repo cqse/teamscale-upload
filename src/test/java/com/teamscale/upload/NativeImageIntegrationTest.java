@@ -51,7 +51,7 @@ public class NativeImageIntegrationTest {
 	 * All of these tests try to call the Teamscale-upload executable.
 	 * If that does not exist (build failed), running the test makes no sense.
 	 */
-	@BeforeAll
+
 	static void ensureExecutableExists() {
 		File expectedExecutable = new File(TEAMSCALE_UPLOAD_EXECUTABLE);
 		SoftAssertions softly = new SoftAssertions();
