@@ -15,6 +15,7 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import org.assertj.core.api.SoftAssertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.EnabledOnOs;
@@ -40,10 +41,23 @@ import com.teamscale.upload.utils.SecretUtils;
  * in 1password as "teamscale-upload-build-test-user".
  */
 @EnabledIfEnvironmentVariable(named = SecretUtils.TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE, matches = ".*")
-public class NativeImageIT {
+public class NativeImageIntegrationTest {
 
 	private static final int MOCK_TEAMSCALE_PORT = 24398;
 	private static final String TEAMSCALE_TEST_USER = "teamscale-upload-build-test-user";
+	public static final String TEAMSCALE_UPLOAD_EXECUTABLE = "./target/teamscale-upload";
+
+	/**
+	 * All of these tests try to call the Teamscale-upload executable.
+	 * If that does not exist (build failed), running the test makes no sense.
+	 */
+	@BeforeAll
+	static void ensureExecutableExists() {
+		File expectedExecutable = new File(TEAMSCALE_UPLOAD_EXECUTABLE);
+		SoftAssertions softly = new SoftAssertions();
+		softly.assertThat(expectedExecutable).exists();
+		softly.assertAll();
+	}
 
 	@Test
 	public void wrongAccessKey() {
@@ -192,7 +206,7 @@ public class NativeImageIT {
 					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withAdditionalMessageLine("Build ID: 1234"));
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 			assertThat(server.sessions).hasSize(1).first().extracting(this::extractNormalizedMessage)
-					.isEqualTo("NativeImageIT external analysis results uploaded at DATE" + "\n\nuploaded from HOSTNAME"
+					.isEqualTo("NativeImageIntegrationTest external analysis results uploaded at DATE" + "\n\nuploaded from HOSTNAME"
 							+ "\nfor revision: master:HEAD" + "\nincludes data in the following formats: SIMPLE"
 							+ "\nBuild ID: 1234");
 			assertThatOSCertificatesWereImported(result);
@@ -381,7 +395,7 @@ public class NativeImageIT {
 	@Test
 	public void successfulUploadWithRepository() {
 		ProcessUtils.ProcessResult result = runUploader(
-				new Arguments().withRepository("cqse/teamscale-upload").withPartition("NativeImageIT > TestRepository")
+				new Arguments().withRepository("cqse/teamscale-upload").withPartition("NativeImageIntegrationTest > TestRepository")
 						.withCommit("3758a3a6c2d62ab787574f869b2352480c6f0c10"));
 		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.errorOutput).isZero();
 		assertThatOSCertificatesWereImported(result);
@@ -403,7 +417,7 @@ public class NativeImageIT {
 	}
 
 	private byte[] readResource(String name) throws IOException {
-		try (InputStream stream = NativeImageIT.class.getResourceAsStream(name)) {
+		try (InputStream stream = NativeImageIntegrationTest.class.getResourceAsStream(name)) {
 			if (stream == null) {
 				return null;
 			}
@@ -423,7 +437,7 @@ public class NativeImageIT {
 	}
 
 	private ProcessUtils.ProcessResult runUploader(Arguments arguments) {
-		return ProcessUtils.runWithStdIn(arguments.stdinFile, arguments.toCommand("./target/teamscale-upload"));
+		return ProcessUtils.runWithStdIn(arguments.stdinFile, arguments.toCommand(TEAMSCALE_UPLOAD_EXECUTABLE));
 	}
 
 	private static String getAccessKeyFromCi() {
@@ -435,7 +449,7 @@ public class NativeImageIT {
 	}
 
 	private static class Arguments {
-		private String partition = "NativeImageIT";
+		private String partition = "NativeImageIntegrationTest";
 		private String url = "https://cqse.teamscale.io/";
 		private String user = TEAMSCALE_TEST_USER;
 		private String accessKey = getAccessKeyFromCi();
