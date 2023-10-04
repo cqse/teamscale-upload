@@ -8,6 +8,7 @@ We use [semantic versioning](http://semver.org/):
 # 2.8.1
 - [fix] Use TLSv1.2
 - [fix] Use versioned API endpoints to be more robust in case of API changes
+- [fix] Vulnerability when uploading Xcode reports
 
 # 2.8.0
 
