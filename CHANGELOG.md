@@ -5,10 +5,12 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
+# 2.8.2
+- [fix] fixed potential vulnerability to a zipslip attack (by malicious tar files in xcode reports)
+  
 # 2.8.1
 - [fix] Use TLSv1.2
 - [fix] Use versioned API endpoints to be more robust in case of API changes
-- [fix] Vulnerability when uploading Xcode reports
 
 # 2.8.0
 
