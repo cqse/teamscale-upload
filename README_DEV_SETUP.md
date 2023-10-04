@@ -131,7 +131,12 @@ Please update the CHANGELOG and consider semantic versioning when choosing the v
 Wait until the build jobs are finished (they create distributables for windows/unix/mac). They take about 10 minutes.
 
 Then simply create a release in GitHub (`Draft a new release` on https://github.com/cqse/teamscale-upload/releases) and paste the release notes from the CHANGELOG into the release description.
+> **Example Release**
+> * Tag: v2.8.2
+> * Release Title: v2.8.2
+> * Description: [fix] Use TLSv1.2
+
 GitHub Actions will automatically create and attach the binaries.
 
 Finally, also create a new release of the [GitHub Action](https://github.com/cqse/teamscale-upload-action) with the same version number.
-You need to adjust the version number in the [script](https://github.com/cqse/teamscale-upload-action/blob/master/src/run-teamscale-upload.sh).
+You need to adjust the version number in the [script](https://github.com/cqse/teamscale-upload-action/blob/master/src/run-teamscale-upload.sh). There are two spots where you need to adjust the number!
