@@ -41,7 +41,7 @@ import com.teamscale.upload.utils.SecretUtils;
  * in 1password as "teamscale-upload-build-test-user".
  * <p>
  * We can't change the class name. It must end with "IT". In theory, you can configure the maven-failsafe-plugin "include" configuration option to something different, but it does not work (it tries to run this class in the normal, non-integration tests then, which fails).
- * TODO TS-35786: this needs to run JLink app instead
+ * TODO TS-35786: these tests need to run on the JLink distribution in addition to the graalvm distribution
  */
 @EnabledIfEnvironmentVariable(named = SecretUtils.TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE, matches = ".*")
 public class NativeImageIT {
