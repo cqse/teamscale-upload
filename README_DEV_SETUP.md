@@ -44,8 +44,7 @@ TBD
 
 # GraalVM build (deprecated)
 
-The following versions detail the development setup with GraalVM, which is deprecated, and should be removed once all
-production builds have been converted to JLink.
+The following versions detail the development setup with GraalVM, which is deprecated, and can be removed once we know that all production applications work with the JLink distribution.
 
 ## Developing
 
