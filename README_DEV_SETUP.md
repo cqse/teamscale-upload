@@ -1,10 +1,50 @@
-## Development of the teamscale-upload tool
+# teamscale-upload development README
 
 The purpose of this tool is to
 1. make it as simple as possible for Teamscale users to upload external reports
 2. provide helpful error messages for commonly occurring problems, to help users resolve those themselves
 
 [Tool Design Principles](README_TOOL_DESIGN_PRINCIPLES.md)
+
+
+## Developing
+
+Open this folder in IntelliJ.
+Ensure the Gradle project is recognized by the IDE.
+You can then test and develop on the JVM.
+
+**However, not everything that works in the JVM will also work after compiling to a native excutable (e.g: reflection).
+Thus, please always test your changes after compiling to a native executable!**
+
+
+### Setup (Linux)
+
+No additional configuration is required after importing the project into IntelliJ.
+Gradle (`./gradlew`) can also be used directly from the command line.
+
+#### Building a Native Executable (Linux)
+
+To create a native executable locally, run the corresponding `customRuntimeZip-*` Gradle task, or `customRuntimeZip` to
+build the executables for all platforms.
+
+The executable is created in the `build/runtime` directory. The zipped ready-to-distribute files are found in the
+`build/distributions` directory.
+
+```bash
+./gradlew clean customRuntimeZip
+```
+
+
+## Creating a Release
+
+[//]: # (TODO TS-35786: GitHub action needs to produce JLink executable)
+TBD
+
+
+
+# GraalVM build (deprecated)
+
+The following versions detail the development setup with GraalVM, which is deprecated, and can be removed once we know that all production applications work with the JLink distribution.
 
 ## Developing
 
@@ -131,7 +171,12 @@ Please update the CHANGELOG and consider semantic versioning when choosing the v
 Wait until the build jobs are finished (they create distributables for windows/unix/mac). They take about 10 minutes.
 
 Then simply create a release in GitHub (`Draft a new release` on https://github.com/cqse/teamscale-upload/releases) and paste the release notes from the CHANGELOG into the release description.
+> **Example Release**
+> * Tag: v2.8.2
+> * Release Title: v2.8.2
+> * Description: [fix] Use TLSv1.2
+
 GitHub Actions will automatically create and attach the binaries.
 
 Finally, also create a new release of the [GitHub Action](https://github.com/cqse/teamscale-upload-action) with the same version number.
-You need to adjust the version number in the [script](https://github.com/cqse/teamscale-upload-action/blob/master/src/run-teamscale-upload.sh).
+You need to adjust the version number in the [script](https://github.com/cqse/teamscale-upload-action/blob/master/src/run-teamscale-upload.sh). There are two spots where you need to adjust the number!

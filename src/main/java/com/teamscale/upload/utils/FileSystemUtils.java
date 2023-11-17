@@ -16,18 +16,21 @@
 +-------------------------------------------------------------------------*/
 package com.teamscale.upload.utils;
 
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
-import org.apache.commons.io.IOUtils;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.List;
+
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import org.apache.commons.io.IOUtils;
+
+import com.google.common.annotations.VisibleForTesting;
 
 /**
  * File system utilities.
@@ -99,8 +102,9 @@ public class FileSystemUtils {
 					continue;
 				}
 				File fileForEntry = new File(destination, entry.getName());
-				File parent = fileForEntry.getParentFile();
+				ensureFileIsBelowDirectory(fileForEntry, destination);
 
+				File parent = fileForEntry.getParentFile();
 				mkdirs(parent);
 
 				try (FileOutputStream output = new FileOutputStream(fileForEntry)) {
@@ -132,6 +136,22 @@ public class FileSystemUtils {
 		}
 		if (files.length > 0) {
 			throw new IOException("Expected directory to be empty: " + directory);
+		}
+	}
+
+	/**
+	 * Ensures that the given file is located under the given directory. Throws an
+	 * {@link IOException} if not.
+	 *
+	 * @throws IOException
+	 *             In case 	the file is not located below the directory
+	 */
+	@VisibleForTesting
+	static void ensureFileIsBelowDirectory(File file, File directory) throws IOException {
+		final Path filePath = file.toPath().toAbsolutePath().normalize();
+		final Path directoryPath = directory.toPath().toAbsolutePath().normalize();
+		if (!filePath.startsWith(directoryPath)) {
+			throw new IOException("Expected file '" + filePath + "' to be below directory '" + directoryPath + "'");
 		}
 	}
 
