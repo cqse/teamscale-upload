@@ -1,9 +1,14 @@
 import json
 import os
 
+# Stand-alone script to compare a newly generated graalvm config directory to
+# the current config directory and highlight differences.
+
 NEW_CONFIG_FOLDER="config-dir"
 CURRENT_CONFIG_FOLDER="src/main/resources/META-INF/native-image"
 
+# Name-prefixes of entries that we want to ignore in the comparison
+# (Because we manually confirmed that they won't be a problem)
 PREFIX_FILTER = ["org.apache.maven", "org.sonatype.plexus", "org.eclipse.sisu", "org.eclipse.aether", "org.codehaus.plexus", "org.fusesource.jansi"]
 
 def compare(file_name, new_config_folder, current_config_folder):
@@ -17,7 +22,7 @@ def compare(file_name, new_config_folder, current_config_folder):
     print(file_name)
     print("="*10)
     for entry in new_config:
-        if filter_out(entry):
+        if entry_should_be_ignored(entry):
             continue
 
         if entry not in current_config:
@@ -29,15 +34,14 @@ def to_absolute_path(relative_path):
     absolute_path = os.path.dirname(__file__)
     return os.path.join(absolute_path, relative_path)
 
-
-def filter_out(reflection_entry):
-    if "name" not in reflection_entry:
+# Returns whether the entry has a name and that name is
+# listed in the prefixes to be ignored.
+def entry_should_be_ignored(entry):
+    if "name" not in entry:
         return False
-    
     for prefix in PREFIX_FILTER:
-        if reflection_entry["name"].startswith(prefix):
+        if entry["name"].startswith(prefix):
             return True
-
     return False
 
 
