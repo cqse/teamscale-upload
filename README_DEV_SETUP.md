@@ -6,7 +6,7 @@ The purpose of this tool is to
 
 [Tool Design Principles](README_TOOL_DESIGN_PRINCIPLES.md)
 
-
+# JLink build
 ## Developing
 
 Open this folder in IntelliJ.
@@ -22,9 +22,9 @@ Thus, please always test your changes after compiling to a native executable!**
 No additional configuration is required after importing the project into IntelliJ.
 Gradle (`./gradlew`) can also be used directly from the command line.
 
-#### Building a Native Executable (Linux)
+#### Building a JLink Native Executable (Linux)
 
-To create a native executable locally, run the corresponding `customRuntimeZip-*` Gradle task, or `customRuntimeZip` to
+To create a native executable with JLink locally, run the corresponding `customRuntimeZip-*` Gradle task, or `customRuntimeZip` to
 build the executables for all platforms.
 
 The executable is created in the `build/runtime` directory. The zipped ready-to-distribute files are found in the

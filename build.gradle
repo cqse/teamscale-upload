@@ -46,7 +46,6 @@ dependencies {
 
 def RUNTIME_JDK_VERSION = '17.0.5+8'
 
-// TODO TS-35786: the following sections were taken from the com.teamscale.ide.cli project and may contain unnecessary options
 runtime {
 	options = [
 			'--compress', '2', // ZIP compression
@@ -57,7 +56,6 @@ runtime {
 
 	// TODO TS-35786: do we need all of these?
 	modules = [
-			'java.desktop', // For java.awt.Desktop (used by GenericWebBrowserService)
 			'java.logging', // For package java.util.logging (used by Google Guava)
 			'java.naming', // For package javax.naming (used by Apache HttpClient)
 			'jdk.crypto.ec', // For Elliptic Curve algorithms over TLS
@@ -96,7 +94,7 @@ runtime {
 	imageZip.set(layout.buildDirectory.file("runtime/zip/${application.applicationName}.zip"))
 }
 
-// Builds a os-specific versions of Teamscale CLI that contain an (os-specific) JRE. These versions don't require that a JRE is installed on the target machine.
+// Builds a os-specific versions of Teamscale Upload that contain an (os-specific) JRE. These versions don't require that a JRE is installed on the target machine.
 def customRuntimeZip = tasks.register('customRuntimeZip')
 
 extensions.runtime.targetPlatforms.get().each { targetPlatform ->
@@ -110,7 +108,7 @@ extensions.runtime.targetPlatforms.get().each { targetPlatform ->
 				 *
 				 * Solving this might be possible if we can transfer files directly from the JRE zip to the target zip (bypassing NTFS and preserving their flags), but I did not find out how to do that in gradle.
 				 */
-				throw new GradleException("Can't build linux/mac distributions of TeamscaleDev cli on Windows. The 'executable' flags on the shell scripts in the resulting zip can't be preserved.")
+				throw new GradleException("Can't build linux/mac distributions of Teamscale Upload on Windows. The 'executable' flags on the shell scripts in the resulting zip can't be preserved.")
 			}
 		}
 		// Omit the version so that archive file name is predictable.
