@@ -1,4 +1,4 @@
-name: Build
+name: Build-GraalVM
 
 on:
   push:
@@ -83,29 +83,6 @@ jobs:
         with:
           name: target-windows
           path: ./target
-          retention-days: 5
-
-  build-jlink:
-    name: JLink build (all target platforms)
-    # Build on a fixed version, for stability of the release artifacts.
-    # In the graalvm build, this also ensures a fixed version of Glibc, but I think that is not required in the jlink
-    # build (because we distribute a JVM, not build an executable).
-    runs-on: ubuntu-20.04
-    steps:
-      - name: 'Build'
-        run: ./gradlew clean customRuntimeZip
-      - name: 'Test linux dist'
-        env:
-          TEAMSCALE_ACCESS_KEY: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
-        run: ./gradlew test
-      - name: 'Pack Distributions'
-        run: ./gradlew customRuntimeZip
-      - name: 'Upload Artifact'
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: target-jlink
-          path: ./target-jlink
           retention-days: 5
 
   release-graalvm:
