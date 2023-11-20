@@ -56,15 +56,15 @@ public class JLinkIntegrationTest extends IntegrationTestBase {
 			distribution = "build/distributions/teamscale-upload-linux-x86_64.zip";
 			executableInZip = "bin/teamscale-upload";
 		}
+		executable = new File(tempDir + "/teamscale-upload/" + executableInZip);
 
-		if (!tempDir.toFile().exists()) {
+		if (!executable.exists()) {
 			try (ZipFile zipFile = new ZipFile(new File(distribution))) {
 				FileSystemUtils.unzip(zipFile, tempDir.toFile());
 			}
 		}
-		executable = new File(tempDir + "/teamscale-upload/" + executableInZip);
 		if (!executable.exists()) {
-			Assertions.fail("Could not find executable after extracting distribution.");
+			Assertions.fail("Could not find executable after extracting distribution. " + executable.getPath());
 		}
 	}
 
