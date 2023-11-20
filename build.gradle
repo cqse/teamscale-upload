@@ -28,6 +28,9 @@ application {
 
 java {
 	toolchain {
+		// Ensure that we build with the same version/vendor that we want to jlink to the distribution.
+		// Before making this explicit, I got this error in the build: "Error: Error reading module: /home/runner/work/teamscale-upload/teamscale-upload/build/jdks/linux-x86_64/jdk-17.0.5+8/jmods/java.security.sasl.jmod"
+		// I think the build was using Java 11 then.
 		languageVersion = JavaLanguageVersion.of(17)
 		vendor = JvmVendorSpec.ADOPTIUM
 	}
@@ -134,4 +137,5 @@ extensions.runtime.targetPlatforms.get().each { targetPlatform ->
 
 tasks.test {
 	useJUnitPlatform()
+	exclude 'com/teamscale/upload/NativeImageIT'
 }

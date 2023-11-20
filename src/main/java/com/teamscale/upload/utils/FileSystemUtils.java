@@ -21,12 +21,22 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.io.IOUtils;
 
@@ -37,6 +47,8 @@ import com.google.common.annotations.VisibleForTesting;
  */
 public class FileSystemUtils {
 
+	/** The path to the directory used by Java to store temporary files */
+	public static final String TEMP_DIR_PATH = System.getProperty("java.io.tmpdir");
 	/**
 	 * Unix file path separator
 	 */
@@ -78,7 +90,90 @@ public class FileSystemUtils {
 		}
 		return fileName;
 	}
+	/**
+	 * Extract entries of a ZipFile to a directory when the ZipFile is created
+	 * externally. Note that this does not close the ZipFile, so the caller has to
+	 * take care of this.
+	 */
+	public static List<String> unzip(ZipFile zip, File targetDirectory) throws IOException {
+		Enumeration<? extends ZipEntry> entries = zip.entries();
+		List<String> extractedPaths = new ArrayList<>();
 
+		while (entries.hasMoreElements()) {
+			ZipEntry entry = entries.nextElement();
+			if (entry.isDirectory()) {
+				continue;
+			}
+			String fileName = entry.getName();
+
+			try (InputStream entryStream = zip.getInputStream(entry)) {
+				File file = new File(targetDirectory, fileName);
+				ensureDirectoryExists(file.getParentFile());
+
+				try (FileOutputStream outputStream = new FileOutputStream(file)) {
+					copy(entryStream, outputStream);
+				}
+			}
+			extractedPaths.add(fileName);
+		}
+		return extractedPaths;
+	}
+
+	/**
+	 * Copy an input stream to an output stream. This does <em>not</em> close the
+	 * streams.
+	 *
+	 * @param input
+	 *            input stream
+	 * @param output
+	 *            output stream
+	 * @return number of bytes copied
+	 * @throws IOException
+	 *             if an IO exception occurs.
+	 */
+	public static int copy(InputStream input, OutputStream output) throws IOException {
+		byte[] buffer = new byte[1024];
+		int size = 0;
+		int len;
+		while ((len = input.read(buffer)) > 0) {
+			output.write(buffer, 0, len);
+			size += len;
+		}
+		return size;
+	}
+	/**
+	 * Checks if a directory exists and is writable. If not it creates the directory
+	 * and all necessary parent directories.
+	 *
+	 * @throws IOException
+	 *             if directories couldn't be created.
+	 */
+	public static void ensureDirectoryExists(File directory) throws IOException {
+		if (!directory.exists() && !directory.mkdirs()) {
+			throw new IOException("Couldn't create directory: " + directory);
+		}
+		if (directory.exists() && directory.canWrite()) {
+			return;
+		}
+		// Something is wrong. Either the directory does not exist yet, or it is not
+		// writable (yet?). We had a case on a Windows OS where the directory was not
+		// writable in a very small fraction of the calls. We assume this was because
+		// the directory was not "ready" yet although mkdirs returned.
+		Instant start = Instant.now();
+		while ((!directory.exists() || !directory.canWrite()) && start.until(Instant.now(), ChronoUnit.MILLIS) < 100) {
+			try {
+				Thread.sleep(10);
+			} catch (InterruptedException e) {
+				// just continue
+			}
+		}
+		if (!directory.exists()) {
+			throw new IOException("Temp directory " + directory + " could not be created.");
+		}
+		if (!directory.canWrite()) {
+			throw new IOException("Temp directory " + directory + " exists, but is not writable.");
+		}
+	}
 	/**
 	 * Decompresses the contents of a Tar file to the destination folder. The Tar
 	 * file may also use Gzip but must indicate this with the *.tar.gz or *.tgz
@@ -188,5 +283,36 @@ public class FileSystemUtils {
 		if (!file.createNewFile()) {
 			throw new IOException("Unable to create file empty file: " + file);
 		}
+	}
+	/**
+	 * Recursively delete directories and files. This method ignores the return
+	 * value of delete(), i.e. if anything fails, some files might still exist.
+	 */
+	public static void deleteRecursively(File directory) {
+
+		if (directory == null) {
+			throw new IllegalArgumentException("Directory may not be null.");
+		}
+
+		File[] filesInDirectory = directory.listFiles();
+		if (filesInDirectory == null) {
+			if (!directory.exists()) {
+				// If filesInDirectory is null, that could have two reasons: Either
+				// directory.isInvalid() is true, or there is a low-level IO error that is not
+				// wrapped in an exception. We can't precisely distinguish the cases. But
+				// directory.exists() checks directory.isInvalid(), and if the directory does
+				// not exist, our job is actually done.
+				return;
+			}
+			throw new IllegalArgumentException(directory.getAbsolutePath() + " is not a valid directory.");
+		}
+
+		for (File entry : filesInDirectory) {
+			if (entry.isDirectory()) {
+				deleteRecursively(entry);
+			}
+			entry.delete();
+		}
+		directory.delete();
 	}
 }
