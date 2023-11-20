@@ -62,8 +62,7 @@ runtime {
 			'jdk.crypto.ec', // For Elliptic Curve algorithms over TLS
 	]
 
-	def ADOPTIUM_BINARY_REPOSITORY = System.env.CI ?
-			'https://nexus.cqse.eu/repository/raw-adoptium-binary' : 'https://api.adoptium.net/v3/binary'
+	def ADOPTIUM_BINARY_REPOSITORY = 'https://api.adoptium.net/v3/binary'
 
 	// We need to downlaod the JDK, not the JRE, as the latter doesn't ship the jmod files needed by jlink
 	targetPlatform('linux-x86_64') {
