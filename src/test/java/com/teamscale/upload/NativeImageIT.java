@@ -366,7 +366,6 @@ public class NativeImageIT {
 		ProcessUtils.ProcessResult result = runUploader(new Arguments().withoutAccessKeyInOption());
 		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 		assertThatOSCertificatesWereImported(result);
-
 	}
 
 	@Test

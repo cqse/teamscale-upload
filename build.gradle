@@ -38,9 +38,10 @@ dependencies {
 	implementation group: 'org.jetbrains.nativecerts', name: 'jvm-native-trusted-roots', version: '1.0.19'
 	implementation group: 'com.sparkjava', name: 'spark-core', version: '2.9.4'
 
-	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.8.1'
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.10.0'
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-params', version: '5.10.0'
 	testImplementation group: 'org.assertj', name: 'assertj-core', version: '3.21.0'
-	testRuntimeOnly group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.8.1'
+	testRuntimeOnly group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.10.0'
 	testRuntimeOnly group: 'javax.servlet', name: 'javax.servlet-api', version: '4.0.1'
 }
 

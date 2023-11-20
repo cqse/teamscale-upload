@@ -8,9 +8,9 @@ on:
     branches: '*'
 
 jobs:
-  build-linux:
-    name: Linux Build
-    # Build against a fixed version, as it determines or minimal Glibc requirements.
+  build-linux-graalvm:
+    name: Linux graalvm Build
+    # Build against a fixed version, as it determines our minimal Glibc requirements.
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
@@ -39,8 +39,8 @@ jobs:
           path: ./target
           retention-days: 5
 
-  build-mac:
-    name: MacOS Build
+  build-mac-graalvm:
+    name: MacOS graalvm Build
     runs-on: macos-11
     steps:
       - uses: actions/checkout@v2
@@ -62,8 +62,8 @@ jobs:
           path: ./target
           retention-days: 5
 
-  build-windows:
-    name: Windows Build
+  build-windows-graalvm:
+    name: Windows graalvm Build
     runs-on: windows-2019
     steps:
       - uses: actions/checkout@v2
@@ -85,12 +85,31 @@ jobs:
           path: ./target
           retention-days: 5
 
-  release:
+  build-jlink:
+    name: JLink build (all target platforms)
+    steps:
+      - name: 'Build'
+        run: ./gradlew clean customRuntimeZip
+      - name: 'Test linux dist'
+        env:
+          TEAMSCALE_ACCESS_KEY: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
+        run: ./gradlew test
+      - name: 'Pack Distributions'
+        run: ./gradlew customRuntimeZip
+      - name: 'Upload Artifact'
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: target-jlink
+          path: ./target-jlink
+          retention-days: 5
+
+  release-graalvm:
     if: startsWith(github.ref, 'refs/tags/v')
     needs:
-      - build-linux
-      - build-mac
-      - build-windows
+      - build-linux-graalvm
+      - build-mac-graalvm
+      - build-windows-graalvm
     name: Create Release
     runs-on: ubuntu-latest
     steps:

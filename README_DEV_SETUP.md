@@ -13,7 +13,7 @@ Open this folder in IntelliJ.
 Ensure the Gradle project is recognized by the IDE.
 You can then test and develop on the JVM.
 
-**However, not everything that works in the JVM will also work after compiling to a native excutable (e.g: reflection).
+**However, not everything that works in the JVM will also work after compiling to a native executable (e.g: reflection).
 Thus, please always test your changes after compiling to a native executable!**
 
 
