@@ -19,15 +19,21 @@ jobs:
         uses: actions/checkout@v3
       - name: 'Setup Gradle'
         uses: gradle/gradle-build-action@v2
-      - name: 'Build'
-        run: ./gradlew clean customRuntimeZip
-      - name: 'Test linux dist'
+      - name: 'Clean'
+        run: ./gradlew clean
+      - name: 'Build Linux'
+        run: ./gradlew customRuntimeZip-linux-x86_64
+      - name: 'Test Dist on Linux'
         env:
           TEAMSCALE_ACCESS_KEY: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
         run: ./gradlew test
-      - name: 'Pack Distributions'
-        run: ./gradlew customRuntimeZip
-      - name: 'Upload Artifact'
+      - name: 'Build Windows'
+        run: ./gradlew customRuntimeZip-windows-x86_64
+      - name: 'Build MacOS Intel'
+        run: ./gradlew customRuntimeZip-macos-x86_64
+      - name: 'Build MacOS ARM'
+        run: ./gradlew customRuntimeZip-macos-aarch64
+      - name: 'Upload Distributions to Temp Storage'
         if: ${{ always() }}
         uses: actions/upload-artifact@v2
         with:
