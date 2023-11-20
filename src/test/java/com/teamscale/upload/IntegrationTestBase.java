@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
+import com.teamscale.upload.utils.StringUtils;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
@@ -103,8 +104,8 @@ public abstract class IntegrationTestBase {
 				new Arguments().withUrl("http://localhost:9999").withTimeoutInSeconds("0"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			softly.assertThat(result.errorOutput).contains("The timeout in seconds")
-					.contains("must be an integer greater").contains("than 0.");
+			// we ignore whitespace because the string is formatted differently coming out of the jlink dist than from graalvm (different line width)
+			softly.assertThat(result.errorOutput).containsIgnoringWhitespaces("The timeout in seconds must be an integer greater than 0.");
 		});
 	}
 
@@ -114,8 +115,8 @@ public abstract class IntegrationTestBase {
 				new Arguments().withUrl("http://localhost:9999").withTimeoutInSeconds("foo"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			softly.assertThat(result.errorOutput).contains("The timeout in seconds")
-					.contains("must be an integer greater").contains("than 0.");
+			// we ignore whitespace because the string is formatted differently coming out of the jlink dist than from graalvm (different line width)
+			softly.assertThat(result.errorOutput).containsIgnoringWhitespaces("The timeout in seconds must be an integer greater than 0.");
 		});
 	}
 
