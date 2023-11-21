@@ -3,9 +3,9 @@ package com.teamscale.upload;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.zip.ZipFile;
 
 import com.teamscale.upload.utils.FileSystemUtils;
+import com.teamscale.upload.utils.ZipFile;
 import org.apache.commons.lang3.SystemUtils;
 import org.assertj.core.api.SoftAssertions;
 import org.jetbrains.annotations.NotNull;

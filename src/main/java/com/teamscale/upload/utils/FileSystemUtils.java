@@ -30,9 +30,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipInputStream;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -94,22 +91,24 @@ public class FileSystemUtils {
 	 * Extract entries of a ZipFile to a directory when the ZipFile is created
 	 * externally. Note that this does not close the ZipFile, so the caller has to
 	 * take care of this.
+	 * <p>
+	 * We use the apache commons ZipArchiveEntry instead of the java standard library
+	 * ZipEntry since the apache commons variant preserves flags on files in the zip.
+	 * In particular executable flags on shell scripts.
 	 */
 	public static List<String> unzip(ZipFile zip, File targetDirectory) throws IOException {
-		Enumeration<? extends ZipEntry> entries = zip.entries();
+		Enumeration<? extends ZipArchiveEntry> entries = zip.getEntries();
 		List<String> extractedPaths = new ArrayList<>();
 
 		while (entries.hasMoreElements()) {
-			ZipEntry entry = entries.nextElement();
+			ZipArchiveEntry entry = entries.nextElement();
 			if (entry.isDirectory()) {
 				continue;
 			}
 			String fileName = entry.getName();
-
 			try (InputStream entryStream = zip.getInputStream(entry)) {
 				File file = new File(targetDirectory, fileName);
 				ensureDirectoryExists(file.getParentFile());
-
 				try (FileOutputStream outputStream = new FileOutputStream(file)) {
 					copy(entryStream, outputStream);
 				}
