@@ -32,7 +32,8 @@ java {
 		// Before making this explicit, I got this error in the build: "Error: Error reading module: /home/runner/work/teamscale-upload/teamscale-upload/build/jdks/linux-x86_64/jdk-17.0.5+8/jmods/java.security.sasl.jmod"
 		// I think the build was using Java 11 then.
 		languageVersion = JavaLanguageVersion.of(17)
-		vendor = JvmVendorSpec.ADOPTIUM
+		// I would like to also use the same vendor as in jlink, but gradle can't find/download a toolchain for this vendor
+		//vendor = JvmVendorSpec.ADOPTIUM
 	}
 }
 

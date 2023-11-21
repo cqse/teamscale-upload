@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -54,6 +53,22 @@ public class FileSystemUtils {
 	private static final List<String> TAR_FILE_EXTENSIONS = List.of(".tar", ".tar.gz", ".tgz");
 
 	private static final List<String> GZIP_FILE_EXTENSIONS = List.of(".tar.gz", ".tgz");
+
+	/**
+	 * Mask for a posix file-mode that states that any execute bit is set (owner, group, or other).
+	 * Given a unix-mode int <code>unixMode</code>, <code>(unixMode & UNIX_EXEC_MASK) != 0</code> determines whether
+	 * one of the execute permissions is set.
+	 * <p>
+	 * Underscores are inserted for readability (separating the read-write-execute flag groups).
+	 */
+	private static final int UNIX_EXEC_MASK = 0b001_001_001;
+
+	/**
+	 * Expected result for <code>unixMode & UNIX_EXEC_MASK</code> if only the owner of the file has execute permissions.
+	 * <p>
+	 * Underscores are inserted for readability (separating the read-write-execute flag groups).
+	 */
+	private static final int UNIX_EXEC_MASK_OWNER = 0b001_000_000;
 
 	/**
 	 * Replace platform dependent separator char with forward slashes to create
@@ -93,7 +108,7 @@ public class FileSystemUtils {
 	 * take care of this.
 	 * <p>
 	 * We use the apache commons ZipArchiveEntry instead of the java standard library
-	 * ZipEntry since the apache commons variant preserves flags on files in the zip.
+	 * ZipEntry since the apache commons variant allows access to the flags on files in the zip.
 	 * In particular executable flags on shell scripts.
 	 */
 	public static List<String> unzip(ZipFile zip, File targetDirectory) throws IOException {
@@ -112,10 +127,33 @@ public class FileSystemUtils {
 				try (FileOutputStream outputStream = new FileOutputStream(file)) {
 					copy(entryStream, outputStream);
 				}
+				adoptUnixExecuteFilePermission(file, entry.getUnixMode());
 			}
 			extractedPaths.add(fileName);
 		}
 		return extractedPaths;
+	}
+
+	/**
+	 * Applies the given posix execute-file permission setting on the given file.
+	 * If only the file owner has execute permission, then this limitation is preserved.
+	 * <p>
+	 * For example, unix mode <code>Integer.toBinaryString(unixMode) == "1000000111101101"</code>
+	 * corresponds to <code>-rwxr-xr-x</code> in ls output. Each enabled bit is represented by a 1.
+	 * In this case all users (owner/group/other) have execute permissions.
+	 *
+	 * @param file the file to which we should apply the given execute-bit settings
+	 * @param unixMode binary representation of the posix file mode
+	 *                    (each bit states enablement/disablement of a flag, order is like in the output of ls).
+	 */
+	private static void adoptUnixExecuteFilePermission(File file, int unixMode) {
+		if (unixMode <= 0) {
+			return;
+		}
+		if ((unixMode & UNIX_EXEC_MASK) != 0) {
+			boolean ownerOnly = (unixMode & UNIX_EXEC_MASK) == UNIX_EXEC_MASK_OWNER;
+			file.setExecutable(true, ownerOnly);
+		}
 	}
 
 	/**
