@@ -66,6 +66,9 @@ public class JLinkIntegrationTest extends IntegrationTestBase {
 		if (!executable.exists()) {
 			Assertions.fail("Could not find executable after extracting distribution. " + executable.getPath());
 		}
+		if (!executable.canExecute()) {
+			Assertions.fail("teamscale-upload script exists, but is not executable after extracting distribution. " + executable.getPath());
+		}
 	}
 
 	@Override
