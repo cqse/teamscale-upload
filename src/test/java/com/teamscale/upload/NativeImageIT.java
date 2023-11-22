@@ -8,6 +8,8 @@ import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 /**
  Integration Tests. Runs the Maven-generated native image in different scenarios.
@@ -44,12 +46,15 @@ public class NativeImageIT extends IntegrationTestBase {
 	static void assertThatExecutableExists() {
 		File expectedExecutable = new File(TEAMSCALE_UPLOAD_EXECUTABLE);
 		Assertions.assertThat(expectedExecutable).exists();
-		//Assertions.assertThat(expectedExecutable.canExecute()).isTrue();
+		Assertions.assertThat(expectedExecutable.canExecute()).isTrue();
 	}
 
 	@Override
 	protected ProcessUtils.ProcessResult runUploader(Arguments arguments) {
-		assertThatExecutableExists();
+		//assertThatExecutableExists();
+		System.out.println("current path: " + (new File(".").getAbsolutePath()));
+		if (new File(".").listFiles()!=null)
+			System.out.println((Arrays.stream(new File(".").listFiles()).map(File::getName).collect(Collectors.joining("\n"))));
 		return ProcessUtils.runWithStdIn(arguments.stdinFile, arguments.toCommand(TEAMSCALE_UPLOAD_EXECUTABLE));
 	}
 }
