@@ -33,7 +33,7 @@ public class NativeImageIT extends IntegrationTestBase {
 	/**
 	 * Path of the graal-vm built executable.
 	 */
-	public static final String TEAMSCALE_UPLOAD_EXECUTABLE = "./target/teamscale-upload".replace(FileSystemUtils.UNIX_SEPARATOR, File.separatorChar);
+	public static final String TEAMSCALE_UPLOAD_EXECUTABLE = "target/teamscale-upload".replace(FileSystemUtils.UNIX_SEPARATOR, File.separatorChar);
 
 	/**
 	 * All of these tests try to call the Teamscale-upload executable.
