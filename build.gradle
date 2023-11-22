@@ -141,6 +141,7 @@ extensions.runtime.targetPlatforms.get().each { targetPlatform ->
 test {
 	useJUnitPlatform()
 	filter {
+		// Don't run the integration test for the graal-vm distribution artifact.
 		excludeTestsMatching('com.teamscale.upload.NativeImageIT')
 	}
 }
