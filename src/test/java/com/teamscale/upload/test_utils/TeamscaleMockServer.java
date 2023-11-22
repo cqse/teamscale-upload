@@ -1,6 +1,5 @@
 package com.teamscale.upload.test_utils;
 
-import org.assertj.core.api.Assert;
 import org.assertj.core.api.Assertions;
 import spark.Request;
 import spark.Response;

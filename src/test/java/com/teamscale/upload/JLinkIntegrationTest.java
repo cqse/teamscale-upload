@@ -7,8 +7,6 @@ import java.nio.file.Path;
 import com.teamscale.upload.utils.FileSystemUtils;
 import com.teamscale.upload.utils.ZipFile;
 import org.apache.commons.lang3.SystemUtils;
-import org.assertj.core.api.SoftAssertions;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;

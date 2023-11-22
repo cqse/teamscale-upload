@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
-import com.teamscale.upload.utils.StringUtils;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
@@ -33,6 +32,9 @@ public abstract class IntegrationTestBase {
 	private static final String TEAMSCALE_TEST_USER = "teamscale-upload-build-test-user";
 
 
+	/**
+	 * Executes the generated teamscale-upload distribution with the given arguments.
+	 */
 	protected abstract ProcessUtils.ProcessResult runUploader(Arguments arguments);
 	@Test
 	public void wrongAccessKey() {
@@ -418,6 +420,9 @@ public abstract class IntegrationTestBase {
 		return accessKey;
 	}
 
+	/**
+	 * Arguments for an execution of the teamscale-upload executable.
+	 */
 	static class Arguments {
 		private String partition = "NativeImageIT";
 		private String url = "https://cqse.teamscale.io/";
@@ -435,6 +440,10 @@ public abstract class IntegrationTestBase {
 		private String repository = null;
 		private String additionalMessageLine = null;
 		private boolean stackTrace = false;
+
+		/**
+		 * The file from which the teamscale-upload executable should draw its stdin.
+		 */
 		File stdinFile = null;
 		private boolean moveToLastCommit = false;
 		private String timeoutInSeconds = null;
@@ -546,6 +555,9 @@ public abstract class IntegrationTestBase {
 			return this;
 		}
 
+		/**
+		 * Assembles the command that invokes the given teamscale-upload executable.
+		 */
 		String[] toCommand(String executable) {
 			List<String> command = new ArrayList<>(
 					Arrays.asList(executable, "-s", url, "-u", user, "-f", format, "-p", project, "-t", partition));
