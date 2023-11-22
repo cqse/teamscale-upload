@@ -138,7 +138,9 @@ extensions.runtime.targetPlatforms.get().each { targetPlatform ->
 	}
 }
 
-tasks.test {
+test {
 	useJUnitPlatform()
-	exclude '**/NativeImageIT'
+	filter {
+		excludeTestsMatching('**/NativeImageIT')
+	}
 }
