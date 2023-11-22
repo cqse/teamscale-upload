@@ -52,9 +52,10 @@ public class NativeImageIT extends IntegrationTestBase {
 	@Override
 	protected ProcessUtils.ProcessResult runUploader(Arguments arguments) {
 		//assertThatExecutableExists();
-		System.out.println("current path: " + (new File(".").getAbsolutePath()));
+		System.out.println("current path: " + (new File("target/").getAbsolutePath()));
 		if (new File(".").listFiles()!=null)
-			System.out.println((Arrays.stream(new File(".").listFiles()).map(File::getName).collect(Collectors.joining("\n"))));
+			System.out.println((Arrays.stream(new File("target/").listFiles()).map(File::getName).collect(Collectors.joining("\n"))));
+		System.out.println("---");
 		return ProcessUtils.runWithStdIn(arguments.stdinFile, arguments.toCommand(TEAMSCALE_UPLOAD_EXECUTABLE));
 	}
 }
