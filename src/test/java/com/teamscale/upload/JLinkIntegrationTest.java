@@ -63,6 +63,13 @@ public class JLinkIntegrationTest extends IntegrationTestBase {
 				FileSystemUtils.unzip(zipFile, tempDir.toFile());
 			}
 		}
+		validateExecutable();
+	}
+
+	/**
+	 * Checks whether the executable exists and can be executed (i.e., whether the extraction step worked).
+	 */
+	private static void validateExecutable() {
 		if (!executable.exists()) {
 			Assertions.fail("Could not find executable after extracting distribution. " + executable.getPath());
 		}
@@ -73,6 +80,7 @@ public class JLinkIntegrationTest extends IntegrationTestBase {
 
 	@Override
 	protected ProcessUtils.ProcessResult runUploader(Arguments arguments) {
+		validateExecutable();
 		return ProcessUtils.runWithStdIn(arguments.stdinFile, arguments.toCommand(executable.getPath()));
 	}
 
