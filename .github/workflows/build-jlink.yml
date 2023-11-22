@@ -26,7 +26,7 @@ jobs:
       - name: 'Test Dist on Linux'
         env:
           TEAMSCALE_ACCESS_KEY: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
-        run: ./gradlew --scan test
+        run: ./gradlew test
       - name: 'Build Windows'
         run: ./gradlew customRuntimeZip-windows-x86_64
       - name: 'Build MacOS Intel'
