@@ -42,8 +42,8 @@ public class JLinkIntegrationTest extends IntegrationTestBase {
 		Path tempDir = Path.of(TEMP_DIR_PATH, "JLinkTest");
 		// cleanup before tests
 		deleteRecursively(tempDir.toFile());
-		String distribution = null;
-		String executableInZip = null;
+		String distribution;
+		String executableInZip;
 		if (SystemUtils.IS_OS_WINDOWS) {
 			distribution = "build/distributions/teamscale-upload-windows-x86_64.zip";
 			executableInZip = "bin/teamscale-upload.bat";
