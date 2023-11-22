@@ -141,6 +141,6 @@ extensions.runtime.targetPlatforms.get().each { targetPlatform ->
 test {
 	useJUnitPlatform()
 	filter {
-		excludeTestsMatching('com.teamscale.upload.NativeImageIT*')
+		excludeTestsMatching('com.teamscale.upload.NativeImageIT')
 	}
 }
