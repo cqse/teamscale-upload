@@ -1,15 +1,12 @@
 package com.teamscale.upload;
 
 import com.teamscale.upload.autodetect_revision.ProcessUtils;
-import com.teamscale.upload.utils.FileSystemUtils;
 import com.teamscale.upload.utils.SecretUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.assertj.core.api.Assertions;
-import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.stream.Collectors;
 
 /**
  Integration Tests. Runs the Maven-generated native image in different scenarios.
@@ -41,21 +38,21 @@ public class NativeImageIT extends IntegrationTestBase {
 	 * All of these tests try to call the Teamscale-upload executable.
 	 * If that does not exist (build failed), running the test makes no sense.
 	 * <p>
-	 * Currently dead code. Ideally, this would have an @BeforeAll annotation, but that somehow did not work with Maven.
+	 * Currently dead code. Ideally, this would run in an @BeforeAll annotation, but that somehow did not work with Maven.
 	 */
-	static void assertThatExecutableExists() {
-		File expectedExecutable = new File(TEAMSCALE_UPLOAD_EXECUTABLE);
+	static void assertThatExecutableExists(String executable) {
+		File expectedExecutable = new File(executable);
 		Assertions.assertThat(expectedExecutable).exists();
 		Assertions.assertThat(expectedExecutable.canExecute()).isTrue();
 	}
 
 	@Override
 	protected ProcessUtils.ProcessResult runUploader(Arguments arguments) {
-		//assertThatExecutableExists();
-		System.out.println("current path: " + (new File("target/").getAbsolutePath()));
-		if (new File(".").listFiles()!=null)
-			System.out.println((Arrays.stream(new File("target/").listFiles()).map(File::getName).collect(Collectors.joining("\n"))));
-		System.out.println("---");
-		return ProcessUtils.runWithStdIn(arguments.stdinFile, arguments.toCommand(TEAMSCALE_UPLOAD_EXECUTABLE));
+		String executable = TEAMSCALE_UPLOAD_EXECUTABLE;
+		if (SystemUtils.IS_OS_WINDOWS) {
+			executable = TEAMSCALE_UPLOAD_EXECUTABLE + ".exe";
+		}
+		assertThatExecutableExists(executable);
+		return ProcessUtils.runWithStdIn(arguments.stdinFile, arguments.toCommand(executable));
 	}
 }
