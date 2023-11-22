@@ -2,6 +2,7 @@ package com.teamscale.upload;
 
 import com.teamscale.upload.autodetect_revision.ProcessUtils;
 import com.teamscale.upload.utils.SecretUtils;
+import org.assertj.core.api.Assertions;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -39,15 +40,15 @@ public class NativeImageIT extends IntegrationTestBase {
 	 * <p>
 	 * Currently dead code. Ideally, this would have an @BeforeAll annotation, but that somehow did not work with Maven.
 	 */
-	static void ensureExecutableExists() {
+	static void assertThatExecutableExists() {
 		File expectedExecutable = new File(TEAMSCALE_UPLOAD_EXECUTABLE);
-		SoftAssertions softly = new SoftAssertions();
-		softly.assertThat(expectedExecutable).exists();
-		softly.assertAll();
+		Assertions.assertThat(expectedExecutable).exists();
+		Assertions.assertThat(expectedExecutable.canExecute()).isTrue();
 	}
 
 	@Override
 	protected ProcessUtils.ProcessResult runUploader(Arguments arguments) {
+		assertThatExecutableExists();
 		return ProcessUtils.runWithStdIn(arguments.stdinFile, arguments.toCommand(TEAMSCALE_UPLOAD_EXECUTABLE));
 	}
 }
