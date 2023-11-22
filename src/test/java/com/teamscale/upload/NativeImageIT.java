@@ -1,6 +1,7 @@
 package com.teamscale.upload;
 
 import com.teamscale.upload.autodetect_revision.ProcessUtils;
+import com.teamscale.upload.utils.FileSystemUtils;
 import com.teamscale.upload.utils.SecretUtils;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.SoftAssertions;
@@ -32,7 +33,7 @@ public class NativeImageIT extends IntegrationTestBase {
 	/**
 	 * Path of the graal-vm built executable.
 	 */
-	public static final String TEAMSCALE_UPLOAD_EXECUTABLE = "./target/teamscale-upload";
+	public static final String TEAMSCALE_UPLOAD_EXECUTABLE = "./target/teamscale-upload".replace(FileSystemUtils.UNIX_SEPARATOR, File.separatorChar);
 
 	/**
 	 * All of these tests try to call the Teamscale-upload executable.
