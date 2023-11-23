@@ -37,61 +37,95 @@ class TeamscaleUploadArguments {
 	private boolean moveToLastCommit = false;
 	private String timeoutInSeconds = null;
 
+	/**
+	 * Sets the report format
+	 */
 	TeamscaleUploadArguments withFormat(String format) {
 		this.format = format;
 		return this;
 	}
-
+	/**
+	 * Sets the report-file path pattern
+	 */
 	TeamscaleUploadArguments withPattern(String pattern) {
 		this.pattern = pattern;
 		return this;
 	}
 
+	/**
+	 * Sets whether to use insecure certificate checking (i.e., skip checking entirely)
+	 */
 	TeamscaleUploadArguments withInsecure() {
 		this.insecure = true;
 		return this;
 	}
 
+	/**
+	 * sets the commit (hash) to which we upload the reports
+	 */
 	TeamscaleUploadArguments withCommit(String commit) {
 		this.commit = commit;
 		return this;
 	}
-
+	/**
+	 * sets the commit to which we upload the reports (e.g. "master:HEAD")
+	 */
 	TeamscaleUploadArguments withTimestamp(String timestamp) {
 		this.timestamp = timestamp;
 		return this;
 	}
 
+	/**
+	 * Sets the target-repository name (name of repo connector in Teamscale project)
+	 */
 	TeamscaleUploadArguments withRepository(String repository) {
 		this.repository = repository;
 		return this;
 	}
 
+	/**
+	 * Sets whether we should auto-detect the current commit and use it as target commit.
+	 */
 	TeamscaleUploadArguments withAutoDetectCommit() {
 		this.autoDetectCommit = true;
 		return this;
 	}
 
+	/**
+	 * Sets whether to use the {@link TeamscaleMockServer#TRUSTSTORE} as parameter for --trusted-keystore.
+	 */
 	TeamscaleUploadArguments withKeystore() {
 		this.useKeystore = true;
 		return this;
 	}
 
+	/**
+	 * uses the given line for the "--append-to-message" parameter
+	 */
 	TeamscaleUploadArguments withAdditionalMessageLine(String line) {
 		this.additionalMessageLine = line;
 		return this;
 	}
 
+	/**
+	 * Configures the given url as Teamscale server
+	 */
 	TeamscaleUploadArguments withUrl(String url) {
 		this.url = url;
 		return this;
 	}
 
+	/**
+	 * sets whether to use the --stacktrace option
+	 */
 	TeamscaleUploadArguments withStackTrace() {
 		this.stackTrace = true;
 		return this;
 	}
 
+	/**
+	 * Confiures the access key for the Teamscale server
+	 */
 	TeamscaleUploadArguments withAccessKey(String accessKey) {
 		this.accessKey = accessKey;
 		return this;
@@ -106,6 +140,9 @@ class TeamscaleUploadArguments {
 		return this;
 	}
 
+	/**
+	 * Configures that the access key is read from the given file
+	 */
 	TeamscaleUploadArguments withAccessKeyViaStdin(String stdinFilePath) {
 		this.accessKey = "-";
 		// If the access key is set to '-', we need to pipe the key from a file via
@@ -114,31 +151,48 @@ class TeamscaleUploadArguments {
 		return this;
 	}
 
+	/**
+	 * Configures the Teamscale user
+	 */
 	TeamscaleUploadArguments withUser(String user) {
 		this.user = user;
 		return this;
 	}
 
+	/**
+	 * Configures the Teamscale project
+	 */
 	TeamscaleUploadArguments withProject(String project) {
 		this.project = project;
 		return this;
 	}
-
+	/**
+	 * Configures the input (path to a file which contains additional report file patterns)
+	 */
 	TeamscaleUploadArguments withInput(String input) {
 		this.input = input;
 		return this;
 	}
 
+	/**
+	 * sets the partition into which the data is inserted in Teamscale
+	 */
 	TeamscaleUploadArguments withPartition(String partition) {
 		this.partition = partition;
 		return this;
 	}
 
+	/**
+	 * Sets whether we use the "--move-to-last-commit" option
+	 */
 	TeamscaleUploadArguments withMoveToLastCommit() {
 		this.moveToLastCommit = true;
 		return this;
 	}
 
+	/**
+	 * Sets the timeout for the Teamscale-service call
+	 */
 	TeamscaleUploadArguments withTimeoutInSeconds(String timeoutInSeconds) {
 		this.timeoutInSeconds = timeoutInSeconds;
 		return this;
@@ -149,13 +203,13 @@ class TeamscaleUploadArguments {
 	 */
 	String[] toCommand(String executable) {
 		List<String> command = new ArrayList<>(
-				Arrays.asList(executable, "-s", url, "-u", user, "-f", format, "-p", project, "-t", partition));
+				Arrays.asList(executable, "--server", url, "--url", user, "--format", format, "--project", project, "--partition", partition));
 		if (accessKey != null) {
-			command.add("-a");
+			command.add("--accesskey");
 			command.add(accessKey);
 		}
 		if (input != null) {
-			command.add("-i");
+			command.add("--input");
 			command.add(input);
 		}
 		command.add(pattern);
@@ -193,7 +247,6 @@ class TeamscaleUploadArguments {
 			command.add("--timeout");
 			command.add(timeoutInSeconds);
 		}
-
 		return command.toArray(new String[0]);
 	}
 
