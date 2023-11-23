@@ -33,17 +33,22 @@ jobs:
         run: ./gradlew customRuntimeZip-macos-x86_64
       - name: 'Build MacOS ARM'
         run: ./gradlew customRuntimeZip-macos-aarch64
-      - name: 'Upload Distributions to Temp Storage'
+      - name: 'Upload Distributions to temporary Workflow Artifacts Storage'
         if: ${{ always() }}
         uses: actions/upload-artifact@v3
         with:
           name: target-jlink
           # Path to generated jlink distributions on the current machine.
+          #
           # We prefer to list the paths explicitly (rather than copy the entire folder) to document
           # which paths can be expected in the upload folder.
+          #
+          # We can download the artifacts (for debugging) as documented here: https://docs.github.com/en/actions/managing-workflow-runs/downloading-workflow-artifacts
           path: |
             ./build/distributions/teamscale-upload-linux-x86_64.zip
             ./build/distributions/teamscale-upload-windows-x86_64.zip
             ./build/distributions/teamscale-upload-macos-x86_64.zip
             ./build/distributions/teamscale-upload-macos-aarch64.zip
           retention-days: 5
+          # fail if the zip files are not found
+          if-no-files-found: error

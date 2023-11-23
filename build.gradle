@@ -28,7 +28,7 @@ application {
 
 java {
 	toolchain {
-		// Ensure that we build with the same version/vendor that we want to jlink to the distribution.
+		// Ensure that we build with the same version that we want to jlink to the distribution.
 		// Before making this explicit, I got this error in the build: "Error: Error reading module: /home/runner/work/teamscale-upload/teamscale-upload/build/jdks/linux-x86_64/jdk-17.0.5+8/jmods/java.security.sasl.jmod"
 		// I think the build was using Java 11 then.
 		languageVersion = JavaLanguageVersion.of(17)
@@ -47,8 +47,8 @@ dependencies {
 	implementation group: 'com.squareup.okhttp3', name: 'okhttp', version: '4.9.2'
 	implementation group: 'net.sourceforge.argparse4j', name: 'argparse4j', version: '0.9.0'
 	implementation group: 'org.jetbrains.nativecerts', name: 'jvm-native-trusted-roots', version: '1.0.19'
-	implementation group: 'com.sparkjava', name: 'spark-core', version: '2.9.4'
 
+	testImplementation group: 'com.sparkjava', name: 'spark-core', version: '2.9.4'
 	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.10.0'
 	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-params', version: '5.10.0'
 	testImplementation group: 'org.assertj', name: 'assertj-core', version: '3.21.0'
@@ -68,7 +68,6 @@ runtime {
 			'--strip-debug',
 	]
 
-	// TODO TS-35786: do we need all of these?
 	modules = [
 			'java.logging', // For package java.util.logging (used by Google Guava)
 			'java.naming', // For package javax.naming (used by Apache HttpClient)
@@ -77,13 +76,12 @@ runtime {
 
 	def ADOPTIUM_BINARY_REPOSITORY = 'https://api.adoptium.net/v3/binary'
 
-	// We need to downlaod the JDK, not the JRE, as the latter doesn't ship the jmod files needed by jlink
+	// We need to download the JDK, not the JRE, as the latter doesn't ship the jmod files needed by jlink
 	targetPlatform('linux-x86_64') {
 		jdkHome = jdkDownload("$ADOPTIUM_BINARY_REPOSITORY/version/jdk-${RUNTIME_JDK_VERSION}/linux/x64/jdk/hotspot/normal/eclipse") {
 			archiveExtension = 'tar.gz'
 		}
 	}
-
 	targetPlatform('windows-x86_64') {
 		jdkHome = jdkDownload("$ADOPTIUM_BINARY_REPOSITORY/version/jdk-${RUNTIME_JDK_VERSION}/windows/x64/jdk/hotspot/normal/eclipse") {
 			archiveExtension = 'zip'
@@ -94,24 +92,17 @@ runtime {
 			archiveExtension = 'tar.gz'
 		}
 	}
-
-
 	targetPlatform('macos-aarch64') {
 		jdkHome = jdkDownload("$ADOPTIUM_BINARY_REPOSITORY/version/jdk-${RUNTIME_JDK_VERSION}/mac/aarch64/jdk/hotspot/normal/eclipse") {
 			archiveExtension = 'tar.gz'
 		}
 	}
-
-
 	imageDir.set(layout.buildDirectory.dir("runtime/install"))
 	imageZip.set(layout.buildDirectory.file("runtime/zip/${application.applicationName}.zip"))
 }
 
-// Builds a os-specific versions of Teamscale Upload that contain an (os-specific) JRE. These versions don't require that a JRE is installed on the target machine.
-def customRuntimeZip = tasks.register('customRuntimeZip')
-
 extensions.runtime.targetPlatforms.get().each { targetPlatform ->
-	def customRuntimeZipPlatform = tasks.register("customRuntimeZip-${targetPlatform.key}", Zip) {
+	tasks.register("customRuntimeZip-${targetPlatform.key}", Zip) {
 		dependsOn tasks.named('runtime')
 		doFirst {
 			if (Os.isFamily(Os.FAMILY_WINDOWS) && targetPlatform.key != 'windows-x86_64') {
@@ -132,16 +123,12 @@ extensions.runtime.targetPlatforms.get().each { targetPlatform ->
 			into "${application.applicationName}"
 		}
 	}
-
-	customRuntimeZip.configure {
-		dependsOn(customRuntimeZipPlatform)
-	}
 }
 
 test {
 	useJUnitPlatform()
 	filter {
-		// Don't run the integration test for the graal-vm distribution artifact.
+		// Don't run the integration test for the graal-vm distribution artifact here. (This is the jlink build.)
 		excludeTestsMatching('com.teamscale.upload.NativeImageIT')
 	}
 }
