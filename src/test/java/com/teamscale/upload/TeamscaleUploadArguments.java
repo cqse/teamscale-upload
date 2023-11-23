@@ -203,7 +203,7 @@ class TeamscaleUploadArguments {
 	 */
 	String[] toCommand(String executable) {
 		List<String> command = new ArrayList<>(
-				Arrays.asList(executable, "--server", url, "--url", user, "--format", format, "--project", project, "--partition", partition));
+				Arrays.asList(executable, "--server", url, "--user", user, "--format", format, "--project", project, "--partition", partition));
 		if (accessKey != null) {
 			command.add("--accesskey");
 			command.add(accessKey);
