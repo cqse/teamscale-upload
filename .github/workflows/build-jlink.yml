@@ -35,8 +35,15 @@ jobs:
         run: ./gradlew customRuntimeZip-macos-aarch64
       - name: 'Upload Distributions to Temp Storage'
         if: ${{ always() }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: target-jlink
-          path: ./target-jlink
+          # Path to generated jlink distributions on the current machine.
+          # We prefer to list the paths explicitly (rather than copy the entire folder) to document
+          # which paths can be expected in the upload folder.
+          path: |
+            ./build/distributions/teamscale-upload-linux-x86_64.zip
+            ./build/distributions/teamscale-upload-windows-x86_64.zip
+            ./build/distributions/teamscale-upload-macos-x86_64.zip
+            ./build/distributions/teamscale-upload-macos-aarch64.zip
           retention-days: 5
