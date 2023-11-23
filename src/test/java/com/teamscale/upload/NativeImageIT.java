@@ -47,7 +47,7 @@ public class NativeImageIT extends IntegrationTestBase {
 	}
 
 	@Override
-	protected ProcessUtils.ProcessResult runUploader(Arguments arguments) {
+	protected ProcessUtils.ProcessResult runUploader(TeamscaleUploadArguments arguments) {
 		String executable = TEAMSCALE_UPLOAD_EXECUTABLE;
 		if (SystemUtils.IS_OS_WINDOWS) {
 			executable = TEAMSCALE_UPLOAD_EXECUTABLE + ".exe";
