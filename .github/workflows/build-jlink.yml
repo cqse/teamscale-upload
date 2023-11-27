@@ -8,6 +8,7 @@ on:
     branches: '*'
 
 jobs:
+  # builds the jlink versions of the teamscale-upload tool and stores them in a temporary gradle-workflow storage
   build-jlink:
     name: JLink build (all target platforms)
     # Build on a fixed version, for stability of the release artifacts.
@@ -52,3 +53,29 @@ jobs:
           retention-days: 5
           # fail if the zip files are not found
           if-no-files-found: error
+
+  # uploads the jlink distributions built by the build-jlink job to a public storage (public release job)
+  release-jlink:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - build-jlink
+    name: Create Release (jlink)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v3
+      - name: Rename Distributions
+        run: |
+          (mv ./build/distributions/teamscale-upload-linux-x86_64.zip ./build/distributions/teamscale-upload-jlink-linux-x86_64.zip)
+          (mv ./build/distributions/teamscale-upload-windows-x86_64.zip ./build/distributions/teamscale-upload-jlink-windows-x86_64.zip)
+          (mv ./build/distributions/teamscale-upload-macos-x86_64.zip ./build/distributions/teamscale-upload-jlink-macos-x86_64.zip)
+          (mv ./build/distributions/teamscale-upload-macos-aarch64.zip ./build/distributions/teamscale-upload-jlink-macos-aarch64.zip)
+          (ls -al)
+      - name: Upload Release Assets
+        id: create_release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          file: teamscale-upload-jlink-*.zip
+          file_glob: true
+          overwrite: true
