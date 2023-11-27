@@ -122,6 +122,15 @@ extensions.runtime.targetPlatforms.get().each { targetPlatform ->
 		from(runtime.imageDir.dir("${project.name}-${targetPlatform.key}")) {
 			into "${application.applicationName}"
 		}
+		var readmeFilePath = "distribution_readme/README_UNIX.md"
+		if (Os.isFamily(Os.FAMILY_WINDOWS) && targetPlatform.key == 'windows-x86_64') {
+			readmeFilePath = "distribution_readme/README_WINDOWS.md"
+		}
+		from(readmeFilePath) {
+			// rename copied file to "Readme.md"
+			rename (oldFilename -> "README.md")
+			into "${application.applicationName}"
+		}
 	}
 }
 
