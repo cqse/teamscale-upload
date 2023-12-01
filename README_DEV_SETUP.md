@@ -34,13 +34,9 @@ The executable is created in the `build/runtime` directory. The zipped ready-to-
 ./gradlew clean customRuntimeZip
 ```
 
-
 ## Creating a Release
 
-[//]: # (TODO TS-35786: GitHub action needs to produce JLink executable)
-TBD
-
-
+Same steps as in the "Creating a Release" subsection in the GraalVM build
 
 # GraalVM build (deprecated)
 
