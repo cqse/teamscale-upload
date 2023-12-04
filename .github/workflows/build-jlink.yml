@@ -63,6 +63,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v3
+      - run: ls -1
+      - run: ls -1 target-jlink
       - name: Rename Distributions
         run: |
           (mv ./build/distributions/teamscale-upload-linux-x86_64.zip ./build/distributions/teamscale-upload-jlink-linux-x86_64.zip)
