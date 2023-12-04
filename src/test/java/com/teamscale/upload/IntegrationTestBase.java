@@ -31,6 +31,7 @@ public abstract class IntegrationTestBase {
 	 * Executes the generated teamscale-upload distribution with the given arguments.
 	 */
 	protected abstract ProcessUtils.ProcessResult runUploader(TeamscaleUploadArguments arguments);
+	
 	@Test
 	public void wrongAccessKey() {
 		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments().withAccessKey("wrong-accesskey_"));
