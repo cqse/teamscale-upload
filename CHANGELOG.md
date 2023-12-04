@@ -5,7 +5,7 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
-# 2.9.0
+# 2.9.1
 - [feature] added jlink-based executable distributions
 - [fix] added support for more connection-security algorithms
   
