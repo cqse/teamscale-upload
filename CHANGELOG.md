@@ -5,6 +5,10 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
+# 2.9.0
+- [feature] added jlink-based executable distributions
+- [fix] added support for more connection-security algorithms
+  
 # 2.8.2
 - [fix] fixed potential vulnerability to a zipslip attack (by malicious tar files in xcode reports)
   
