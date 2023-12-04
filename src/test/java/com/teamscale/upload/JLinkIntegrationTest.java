@@ -35,6 +35,7 @@ import static com.teamscale.upload.utils.FileSystemUtils.deleteRecursively;
 public class JLinkIntegrationTest extends IntegrationTestBase {
 
 	private static File executable;
+	
 	@BeforeAll
 	public static void extractDistribution() throws IOException {
 		Path tempDir = Path.of(TEMP_DIR_PATH, "JLinkTest");
