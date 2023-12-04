@@ -1,10 +1,50 @@
-## Development of the teamscale-upload tool
+# teamscale-upload development README
 
 The purpose of this tool is to
 1. make it as simple as possible for Teamscale users to upload external reports
 2. provide helpful error messages for commonly occurring problems, to help users resolve those themselves
 
 [Tool Design Principles](README_TOOL_DESIGN_PRINCIPLES.md)
+
+At the moment, this tool has two build systems (maven and gradle).
+Gradle is used to build the new JLink-executable distribution.
+Maven is used to build the old Graalvm-executable distribution.
+New dependencies must be inserted into both systems (`pom.xml` and `build.gradle`).
+
+# JLink build
+## Developing
+
+Open this folder in IntelliJ.
+Ensure the Gradle project is recognized by the IDE.
+You can then test and develop on the JVM.
+
+**However, not everything that works in the JVM will also work after compiling to a native executable (e.g: reflection).
+Thus, please always test your changes after compiling to a native executable!**
+
+### Setup (Linux)
+
+No additional configuration is required after importing the project into IntelliJ.
+Gradle (`./gradlew`) can also be used directly from the command line.
+
+#### Building a JLink Native Executable (Linux)
+
+To create a native executable with JLink locally, run the corresponding `customRuntimeZip-*` Gradle task, or `customRuntimeZip` to
+build the executables for all platforms.
+
+The executable is created in the `build/runtime` directory. The zipped ready-to-distribute files are found in the
+`build/distributions` directory.
+
+```bash
+./gradlew clean customRuntimeZip
+```
+
+## Creating a Release
+
+Same steps as in the "Creating a Release" subsection in the GraalVM build
+
+# GraalVM build (deprecated)
+
+The following versions detail the development setup with GraalVM, which is deprecated, and can be removed once we know that all production applications work with the JLink distribution.
 
 ## Developing
 

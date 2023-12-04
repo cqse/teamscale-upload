@@ -1,0 +1,10 @@
+# Teamscale Folder Mapping
+version = "1.0"
+
+root = true
+
+[server]
+url = "https://cqse.teamscale.io/"
+
+[project]
+id = "teamscale-upload"

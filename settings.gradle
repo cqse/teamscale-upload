@@ -1,0 +1,12 @@
+pluginManagement {
+	repositories {
+		maven {
+			url "https://europe-west1-maven.pkg.dev/cqse-build/cqse-maven-public"
+		}
+		gradlePluginPortal()
+	}
+
+	plugins {
+		id("org.beryx.runtime") version "1.13.0"
+	}
+}

@@ -6,6 +6,15 @@
       },
       {
         "pattern":"com/sun/jna/.*/jnidispatch.dll"
+      },
+      {
+        "pattern":"java.base:\\Qjdk/internal/icu/impl/data/icudt67b/nfkc.nrm\\E"
+      },
+      {
+        "pattern":"java.base:\\Qjdk/internal/icu/impl/data/icudt67b/uprops.icu\\E"
+      },
+      {
+        "pattern":"java.base:\\Qsun/net/idn/uidna.spp\\E"
       }
     ]
   },

@@ -86,9 +86,9 @@ public class OkHttpUtils {
 			SSLContext sslContext = SSLContext.getInstance(PROTOCOL);
 
 			List<TrustManager> trustManagers = new ArrayList<>();
+			trustManagers.addAll(getExternalTrustManagers(trustStorePath, trustStorePassword));
 			trustManagers.addAll(getJVMTrustManagers());
 			trustManagers.addAll(getOSTrustManagers());
-			trustManagers.addAll(getExternalTrustManagers(trustStorePath, trustStorePassword));
 
 			MultiTrustManager multiTrustManager = new MultiTrustManager(trustManagers);
 
@@ -175,7 +175,7 @@ public class OkHttpUtils {
 			KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
 			keyStore.load(null);
 			for (X509Certificate certificate : osCertificates) {
-				keyStore.setCertificateEntry(certificate.getSubjectX500Principal().getName(), certificate);
+				keyStore.setCertificateEntry(String.valueOf(certificate.hashCode()), certificate);
 			}
 
 			TrustManagerFactory trustManagerFactory = TrustManagerFactory

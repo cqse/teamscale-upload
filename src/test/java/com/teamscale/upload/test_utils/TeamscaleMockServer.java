@@ -1,5 +1,6 @@
 package com.teamscale.upload.test_utils;
 
+import org.assertj.core.api.Assertions;
 import spark.Request;
 import spark.Response;
 import spark.Service;
@@ -11,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,8 +34,20 @@ public class TeamscaleMockServer implements AutoCloseable {
 
 	static {
 		try {
-			KEYSTORE = new File(TeamscaleMockServer.class.getResource("keystore.jks").toURI());
-			TRUSTSTORE = new File(TeamscaleMockServer.class.getResource("truststore.jks").toURI());
+			URL keystoreResource = TeamscaleMockServer.class.getResource("keystore.jks");
+			if (keystoreResource != null) {
+				KEYSTORE = new File(keystoreResource.toURI());
+			} else {
+				// will fail in constructor, a failure there is not handled properly by the test framework
+				KEYSTORE = null;
+			}
+			URL truststoreResource = TeamscaleMockServer.class.getResource("truststore.jks");
+			if (truststoreResource != null) {
+				TRUSTSTORE = new File(truststoreResource.toURI());
+			} else {
+				// will fail in constructor, a failure there is not handled properly by the test framework
+				TRUSTSTORE = null;
+			}
 		} catch (URISyntaxException e) {
 			throw new AssertionError("Failed to get keystore from resources", e);
 		}
@@ -65,6 +79,9 @@ public class TeamscaleMockServer implements AutoCloseable {
 	}
 
 	public TeamscaleMockServer(int port, boolean useSelfSignedCertificate, long openSessionRequestTimeInSeconds) {
+		if (KEYSTORE == null || TRUSTSTORE == null) {
+			Assertions.fail("Could not initialize TeamscaleMockServer: Could not find keystore.jks or truststore.jks test resources");
+		}
 		this.spark = Service.ignite();
 		this.openSessionRequestTimeInSeconds = openSessionRequestTimeInSeconds;
 

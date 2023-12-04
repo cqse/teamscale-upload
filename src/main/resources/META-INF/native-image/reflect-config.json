@@ -11,6 +11,38 @@
     ]
   },
   {
+    "name": "java.lang.Thread",
+    "fields": [
+      {
+        "name": "threadLocalRandomProbe"
+      }
+    ]
+  },
+  {
+    "name": "java.util.concurrent.atomic.AtomicBoolean",
+    "fields": [
+      {
+        "name": "value"
+      }
+    ]
+  },
+  {
+    "name": "java.util.concurrent.atomic.AtomicReference",
+    "fields": [
+      {
+        "name": "value"
+      }
+    ]
+  },
+  {
+    "name": "java.util.concurrent.atomic.Striped64",
+    "allDeclaredFields": true
+  },
+  {
+    "name": "java.util.concurrent.ForkJoinTask",
+    "allDeclaredFields": true
+  },
+  {
     "name": "com.teamscale.upload.report.testwise_coverage.TestInfo",
     "allDeclaredFields": true
   },
@@ -149,6 +181,9 @@
   {
     "name":"org.apiguardian.api.API",
     "queryAllPublicMethods":true
+  },
+  {
+    "name": "javax.crypto.spec.DHParameterSpec"
   },
   {
     "name":"org.bouncycastle.jcajce.provider.asymmetric.COMPOSITE$Mappings",
@@ -515,6 +550,18 @@
     "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
+    "name": "sun.security.provider.MD5",
+    "methods": [{"name": "<init>", "parameterTypes": []}]
+  },
+  {
+    "name": "sun.security.provider.NativePRNG",
+    "methods": [{"name": "<init>", "parameterTypes": []}]
+  },
+  {
+    "name": "sun.misc.Unsafe",
+    "allDeclaredFields": true
+  },
+  {
     "name":"sun.security.pkcs12.PKCS12KeyStore",
     "methods":[{"name":"<init>","parameterTypes":[] }]
   },
@@ -540,7 +587,10 @@
   },
   {
     "name":"sun.security.provider.NativePRNG",
-    "methods":[{"name":"<init>","parameterTypes":[] }]
+    "methods":[
+      {"name":"<init>","parameterTypes":[] },
+      {"name":"<init>","parameterTypes":["java.security.SecureRandomParameters"]}
+    ]
   },
   {
     "name":"sun.security.provider.SHA",
@@ -592,6 +642,22 @@
   },
   {
     "name":"sun.security.ssl.SSLContextImpl$TLSContext",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.ssl.SSLContextImpl$TLS10Context",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.ssl.SSLContextImpl$TLS11Context",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.ssl.SSLContextImpl$TLS12Context",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.ssl.SSLContextImpl$TLS13Context",
     "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
@@ -839,10 +905,6 @@
     "name": "byte[]"
   },
   {
-    "name": "com.intellij.rt.execution.application.AppMainV2$Agent",
-    "methods": [{"name": "premain", "parameterTypes": ["java.lang.String", "java.lang.instrument.Instrumentation"]}]
-  },
-  {
     "name": "com.sun.crypto.provider.TlsKeyMaterialGenerator",
     "methods": [{"name": "<init>", "parameterTypes": []}]
   },
@@ -896,5 +958,34 @@
   {
     "name": "sun.security.rsa.RSASignature$SHA512withRSA",
     "methods": [{"name": "<init>", "parameterTypes": []}]
-  }
+  },
+
+  {"name": "java.io.File", "methods": [{"name": "toPath", "parameterTypes": []}]},
+  {"name": "java.lang.Boolean", "methods": [{"name": "parseBoolean", "parameterTypes": ["java.lang.String"]}]},
+  {"name": "java.lang.Byte", "methods": [{"name": "parseByte", "parameterTypes": ["java.lang.String"]}]},
+  {"name": "java.lang.ClassLoader"},
+  {"name": "java.lang.Double", "methods": [{"name": "parseDouble", "parameterTypes": ["java.lang.String"]}]},
+  {"name": "java.lang.Float", "methods": [{"name": "parseFloat", "parameterTypes": ["java.lang.String"]}]},
+  {"name": "java.lang.Integer", "methods": [{"name": "parseInt", "parameterTypes": ["java.lang.String"]}]},
+  {"name": "java.lang.Long", "methods": [{"name": "parseLong", "parameterTypes": ["java.lang.String"]}]},
+  {"name": "java.lang.Short", "methods": [{"name": "parseShort", "parameterTypes": ["java.lang.String"]}]},
+  {"name": "java.nio.file.Files", "methods": [{"name": "setPosixFilePermissions", "parameterTypes": ["java.nio.file.Path", "java.util.Set"]}]},
+  {"name": "java.nio.file.Path"},
+  {"name": "java.nio.file.attribute.PosixFilePermissions", "methods": [{"name": "fromString", "parameterTypes": ["java.lang.String"]}]},
+  {"name": "java.util.ArrayList", "methods": [{"name": "<init>", "parameterTypes": []}]},
+  {"name": "java.util.HashMap", "methods": [{"name": "<init>", "parameterTypes": []}]},
+  {"name": "java.util.List"},
+  {"name": "java.util.Map"},
+  {"name": "javax.net.SocketFactory"},
+  {"name": "javax.net.ssl.HostnameVerifier"},
+  {"name": "javax.net.ssl.SSLContext"},
+  {"name": "javax.net.ssl.SSLException"},
+  {"name": "javax.net.ssl.SSLParameters"},
+  {"name": "javax.net.ssl.SSLPeerUnverifiedException"},
+  {"name": "javax.net.ssl.SSLSession"},
+  {"name": "javax.net.ssl.SSLSocket"},
+  {"name": "javax.net.ssl.SSLSocketFactory"},
+  {"name": "javax.net.ssl.TrustManager"},
+  {"name": "javax.net.ssl.TrustManagerFactory"},
+  {"name": "javax.net.ssl.X509TrustManager"}
 ]

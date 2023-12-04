@@ -1,0 +1,143 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
+plugins {
+	id 'org.beryx.runtime'
+}
+
+repositories {
+	maven {
+		url "https://packages.jetbrains.team/maven/p/ij/intellij-dependencies/"
+	}
+	mavenCentral()
+}
+
+group = "com.teamscale"
+version = "1.0-SNAPSHOT"
+
+application {
+	applicationName = 'teamscale-upload'
+
+	mainClass = 'com.teamscale.upload.TeamscaleUpload'
+
+	applicationDefaultJvmArgs = [
+			// Ensure that no stack traces are lost.
+			// See <https://stackoverflow.com/questions/2411487/nullpointerexception-in-java-with-no-stacktrace>
+			'-XX:-OmitStackTraceInFastThrow',
+	]
+}
+
+java {
+	toolchain {
+		// Ensure that we build with the same version that we want to jlink to the distribution.
+		// Before making this explicit, I got this error in the build: "Error: Error reading module: /home/runner/work/teamscale-upload/teamscale-upload/build/jdks/linux-x86_64/jdk-17.0.5+8/jmods/java.security.sasl.jmod"
+		// I think the build was using Java 11 then.
+		languageVersion = JavaLanguageVersion.of(17)
+		// I would like to also use the same vendor as in jlink, but gradle can't find/download a toolchain for this vendor
+		//vendor = JvmVendorSpec.ADOPTIUM
+	}
+}
+
+dependencies {
+	implementation group: 'org.apache.commons', name: 'commons-exec', version: '1.3'
+	implementation group: 'commons-io', name: 'commons-io', version: '2.11.0'
+	implementation group: 'org.apache.commons', name: 'commons-compress', version: '1.21'
+	implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
+	implementation group: 'com.google.code.gson', name: 'gson', version: '2.8.9'
+	implementation group: 'com.google.guava', name: 'guava', version: '32.1.2-jre'
+	implementation group: 'com.squareup.okhttp3', name: 'okhttp', version: '4.9.2'
+	implementation group: 'net.sourceforge.argparse4j', name: 'argparse4j', version: '0.9.0'
+	implementation group: 'org.jetbrains.nativecerts', name: 'jvm-native-trusted-roots', version: '1.0.19'
+
+	testImplementation group: 'com.sparkjava', name: 'spark-core', version: '2.9.4'
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.10.0'
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-params', version: '5.10.0'
+	testImplementation group: 'org.assertj', name: 'assertj-core', version: '3.21.0'
+	testRuntimeOnly group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.10.0'
+	testRuntimeOnly group: 'javax.servlet', name: 'javax.servlet-api', version: '4.0.1'
+
+	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+def RUNTIME_JDK_VERSION = '17.0.5+8'
+
+runtime {
+	options = [
+			'--compress', '2', // ZIP compression
+			'--no-header-files', '--no-man-pages',
+			'--dedup-legal-notices', 'error-if-not-same-content',
+			'--strip-debug',
+	]
+
+	modules = [
+			'java.logging', // For package java.util.logging (used by Google Guava)
+			'java.naming', // For package javax.naming (used by Apache HttpClient)
+			'jdk.crypto.ec', // For Elliptic Curve algorithms over TLS
+	]
+
+	def ADOPTIUM_BINARY_REPOSITORY = 'https://api.adoptium.net/v3/binary'
+
+	// We need to download the JDK, not the JRE, as the latter doesn't ship the jmod files needed by jlink
+	targetPlatform('linux-x86_64') {
+		jdkHome = jdkDownload("$ADOPTIUM_BINARY_REPOSITORY/version/jdk-${RUNTIME_JDK_VERSION}/linux/x64/jdk/hotspot/normal/eclipse") {
+			archiveExtension = 'tar.gz'
+		}
+	}
+	targetPlatform('windows-x86_64') {
+		jdkHome = jdkDownload("$ADOPTIUM_BINARY_REPOSITORY/version/jdk-${RUNTIME_JDK_VERSION}/windows/x64/jdk/hotspot/normal/eclipse") {
+			archiveExtension = 'zip'
+		}
+	}
+	targetPlatform('macos-x86_64') {
+		jdkHome = jdkDownload("$ADOPTIUM_BINARY_REPOSITORY/version/jdk-${RUNTIME_JDK_VERSION}/mac/x64/jdk/hotspot/normal/eclipse") {
+			archiveExtension = 'tar.gz'
+		}
+	}
+	targetPlatform('macos-aarch64') {
+		jdkHome = jdkDownload("$ADOPTIUM_BINARY_REPOSITORY/version/jdk-${RUNTIME_JDK_VERSION}/mac/aarch64/jdk/hotspot/normal/eclipse") {
+			archiveExtension = 'tar.gz'
+		}
+	}
+	imageDir.set(layout.buildDirectory.dir("runtime/install"))
+	imageZip.set(layout.buildDirectory.file("runtime/zip/${application.applicationName}.zip"))
+}
+
+extensions.runtime.targetPlatforms.get().each { targetPlatform ->
+	tasks.register("customRuntimeZip-${targetPlatform.key}", Zip) {
+		dependsOn tasks.named('runtime')
+		doFirst {
+			if (Os.isFamily(Os.FAMILY_WINDOWS) && targetPlatform.key != 'windows-x86_64') {
+				/*
+				 * After unpacking the JRE on Windows, executable flags on the JRE's shell script files are lost (NTFS does not store them).
+				 * So we can't build the linux/mac distributions on a Windows system (we can build the Windows dist though because Windows does not care about the executable flags).
+				 *
+				 * Solving this might be possible if we can transfer files directly from the JRE zip to the target zip (bypassing NTFS and preserving their flags), but I did not find out how to do that in gradle.
+				 */
+				throw new GradleException("Can't build linux/mac distributions of Teamscale Upload on Windows. The 'executable' flags on the shell scripts in the resulting zip can't be preserved.")
+			}
+		}
+		// Omit the version so that archive file name is predictable.
+		archiveFileName = "${application.applicationName}-${targetPlatform.key}.zip"
+		destinationDirectory = layout.buildDirectory.dir('distributions')
+
+		from(runtime.imageDir.dir("${project.name}-${targetPlatform.key}")) {
+			into "${application.applicationName}"
+		}
+		var readmeFilePath = "distribution_readme/README_UNIX.md"
+		if (Os.isFamily(Os.FAMILY_WINDOWS) && targetPlatform.key == 'windows-x86_64') {
+			readmeFilePath = "distribution_readme/README_WINDOWS.md"
+		}
+		from(readmeFilePath) {
+			// rename copied file to "Readme.md"
+			rename (oldFilename -> "README.md")
+			into "${application.applicationName}"
+		}
+	}
+}
+
+test {
+	useJUnitPlatform()
+	filter {
+		// Don't run the integration test for the graal-vm distribution artifact here. (This is the jlink build.)
+		excludeTestsMatching('com.teamscale.upload.NativeImageIT')
+	}
+}
