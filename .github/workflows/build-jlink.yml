@@ -63,21 +63,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v3
-      - run: ls -1
-      - run: ls -1 target-jlink
+      - name: List downloaded distributions
+        run: ls -1 target-jlink
       - name: Rename Distributions
         run: |
-          (mv ./build/distributions/teamscale-upload-linux-x86_64.zip ./build/distributions/teamscale-upload-jlink-linux-x86_64.zip)
-          (mv ./build/distributions/teamscale-upload-windows-x86_64.zip ./build/distributions/teamscale-upload-jlink-windows-x86_64.zip)
-          (mv ./build/distributions/teamscale-upload-macos-x86_64.zip ./build/distributions/teamscale-upload-jlink-macos-x86_64.zip)
-          (mv ./build/distributions/teamscale-upload-macos-aarch64.zip ./build/distributions/teamscale-upload-jlink-macos-aarch64.zip)
-          (ls -al)
+          (mv ./target-jlink/teamscale-upload-linux-x86_64.zip ./target-jlink/teamscale-upload-jlink-linux-x86_64.zip)
+          (mv ./target-jlink/teamscale-upload-windows-x86_64.zip ./target-jlink/teamscale-upload-jlink-windows-x86_64.zip)
+          (mv ./target-jlink/teamscale-upload-macos-x86_64.zip ./target-jlink/teamscale-upload-jlink-macos-x86_64.zip)
+          (mv ./target-jlink/teamscale-upload-macos-aarch64.zip ./target-jlink/teamscale-upload-jlink-macos-aarch64.zip)
+          (ls -1 target-jlink)
       - name: Upload Release Assets
         id: create_release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
-          file: teamscale-upload-jlink-*.zip
+          file: target-jlink/teamscale-upload-jlink-*.zip
           file_glob: true
           overwrite: true
