@@ -38,9 +38,12 @@ import okhttp3.Response;
 /**
  * Main class of the teamscale-upload project.
  */
+// this IntelliJ warning is a false-positive due to the overloading of
+// properties and methods with the same name in the okhttp code
+@SuppressWarnings("KotlinInternalInJava")
 public class TeamscaleUpload {
 
-	/** The version against which the API requests are performed.  */
+	/** The version against which the API requests are performed. */
 	private static final String MINIMUM_REQUIRED_API_VERSION = "v8.2";
 
 	/**
@@ -310,6 +313,8 @@ public class TeamscaleUpload {
 	private static String sendRequest(OkHttpClient client, CommandLine commandLine, HttpUrl url, Request request)
 			throws IOException {
 
+		HttpUrl host = new HttpUrl.Builder().scheme(url.scheme()).host(url.host()).port(url.port()).build();
+
 		try (Response response = client.newCall(request).execute()) {
 			SafeResponse safeResponse = new SafeResponse(response);
 			handleErrors(safeResponse, commandLine);
@@ -317,12 +322,12 @@ public class TeamscaleUpload {
 			return safeResponse.body;
 		} catch (UnknownHostException e) {
 			LogUtils.failWithoutStackTrace(
-					"The host " + url + " could not be resolved. Please ensure you have no typo and that"
+					"The host " + host + " could not be resolved. Please ensure you have no typo and that"
 							+ " this host is reachable from this server.",
 					e);
 		} catch (ConnectException e) {
 			LogUtils.failWithoutStackTrace(
-					"The URL " + url + " refused a connection. Please ensure that you have no typo and that"
+					"The host " + host + " refused a connection. Please ensure that you have no typo and that"
 							+ " this endpoint is reachable and not blocked by firewalls.",
 					e);
 		} catch (SocketTimeoutException e) {
