@@ -5,6 +5,8 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
+- [fix] more readable error message when connection to host is refused
+
 # 2.9.1
 - [feature] added jlink-based executable distributions
 - [fix] added support for more connection-security algorithms
