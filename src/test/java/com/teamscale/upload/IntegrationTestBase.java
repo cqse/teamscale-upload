@@ -60,7 +60,7 @@ public abstract class IntegrationTestBase {
 		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments().withUrl("http://domain.invalid:9999"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			softly.assertThat(result.errorOutput).contains("could not be resolved");
+			softly.assertThat(result.errorOutput).contains("The host http://domain.invalid:9999/ could not be resolved");
 		});
 		assertThatOSCertificatesWereImported(result);
 	}
@@ -70,7 +70,7 @@ public abstract class IntegrationTestBase {
 		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments().withUrl("http://localhost:9999"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			softly.assertThat(result.errorOutput).contains("refused a connection");
+			softly.assertThat(result.errorOutput).contains("The host http://localhost:9999/ refused a connection");
 		});
 		assertThatOSCertificatesWereImported(result);
 	}
