@@ -5,7 +5,10 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
+
+# 2.9.2
 - [fix] more readable error message when connection to host is refused
+- [fix] jlink-based executables now work correctly with XCResults
 
 # 2.9.1
 - [feature] added jlink-based executable distributions
