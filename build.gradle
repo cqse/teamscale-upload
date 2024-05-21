@@ -72,6 +72,7 @@ runtime {
 			'java.logging', // For package java.util.logging (used by Google Guava)
 			'java.naming', // For package javax.naming (used by Apache HttpClient)
 			'jdk.crypto.ec', // For Elliptic Curve algorithms over TLS
+			'jdk.unsupported', // For GSON
 	]
 
 	def ADOPTIUM_BINARY_REPOSITORY = 'https://api.adoptium.net/v3/binary'
