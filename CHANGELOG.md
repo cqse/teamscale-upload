@@ -5,6 +5,7 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
+- [fix] Using the `--insecure` flag now skips loading any custom certificates from OS trust stores
 
 # 2.9.2
 - [fix] more readable error message when connection to host is refused

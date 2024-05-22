@@ -67,7 +67,9 @@ public class OkHttpUtils {
 		setTimeouts(builder, timeoutInSeconds);
 		builder.followRedirects(false).followSslRedirects(false);
 
-		configureTrustStore(builder, trustStorePath, trustStorePassword);
+		if (validateSsl) {
+			configureTrustStore(builder, trustStorePath, trustStorePassword);
+		}
 		if (!validateSsl) {
 			disableSslValidation(builder);
 		}
