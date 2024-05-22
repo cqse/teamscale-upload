@@ -226,7 +226,6 @@ public abstract class IntegrationTestBase {
 					new TeamscaleUploadArguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT).withInsecure());
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 			assertThat(server.sessions).hasSize(1);
-			assertThatOSCertificatesWereImported(result);
 		}
 	}
 

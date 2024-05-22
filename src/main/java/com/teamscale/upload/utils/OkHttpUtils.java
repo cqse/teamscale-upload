@@ -67,9 +67,8 @@ public class OkHttpUtils {
 		setTimeouts(builder, timeoutInSeconds);
 		builder.followRedirects(false).followSslRedirects(false);
 
-		configureTrustStore(builder, trustStorePath, trustStorePassword);
-		if (!validateSsl) {
-			disableSslValidation(builder);
+		if (validateSsl || !disableSslValidation(builder)) {
+			configureTrustStore(builder, trustStorePath, trustStorePassword);
 		}
 
 		return builder.build();
@@ -92,7 +91,7 @@ public class OkHttpUtils {
 
 			MultiTrustManager multiTrustManager = new MultiTrustManager(trustManagers);
 
-			sslContext.init(null, new TrustManager[]{multiTrustManager}, new SecureRandom());
+			sslContext.init(null, new TrustManager[] {multiTrustManager}, new SecureRandom());
 			builder.sslSocketFactory(sslContext.getSocketFactory(), multiTrustManager);
 		} catch (NoSuchAlgorithmException e) {
 			LogUtils.failWithStackTrace(e, "Failed to instantiate an SSLContext or TrustManagerFactory.");
@@ -220,7 +219,8 @@ public class OkHttpUtils {
 		}
 	}
 
-	private static void disableSslValidation(OkHttpClient.Builder builder) {
+	/** Tries to disable SSL validation. Returns {@code true} if validation was successfully disabled. */
+	private static boolean disableSslValidation(OkHttpClient.Builder builder) {
 		SSLSocketFactory sslSocketFactory;
 		try {
 			SSLContext sslContext = SSLContext.getInstance(PROTOCOL);
@@ -228,11 +228,12 @@ public class OkHttpUtils {
 			sslSocketFactory = sslContext.getSocketFactory();
 		} catch (GeneralSecurityException e) {
 			LogUtils.warn("Could not disable SSL certificate validation. Leaving it enabled", e);
-			return;
+			return false;
 		}
 
 		builder.sslSocketFactory(sslSocketFactory, TrustAllCertificatesManager.INSTANCE);
 		builder.hostnameVerifier((hostName, session) -> true);
+		return true;
 	}
 
 	private static void setTimeouts(okhttp3.OkHttpClient.Builder builder, long timeoutInSeconds) {
@@ -274,7 +275,6 @@ public class OkHttpUtils {
 		public X509Certificate[] getAcceptedIssuers() {
 			return trustManagers.stream().flatMap(manager -> Arrays.stream(manager.getAcceptedIssuers())).toArray(X509Certificate[]::new);
 		}
-
 
 		@Override
 		public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
