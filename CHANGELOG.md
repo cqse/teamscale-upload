@@ -5,6 +5,9 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
+- ...
+
+# 2.9.3
 - [fix] Using the `--insecure` flag now skips loading any custom certificates from OS trust stores
 
 # 2.9.2
@@ -14,10 +17,10 @@ We use [semantic versioning](http://semver.org/):
 # 2.9.1
 - [feature] added jlink-based executable distributions
 - [fix] added support for more connection-security algorithms
-  
+
 # 2.8.2
 - [fix] fixed potential vulnerability to a zipslip attack (by malicious tar files in xcode reports)
-  
+
 # 2.8.1
 - [fix] Use TLSv1.2
 - [fix] Use versioned API endpoints to be more robust in case of API changes
