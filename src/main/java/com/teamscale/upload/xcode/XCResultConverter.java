@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -138,17 +137,18 @@ public class XCResultConverter {
 
 			if (isXccovArchive(reportDirectory)) {
 				convertedReports.add(extractCoverageData(report, reportDirectory));
-			} else {
-				ActionsInvocationRecord actionsInvocationRecord = getActionsInvocationRecord(reportDirectory);
+				return convertedReports;
+			}
 
-				if (actionsInvocationRecord.hasCoverageData()) {
-					for (File convertToXccovArchive : convertToXccovArchives(reportDirectory,
-							actionsInvocationRecord)) {
-						convertedReports.add(extractCoverageData(report, convertToXccovArchive));
-					}
-				} else {
-					LogUtils.warn("XCResult bundle doesn't contain any coverage data.");
-				}
+			ActionsInvocationRecord actionsInvocationRecord = getActionsInvocationRecord(reportDirectory);
+
+			if (!actionsInvocationRecord.hasCoverageData()) {
+				LogUtils.warn("XCResult bundle doesn't contain any coverage data.");
+				return convertedReports;
+			}
+
+			for (File convertToXccovArchive : convertToXccovArchives(reportDirectory, actionsInvocationRecord)) {
+				convertedReports.add(extractCoverageData(report, convertToXccovArchive));
 			}
 
 			return convertedReports;
@@ -164,11 +164,9 @@ public class XCResultConverter {
 
 		for (int i = 0; i < actionsInvocationRecord.actions.length; i++) {
 			ActionRecord action = actionsInvocationRecord.actions[i];
-			if(action == null ||
-					action.actionResult == null ||
-					action.actionResult.coverage == null ||
-					action.actionResult.coverage.archiveRef == null ||
-					action.actionResult.coverage.archiveRef.id == null){
+			if (action == null || action.actionResult == null || action.actionResult.coverage == null
+					|| action.actionResult.coverage.archiveRef == null
+					|| action.actionResult.coverage.archiveRef.id == null) {
 				continue;
 			}
 			File tempDirectory = Files.createTempDirectory(workingDirectory.toPath(), null).toFile();
