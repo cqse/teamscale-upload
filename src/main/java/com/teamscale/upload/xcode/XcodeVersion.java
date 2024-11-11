@@ -30,7 +30,8 @@ public record XcodeVersion(int major, int minor) {
 		ProcessUtils.ProcessResult result = ProcessUtils.run("xcodebuild", "-version");
 		if (!result.wasSuccessful()) {
 			LogUtils.warn("Could not determine installed Xcode version. Assuming latest Xcode version is installed.");
-			LogUtils.debug("Error whilst running 'xcodebuild -version' command: ", result.exception);
+			LogUtils.debug("Error whilst running 'xcodebuild -version' command: " + result.errorOutput,
+					result.exception);
 			return latestVersion();
 		}
 
