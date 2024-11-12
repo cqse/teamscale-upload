@@ -8,14 +8,19 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.io.FileUtils;
 
 import com.google.gson.Gson;
 import com.teamscale.upload.autodetect_revision.ProcessUtils;
@@ -49,12 +54,46 @@ public class XCResultConverter {
 	 */
 	private static final String XCCOV_REPORT_FILE_EXTENSION = ".xccov";
 
+	/** */
+	private static final String XCCOV_ARCHIVE_FILE_EXTENSION = ".xccovarchive";
+
 	private final File workingDirectory;
 
 	private ExecutorService executorService;
 
 	public XCResultConverter(File workingDirectory) {
 		this.workingDirectory = workingDirectory;
+	}
+
+	/**
+	 * Converts a single XCode report from the internal binary XCode format to a
+	 * readable report that can be uploaded to Teamscale.
+	 */
+	public static List<ConvertedReport> convert(Map<String, Set<File>> formatToFiles, File xcodeReport)
+			throws ConversionException {
+		if (!XCResultConverter.needsConversion(xcodeReport)) {
+			formatToFiles.computeIfAbsent(XCResultConverter.XCODE_REPORT_FORMAT, x -> new HashSet<>()).add(xcodeReport);
+			return Collections.emptyList();
+		}
+
+		File workingDirectory = createTemporaryWorkingDirectory();
+		XCResultConverter converter = new XCResultConverter(workingDirectory);
+		Thread cleanupShutdownHook = createCleanupShutdownHook(workingDirectory, converter);
+		try {
+			Runtime.getRuntime().addShutdownHook(cleanupShutdownHook);
+
+			return converter.convert(xcodeReport);
+		} finally {
+			deleteWorkingDirectory(workingDirectory);
+			Runtime.getRuntime().removeShutdownHook(cleanupShutdownHook);
+		}
+	}
+
+	/**
+	 * Returns true if XCode report requires conversion.
+	 */
+	public static boolean needsConversion(File report) {
+		return FileSystemUtils.isTarFile(report) || isXcresultBundle(report) || isXccovArchive(report);
 	}
 
 	/**
@@ -72,14 +111,41 @@ public class XCResultConverter {
 	 * coverage. Note that xccov archives don't contain test results.
 	 */
 	private static boolean isXccovArchive(File file) {
-		return file.isDirectory() && file.getName().endsWith(".xccovarchive");
+		return file.isDirectory() && file.getName().endsWith(XCCOV_ARCHIVE_FILE_EXTENSION);
 	}
 
 	/**
-	 * Returns true if XCode report requires conversion.
+	 * Creates a {@linkplain Runtime#addShutdownHook(Thread) shutdown hook} that
+	 * ensures that temporarily created files and directories are deleted if the
+	 * user terminates the application forcefully (e.g. via Ctrl+C).
 	 */
-	public static boolean needsConversion(File report) {
-		return FileSystemUtils.isTarFile(report) || isXcresultBundle(report) || isXccovArchive(report);
+	private static Thread createCleanupShutdownHook(File workingDirectory, XCResultConverter converter) {
+		return new Thread(() -> {
+			try {
+				converter.stopProcesses();
+			} catch (ConversionException e) {
+				LogUtils.warn(e.getMessage());
+			}
+			deleteWorkingDirectory(workingDirectory);
+		});
+	}
+
+	private static void deleteWorkingDirectory(File workingDirectory) {
+		try {
+			FileUtils.deleteDirectory(workingDirectory);
+		} catch (IOException e) {
+			LogUtils.warn("Unable to delete temporary working directory " + workingDirectory.getAbsolutePath() + ": "
+					+ e.getMessage());
+		}
+	}
+
+	private static File createTemporaryWorkingDirectory() throws ConversionException {
+		try {
+			return Files.createTempDirectory(null).toFile();
+		} catch (IOException e) {
+			throw new ConversionException(
+					"Error occurred when trying to create temporary working directory:" + e.getMessage(), e);
+		}
 	}
 
 	/**
@@ -160,7 +226,7 @@ public class XCResultConverter {
 	}
 
 	private List<File> convertToXccovArchives(File reportDirectory, ActionsInvocationRecord actionsInvocationRecord)
-			throws IOException, InterruptedException {
+			throws IOException, ConversionException {
 		List<File> xccovArchives = new ArrayList<>(actionsInvocationRecord.actions.length);
 
 		for (int i = 0; i < actionsInvocationRecord.actions.length; i++) {
@@ -171,14 +237,20 @@ public class XCResultConverter {
 				continue;
 			}
 			File tempDirectory = Files.createTempDirectory(workingDirectory.toPath(), null).toFile();
-			File xccovArchive = new File(tempDirectory, reportDirectory.getName() + "." + i + ".xccovarchive");
+			File xccovArchive = new File(tempDirectory,
+					reportDirectory.getName() + "." + i + XCCOV_ARCHIVE_FILE_EXTENSION);
 			String archiveRef = action.actionResult.coverage.archiveRef.id;
 
 			FileSystemUtils.mkdirs(xccovArchive.getParentFile());
-			ProcessUtils.run("xcrun", "xcresulttool", "export", "--type", "directory", "--path",
+			ProcessResult result = ProcessUtils.run("xcrun", "xcresulttool", "export", "--type", "directory", "--path",
 					reportDirectory.getAbsolutePath(), "--id", archiveRef, "--output-path",
 					xccovArchive.getAbsolutePath());
 
+			// TODO: Check if this command may have failed
+			if (!result.wasSuccessful()) {
+				throw ConversionException
+						.withProcessResult("Could not convert report to " + XCCOV_ARCHIVE_FILE_EXTENSION, result);
+			}
 			xccovArchives.add(xccovArchive);
 		}
 

@@ -1,5 +1,7 @@
 package com.teamscale.upload.utils;
 
+import com.teamscale.upload.client.SafeResponse;
+
 /**
  * Utilities for interacting with stdout, stderr and terminating the program due
  * to fatal errors.
