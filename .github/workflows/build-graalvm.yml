@@ -50,12 +50,12 @@ jobs:
           java-version: 17
           graalvm-version: 22.3.1
           native-image: true
+      - name: 'Print Xcode version'
+        run: xcodebuild -version
       - name: Build
         env:
           TEAMSCALE_ACCESS_KEY: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
         run: mvn clean verify
-      - name: 'Print Xcode version'
-        run: xcodebuild -version
       - name: 'Upload Artifact'
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
