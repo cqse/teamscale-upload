@@ -110,9 +110,9 @@ public class XCResultConverter {
 		ProcessResult result = ProcessUtils.run("xcrun", "xccov", "view", "--archive", "--file-list",
 				reportDirectory.getAbsolutePath());
 		if (!result.wasSuccessful()) {
-			throw new ConversionException(
+			throw ConversionException.withProcessResult(
 					"Error while obtaining file list from XCResult archive " + reportDirectory.getAbsolutePath(),
-					result.exception);
+					result);
 		}
 		return result.output.lines().sorted().collect(toList());
 	}
@@ -138,17 +138,18 @@ public class XCResultConverter {
 
 			if (isXccovArchive(reportDirectory)) {
 				convertedReports.add(extractCoverageData(report, reportDirectory));
-			} else {
-				ActionsInvocationRecord actionsInvocationRecord = getActionsInvocationRecord(reportDirectory);
+				return convertedReports;
+			}
 
-				if (actionsInvocationRecord.hasCoverageData()) {
-					for (File convertToXccovArchive : convertToXccovArchives(reportDirectory,
-							actionsInvocationRecord)) {
-						convertedReports.add(extractCoverageData(report, convertToXccovArchive));
-					}
-				} else {
-					LogUtils.warn("XCResult bundle doesn't contain any coverage data.");
-				}
+			ActionsInvocationRecord actionsInvocationRecord = getActionsInvocationRecord(reportDirectory);
+
+			if (!actionsInvocationRecord.hasCoverageData()) {
+				LogUtils.warn("XCResult bundle doesn't contain any coverage data.");
+				return convertedReports;
+			}
+
+			for (File convertToXccovArchive : convertToXccovArchives(reportDirectory, actionsInvocationRecord)) {
+				convertedReports.add(extractCoverageData(report, convertToXccovArchive));
 			}
 
 			return convertedReports;
@@ -164,11 +165,9 @@ public class XCResultConverter {
 
 		for (int i = 0; i < actionsInvocationRecord.actions.length; i++) {
 			ActionRecord action = actionsInvocationRecord.actions[i];
-			if(action == null ||
-					action.actionResult == null ||
-					action.actionResult.coverage == null ||
-					action.actionResult.coverage.archiveRef == null ||
-					action.actionResult.coverage.archiveRef.id == null){
+			if (action == null || action.actionResult == null || action.actionResult.coverage == null
+					|| action.actionResult.coverage.archiveRef == null
+					|| action.actionResult.coverage.archiveRef.id == null) {
 				continue;
 			}
 			File tempDirectory = Files.createTempDirectory(workingDirectory.toPath(), null).toFile();
@@ -211,11 +210,21 @@ public class XCResultConverter {
 
 	private ActionsInvocationRecord getActionsInvocationRecord(File reportDirectory)
 			throws InterruptedException, ConversionException {
-		ProcessResult result = ProcessUtils.run("xcrun", "xcresulttool", "get", "--path",
-				reportDirectory.getAbsolutePath(), "--format", "json");
+		List<String> command = new ArrayList<>();
+		Collections.addAll(command, "xcrun", "xcresulttool", "get", "--path", reportDirectory.getAbsolutePath(),
+				"--format", "json");
+		if (XcodeVersion.determine().major >= 16) {
+			// Starting with Xcode 16 this command is marked as deprecated and will fail if
+			// ran without the legacy flag
+			// see TS-40724 for more information
+			command.add("--legacy");
+		}
+
+		ProcessResult result = ProcessUtils.run(command.toArray(new String[0]));
 		if (!result.wasSuccessful()) {
-			throw new ConversionException("Error while obtaining ActionInvocationsRecord from XCResult archive "
-					+ reportDirectory.getAbsolutePath(), result.exception);
+			throw ConversionException
+					.withProcessResult("Error while obtaining ActionInvocationsRecord from XCResult archive "
+							+ reportDirectory.getAbsolutePath(), result);
 		}
 		String actionsInvocationRecordJson = result.output;
 		return new Gson().fromJson(actionsInvocationRecordJson, ActionsInvocationRecord.class);
@@ -306,6 +315,18 @@ public class XCResultConverter {
 
 		public ConversionException(String message, Exception e) {
 			super(message, e);
+		}
+
+		/**
+		 * Creates a {@link ConversionException} with the given message and the
+		 * {@linkplain ProcessResult#errorOutput error output of the command}.
+		 */
+		public static ConversionException withProcessResult(String message, ProcessResult processResult) {
+			String messageIncludingErrorOutput = message;
+			if (processResult.errorOutput != null) {
+				messageIncludingErrorOutput += " (command output: " + processResult.errorOutput + ")";
+			}
+			return new ConversionException(messageIncludingErrorOutput, processResult.exception);
 		}
 	}
 }

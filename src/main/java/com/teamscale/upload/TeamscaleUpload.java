@@ -38,9 +38,6 @@ import okhttp3.Response;
 /**
  * Main class of the teamscale-upload project.
  */
-// this IntelliJ warning is a false-positive due to the overloading of
-// properties and methods with the same name in the okhttp code
-@SuppressWarnings("KotlinInternalInJava")
 public class TeamscaleUpload {
 
 	/** The version against which the API requests are performed. */
@@ -92,41 +89,50 @@ public class TeamscaleUpload {
 		}
 
 		Set<File> xcresultBundles = formatToFiles.remove(XCResultConverter.XCODE_REPORT_FORMAT);
-
 		for (File xcodeReport : xcresultBundles) {
-			if (!XCResultConverter.needsConversion(xcodeReport)) {
-				formatToFiles.computeIfAbsent(XCResultConverter.XCODE_REPORT_FORMAT, x -> new HashSet<>())
-						.add(xcodeReport);
-				continue;
-			}
-
-			File workingDirectory = createTemporaryWorkingDirectory();
-			XCResultConverter converter = new XCResultConverter(workingDirectory);
-
-			// Cleanup hook to ensure temporarily created files and directories are deleted
-			// if the user
-			// terminates the application forcefully (e.g. via Ctrl+C).
-			Thread cleanupHook = new Thread(() -> {
-				try {
-					converter.stopProcesses();
-				} catch (ConversionException e) {
-					LogUtils.warn(e.getMessage());
-				}
-				deleteWorkingDirectory(workingDirectory);
-			});
-
-			try {
-				Runtime.getRuntime().addShutdownHook(cleanupHook);
-
-				converter.convert(xcodeReport).forEach(convertedReport -> {
-					formatToFiles.computeIfAbsent(convertedReport.reportFormat, x -> new HashSet<>())
-							.add(convertedReport.report);
-				});
-			} finally {
-				deleteWorkingDirectory(workingDirectory);
-				Runtime.getRuntime().removeShutdownHook(cleanupHook);
-			}
+			convertXCodeReport(formatToFiles, xcodeReport);
 		}
+	}
+
+	/**
+	 * Converts a single XCode report from the internal binary XCode format to a
+	 * readable report that can be uploaded to Teamscale.
+	 */
+	private static void convertXCodeReport(Map<String, Set<File>> formatToFiles, File xcodeReport)
+			throws ConversionException {
+		if (!XCResultConverter.needsConversion(xcodeReport)) {
+			formatToFiles.computeIfAbsent(XCResultConverter.XCODE_REPORT_FORMAT, x -> new HashSet<>()).add(xcodeReport);
+			return;
+		}
+
+		File workingDirectory = createTemporaryWorkingDirectory();
+		XCResultConverter converter = new XCResultConverter(workingDirectory);
+		Thread cleanupShutdownHook = createCleanupShutdownHook(workingDirectory, converter);
+		try {
+			Runtime.getRuntime().addShutdownHook(cleanupShutdownHook);
+
+			converter.convert(xcodeReport).forEach(convertedReport -> formatToFiles
+					.computeIfAbsent(convertedReport.reportFormat, x -> new HashSet<>()).add(convertedReport.report));
+		} finally {
+			deleteWorkingDirectory(workingDirectory);
+			Runtime.getRuntime().removeShutdownHook(cleanupShutdownHook);
+		}
+	}
+
+	/**
+	 * Creates a {@linkplain Runtime#addShutdownHook(Thread) shutdown hook} that
+	 * ensures that temporarily created files and directories are deleted if the
+	 * user terminates the application forcefully (e.g. via Ctrl+C).
+	 */
+	private static Thread createCleanupShutdownHook(File workingDirectory, XCResultConverter converter) {
+		return new Thread(() -> {
+			try {
+				converter.stopProcesses();
+			} catch (ConversionException e) {
+				LogUtils.warn(e.getMessage());
+			}
+			deleteWorkingDirectory(workingDirectory);
+		});
 	}
 
 	private static void deleteWorkingDirectory(File workingDirectory) {
@@ -290,7 +296,7 @@ public class TeamscaleUpload {
 
 		for (File file : fileList) {
 			multipartBodyBuilder.addFormDataPart("report", file.getName(),
-					RequestBody.create(MediaType.get("application/octet-stream"), file));
+					RequestBody.create(file, MediaType.get("application/octet-stream")));
 		}
 
 		RequestBody requestBody = multipartBodyBuilder.build();

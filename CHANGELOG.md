@@ -5,7 +5,7 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
-- ...
+- [fix] Uploading `.xcresult` files was not possible when using Xcode version 16
 
 # 2.9.3
 - [fix] Using the `--insecure` flag now skips loading any custom certificates from OS trust stores
