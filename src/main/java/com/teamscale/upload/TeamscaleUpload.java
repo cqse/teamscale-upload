@@ -68,7 +68,7 @@ public class TeamscaleUpload {
 		try {
 			Set<File> xcresultBundles = formatToFiles.remove(XCResultConverter.XCODE_REPORT_FORMAT);
 			for (File xcodeReport : xcresultBundles) {
-				List<ConvertedReport> convertedReports = XCResultConverter.convert(formatToFiles, xcodeReport);
+				List<ConvertedReport> convertedReports = XCResultConverter.convertReport(xcodeReport);
 				// TODO: Check if we can just use XCODE_REPORT_FORMAT instead of
 				// convertedReport.reportFormat here
 				convertedReports.forEach(convertedReport -> formatToFiles

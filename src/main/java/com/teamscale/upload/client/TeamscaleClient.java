@@ -28,14 +28,13 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-/** Client */
+/** Client to perform requests to Teamscale. */
 public class TeamscaleClient {
 
 	/** The version against which the API requests are performed. */
 	private static final String MINIMUM_REQUIRED_API_VERSION = "v8.2";
 
 	/** Performs the upload of the files. */
-	// TODO: Refactor to make commandlines to attributes
 	public static void performUpload(CommandLine commandLine, Map<String, Set<File>> filesByFormat) throws IOException {
 		OkHttpClient client = OkHttpUtils.createClient(commandLine.validateSsl, commandLine.getKeyStorePath(),
 				commandLine.getKeyStorePassword(), commandLine.getTimeoutInSeconds());

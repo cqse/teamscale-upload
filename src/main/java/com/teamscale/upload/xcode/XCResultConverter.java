@@ -8,12 +8,9 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -54,7 +51,11 @@ public class XCResultConverter {
 	 */
 	private static final String XCCOV_REPORT_FILE_EXTENSION = ".xccov";
 
-	/** */
+	/**
+	 * File extension used for xccov archives
+	 *
+	 * @see #isXccovArchive(File)
+	 */
 	private static final String XCCOV_ARCHIVE_FILE_EXTENSION = ".xccovarchive";
 
 	private final File workingDirectory;
@@ -69,11 +70,9 @@ public class XCResultConverter {
 	 * Converts a single XCode report from the internal binary XCode format to a
 	 * readable report that can be uploaded to Teamscale.
 	 */
-	public static List<ConvertedReport> convert(Map<String, Set<File>> formatToFiles, File xcodeReport)
-			throws ConversionException {
+	public static List<ConvertedReport> convertReport(File xcodeReport) throws ConversionException {
 		if (!XCResultConverter.needsConversion(xcodeReport)) {
-			formatToFiles.computeIfAbsent(XCResultConverter.XCODE_REPORT_FORMAT, x -> new HashSet<>()).add(xcodeReport);
-			return Collections.emptyList();
+			return Collections.singletonList(new ConvertedReport(XCODE_REPORT_FORMAT, xcodeReport));
 		}
 
 		File workingDirectory = createTemporaryWorkingDirectory();
@@ -82,8 +81,10 @@ public class XCResultConverter {
 		try {
 			Runtime.getRuntime().addShutdownHook(cleanupShutdownHook);
 
-			return converter.convert(xcodeReport);
+			return converter.doConvert(xcodeReport);
 		} finally {
+			// TODO: This does not make sense to me. how are we supposed to access the
+			// reports afterwards?
 			deleteWorkingDirectory(workingDirectory);
 			Runtime.getRuntime().removeShutdownHook(cleanupShutdownHook);
 		}
@@ -195,7 +196,7 @@ public class XCResultConverter {
 	 * Converts the report and writes the conversion result to a file with the same
 	 * path and the {@link #XCCOV_REPORT_FILE_EXTENSION} as an added file extension.
 	 */
-	public List<ConvertedReport> convert(File report) throws ConversionException {
+	private List<ConvertedReport> doConvert(File report) throws ConversionException {
 		try {
 			validateCommandLineTools();
 
@@ -368,12 +369,12 @@ public class XCResultConverter {
 	 * Stops the conversion processes and ensures that all processes have finished.
 	 */
 	public void stopProcesses() throws ConversionException {
-		if (executorService != null) {
-			if (!executorService.isTerminated()) {
-				executorService.shutdownNow();
-				waitForRunningProcessesToFinish();
-			}
+		if (executorService == null || executorService.isTerminated()) {
+			return;
 		}
+
+		executorService.shutdownNow();
+		waitForRunningProcessesToFinish();
 	}
 
 	/**
