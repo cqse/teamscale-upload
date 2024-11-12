@@ -83,8 +83,8 @@ public class XCResultConverter {
 
 			return converter.doConvert(xcodeReport);
 		} finally {
-			// TODO: This does not make sense to me. how are we supposed to access the
-			// reports afterwards?
+			// TODO: This does not make sense to me.
+			// how are we supposed to access the reports afterwards?
 			deleteWorkingDirectory(workingDirectory);
 			Runtime.getRuntime().removeShutdownHook(cleanupShutdownHook);
 		}
@@ -131,6 +131,7 @@ public class XCResultConverter {
 		});
 	}
 
+	// TODO: Move these three methods below to somewhere else
 	private static void deleteWorkingDirectory(File workingDirectory) {
 		try {
 			FileUtils.deleteDirectory(workingDirectory);
@@ -247,7 +248,8 @@ public class XCResultConverter {
 					reportDirectory.getAbsolutePath(), "--id", archiveRef, "--output-path",
 					xccovArchive.getAbsolutePath());
 
-			// TODO: Check if this command may have failed
+			// TODO: This command also fails without legacy option on XCode 16
+			// Determine version before and use here
 			if (!result.wasSuccessful()) {
 				throw ConversionException
 						.withProcessResult("Could not convert report to " + XCCOV_ARCHIVE_FILE_EXTENSION, result);
