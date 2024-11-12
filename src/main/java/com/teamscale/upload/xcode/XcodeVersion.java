@@ -1,5 +1,6 @@
 package com.teamscale.upload.xcode;
 
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -8,15 +9,8 @@ import com.teamscale.upload.utils.LogUtils;
 
 /**
  * Represents an Xcode version.
- *
- * @param major
- *            The minor version number (e.g., {@code 16} for version
- *            {@code 16.1} or {@link Integer#MAX_VALUE} for latest version)
- * @param minor
- *            The minor version number (e.g., {@code 1} for version {@code 16.1}
- *            or {@link Integer#MAX_VALUE} for latest version)
  */
-public record XcodeVersion(int major, int minor) {
+public final class XcodeVersion {
 
 	/**
 	 * Pattern that matches the output of an {@code xcodebuild -version} command to
@@ -24,6 +18,22 @@ public record XcodeVersion(int major, int minor) {
 	 */
 	private static final Pattern XCODE_BUILD_VERSION_PATTERN = Pattern
 			.compile("^Xcode (?<major>\\d+)\\.(?<minor>\\d+)");
+	/**
+	 * The minor version number (e.g., {@code 16} for version {@code 16.1} or
+	 * {@link Integer#MAX_VALUE} for latest version)
+	 */
+	public final int major;
+
+	/**
+	 * The minor version number (e.g., {@code 1} for version {@code 16.1} or
+	 * {@link Integer#MAX_VALUE} for latest version)
+	 */
+	public final int minor;
+
+	public XcodeVersion(int major, int minor) {
+		this.major = major;
+		this.minor = minor;
+	}
 
 	/** Determines the version installed on this machine. */
 	public static XcodeVersion determine() {
@@ -56,5 +66,25 @@ public record XcodeVersion(int major, int minor) {
 	 */
 	private static XcodeVersion latestVersion() {
 		return new XcodeVersion(Integer.MAX_VALUE, Integer.MAX_VALUE);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null || obj.getClass() != this.getClass()) {
+			return false;
+		}
+
+		XcodeVersion that = (XcodeVersion) obj;
+		return this.major == that.major && this.minor == that.minor;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(major, minor);
+	}
+
+	@Override
+	public String toString() {
+		return "XcodeVersion " + major + "." + minor;
 	}
 }

@@ -213,7 +213,7 @@ public class XCResultConverter {
 		List<String> command = new ArrayList<>();
 		Collections.addAll(command, "xcrun", "xcresulttool", "get", "--path", reportDirectory.getAbsolutePath(),
 				"--format", "json");
-		if (XcodeVersion.determine().major() >= 16) {
+		if (XcodeVersion.determine().major >= 16) {
 			// Starting with Xcode 16 this command is marked as deprecated and will fail if
 			// ran without the legacy flag
 			// see TS-40724 for more information
