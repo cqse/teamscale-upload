@@ -36,15 +36,15 @@ public record XcodeVersion(int major, int minor) {
 		}
 
 		String xcodeBuildVersionCommandOutput = result.output;
-		Matcher m = XCODE_BUILD_VERSION_PATTERN.matcher(xcodeBuildVersionCommandOutput);
-		if (!m.find()) {
+		Matcher xcodeVersionPatternMatcher = XCODE_BUILD_VERSION_PATTERN.matcher(xcodeBuildVersionCommandOutput);
+		if (!xcodeVersionPatternMatcher.find()) {
 			LogUtils.warn("Could not determine installed Xcode version. Assuming latest Xcode version is installed.");
 			LogUtils.debug("Output of 'xcodebuild -version' command:\n" + xcodeBuildVersionCommandOutput);
 			return latestVersion();
 		}
 
-		int major = Integer.parseInt(m.group("major"));
-		int minor = Integer.parseInt(m.group("minor"));
+		int major = Integer.parseInt(xcodeVersionPatternMatcher.group("major"));
+		int minor = Integer.parseInt(xcodeVersionPatternMatcher.group("minor"));
 		return new XcodeVersion(major, minor);
 	}
 
