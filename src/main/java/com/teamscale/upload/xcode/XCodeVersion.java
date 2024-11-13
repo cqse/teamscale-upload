@@ -10,7 +10,7 @@ import com.teamscale.upload.utils.LogUtils;
 /**
  * Represents an Xcode version.
  */
-public final class XcodeVersion {
+public final class XCodeVersion {
 
 	/**
 	 * Pattern that matches the output of an {@code xcodebuild -version} command to
@@ -30,13 +30,13 @@ public final class XcodeVersion {
 	 */
 	public final int minor;
 
-	public XcodeVersion(int major, int minor) {
+	public XCodeVersion(int major, int minor) {
 		this.major = major;
 		this.minor = minor;
 	}
 
 	/** Determines the version installed on this machine. */
-	public static XcodeVersion determine() {
+	public static XCodeVersion determine() {
 		ProcessUtils.ProcessResult result = ProcessUtils.run("xcodebuild", "-version");
 		if (!result.wasSuccessful()) {
 			LogUtils.warn("Could not determine installed Xcode version. Assuming latest Xcode version is installed.");
@@ -55,17 +55,17 @@ public final class XcodeVersion {
 
 		int major = Integer.parseInt(xcodeVersionPatternMatcher.group("major"));
 		int minor = Integer.parseInt(xcodeVersionPatternMatcher.group("minor"));
-		return new XcodeVersion(major, minor);
+		return new XCodeVersion(major, minor);
 	}
 
 	/**
-	 * Returns a {@link XcodeVersion} that represents the latest version.
+	 * Returns a {@link XCodeVersion} that represents the latest version.
 	 * <p>
 	 * Instead of determining the version via the web, {@link #major} and
 	 * {@link #minor} will be simply set to {@link Integer#MAX_VALUE}.
 	 */
-	private static XcodeVersion latestVersion() {
-		return new XcodeVersion(Integer.MAX_VALUE, Integer.MAX_VALUE);
+	private static XCodeVersion latestVersion() {
+		return new XCodeVersion(Integer.MAX_VALUE, Integer.MAX_VALUE);
 	}
 
 	@Override
@@ -74,7 +74,7 @@ public final class XcodeVersion {
 			return false;
 		}
 
-		XcodeVersion that = (XcodeVersion) obj;
+		XCodeVersion that = (XCodeVersion) obj;
 		return this.major == that.major && this.minor == that.minor;
 	}
 

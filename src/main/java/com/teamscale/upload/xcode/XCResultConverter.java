@@ -60,10 +60,14 @@ public class XCResultConverter {
 
 	private final File workingDirectory;
 
+	private final XCodeVersion xcodeVersion;
+
 	private ExecutorService executorService;
 
 	public XCResultConverter(File workingDirectory) {
 		this.workingDirectory = workingDirectory;
+
+		xcodeVersion = XCodeVersion.determine();
 	}
 
 	/**
@@ -242,14 +246,20 @@ public class XCResultConverter {
 			File xccovArchive = new File(tempDirectory,
 					reportDirectory.getName() + "." + i + XCCOV_ARCHIVE_FILE_EXTENSION);
 			String archiveRef = action.actionResult.coverage.archiveRef.id;
-
 			FileSystemUtils.mkdirs(xccovArchive.getParentFile());
-			ProcessResult result = ProcessUtils.run("xcrun", "xcresulttool", "export", "--type", "directory", "--path",
+
+			List<String> command = new ArrayList<>();
+			Collections.addAll(command, "xcrun", "xcresulttool", "export", "--type", "directory", "--path",
 					reportDirectory.getAbsolutePath(), "--id", archiveRef, "--output-path",
 					xccovArchive.getAbsolutePath());
+			if (xcodeVersion.major >= 16) {
+				// Starting with Xcode 16 this command is marked as deprecated and will fail if
+				// ran without the legacy flag
+				// see TS-40724 for more information
+				command.add("--legacy");
+			}
 
-			// TODO: This command also fails without legacy option on XCode 16
-			// Determine version before and use here
+			ProcessResult result = ProcessUtils.run(command.toArray(new String[0]));
 			if (!result.wasSuccessful()) {
 				throw ConversionException
 						.withProcessResult("Could not convert report to " + XCCOV_ARCHIVE_FILE_EXTENSION, result);
@@ -288,7 +298,7 @@ public class XCResultConverter {
 		List<String> command = new ArrayList<>();
 		Collections.addAll(command, "xcrun", "xcresulttool", "get", "--path", reportDirectory.getAbsolutePath(),
 				"--format", "json");
-		if (XcodeVersion.determine().major >= 16) {
+		if (xcodeVersion.major >= 16) {
 			// Starting with Xcode 16 this command is marked as deprecated and will fail if
 			// ran without the legacy flag
 			// see TS-40724 for more information
