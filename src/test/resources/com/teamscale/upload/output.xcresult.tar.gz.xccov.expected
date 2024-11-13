@@ -1,4 +1,4 @@
-/Users/albert/repos/test/xcresultcovnersion/XCResultConversion/Tests/ObjectiveCTest.m
+/Users/albert/repos/test/xcresultcovnersion/XCResultConversion/Tests/ObjectiveCTest.m:
  1: *
  2: *
  3: *
@@ -26,7 +26,7 @@
 25: 1
 26: 1
 
-/Users/albert/repos/test/xcresultcovnersion/XCResultConversion/Tests/ObjectiveCTestWithFailingSetup.m
+/Users/albert/repos/test/xcresultcovnersion/XCResultConversion/Tests/ObjectiveCTestWithFailingSetup.m:
  1: *
  2: *
  3: *
@@ -55,7 +55,7 @@
 26: 0
 27: 0
 
-/Users/albert/repos/test/xcresultcovnersion/XCResultConversion/Tests/SwiftTest.swift
+/Users/albert/repos/test/xcresultcovnersion/XCResultConversion/Tests/SwiftTest.swift:
  1: *
  2: *
  3: *
@@ -103,7 +103,7 @@
 43: 1
 44: 1
 
-/Users/albert/repos/test/xcresultcovnersion/XCResultConversion/Tests/SwiftTestWithFailingSetup.swift
+/Users/albert/repos/test/xcresultcovnersion/XCResultConversion/Tests/SwiftTestWithFailingSetup.swift:
  1: *
  2: *
  3: *
@@ -127,7 +127,7 @@
 21: 0
 22: 0
 
-/Users/albert/repos/test/xcresultcovnersion/XCResultConversion/XCResultConversion/XCResultConversion.swift
+/Users/albert/repos/test/xcresultcovnersion/XCResultConversion/XCResultConversion/XCResultConversion.swift:
  1: *
  2: *
  3: *
