@@ -2,6 +2,7 @@ package com.teamscale.upload;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import com.teamscale.upload.utils.LogUtils;
 import com.teamscale.upload.xcode.ConvertedReport;
 import com.teamscale.upload.xcode.XCResultConverter;
 import com.teamscale.upload.xcode.XCResultConverter.ConversionException;
+import com.teamscale.upload.xcode.XCodeVersion;
 
 /**
  * Main class of the teamscale-upload project.
@@ -64,20 +66,22 @@ public class TeamscaleUpload {
 	 * Converts the reports from the internal binary XCode format to a readable
 	 * report that can be uploaded to Teamscale.
 	 */
-	private static void convertXCodeReports(Map<String, Set<File>> formatToFiles) {
+	private static void convertXCodeReports(Map<String, Set<File>> filesByFormat) {
 		try {
-			Set<File> xcresultBundles = formatToFiles.remove(XCResultConverter.XCODE_REPORT_FORMAT);
+			Set<File> xcresultBundles = filesByFormat.remove(XCResultConverter.XCODE_REPORT_FORMAT);
+			XCodeVersion xcodeVersion = XCodeVersion.determine();
+			List<ConvertedReport> convertedReports = new ArrayList<>();
 			for (File xcodeReport : xcresultBundles) {
-				List<ConvertedReport> convertedReports = XCResultConverter.convertReport(xcodeReport);
-				// TODO: Check if we can just use XCODE_REPORT_FORMAT instead of
-				// convertedReport.reportFormat here
-				convertedReports.forEach(convertedReport -> formatToFiles
-						.computeIfAbsent(convertedReport.reportFormat, x -> new HashSet<>())
-						.add(convertedReport.report));
+				convertedReports.addAll(XCResultConverter.convertReport(xcodeVersion, xcodeReport));
+			}
+
+			// Add the converted reports back to filesByFormat
+			for (ConvertedReport convertedReport : convertedReports) {
+				filesByFormat.computeIfAbsent(convertedReport.reportFormat, format -> new HashSet<>())
+						.add(convertedReport.report);
 			}
 		} catch (ConversionException e) {
 			LogUtils.failWithoutStackTrace(e.getMessage(), e);
 		}
 	}
-
 }

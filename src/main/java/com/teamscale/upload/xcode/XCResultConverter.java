@@ -64,32 +64,30 @@ public class XCResultConverter {
 
 	private ExecutorService executorService;
 
-	public XCResultConverter(File workingDirectory) {
+	public XCResultConverter(XCodeVersion xcodeVersion, File workingDirectory) {
+		this.xcodeVersion = xcodeVersion;
 		this.workingDirectory = workingDirectory;
-
-		xcodeVersion = XCodeVersion.determine();
 	}
 
 	/**
 	 * Converts a single XCode report from the internal binary XCode format to a
 	 * readable report that can be uploaded to Teamscale.
 	 */
-	public static List<ConvertedReport> convertReport(File xcodeReport) throws ConversionException {
+	public static List<ConvertedReport> convertReport(XCodeVersion xcodeVersion, File xcodeReport)
+			throws ConversionException {
 		if (!XCResultConverter.needsConversion(xcodeReport)) {
 			return Collections.singletonList(new ConvertedReport(XCODE_REPORT_FORMAT, xcodeReport));
 		}
 
 		File workingDirectory = createTemporaryWorkingDirectory();
-		XCResultConverter converter = new XCResultConverter(workingDirectory);
-		Thread cleanupShutdownHook = createCleanupShutdownHook(workingDirectory, converter);
+		XCResultConverter converter = new XCResultConverter(xcodeVersion, workingDirectory);
+		Thread cleanupShutdownHook = createCleanupShutdownHook(converter);
 		try {
 			Runtime.getRuntime().addShutdownHook(cleanupShutdownHook);
 
 			return converter.doConvert(xcodeReport);
 		} finally {
-			// TODO: This does not make sense to me.
-			// how are we supposed to access the reports afterwards?
-			deleteWorkingDirectory(workingDirectory);
+			converter.deleteWorkingDirectory();
 			Runtime.getRuntime().removeShutdownHook(cleanupShutdownHook);
 		}
 	}
@@ -124,54 +122,15 @@ public class XCResultConverter {
 	 * ensures that temporarily created files and directories are deleted if the
 	 * user terminates the application forcefully (e.g. via Ctrl+C).
 	 */
-	private static Thread createCleanupShutdownHook(File workingDirectory, XCResultConverter converter) {
+	private static Thread createCleanupShutdownHook(XCResultConverter converter) {
 		return new Thread(() -> {
 			try {
 				converter.stopProcesses();
 			} catch (ConversionException e) {
 				LogUtils.warn(e.getMessage());
 			}
-			deleteWorkingDirectory(workingDirectory);
+			converter.deleteWorkingDirectory();
 		});
-	}
-
-	// TODO: Move these three methods below to somewhere else
-	private static void deleteWorkingDirectory(File workingDirectory) {
-		try {
-			FileUtils.deleteDirectory(workingDirectory);
-		} catch (IOException e) {
-			LogUtils.warn("Unable to delete temporary working directory " + workingDirectory.getAbsolutePath() + ": "
-					+ e.getMessage());
-		}
-	}
-
-	private static File createTemporaryWorkingDirectory() throws ConversionException {
-		try {
-			return Files.createTempDirectory(null).toFile();
-		} catch (IOException e) {
-			throw new ConversionException(
-					"Error occurred when trying to create temporary working directory:" + e.getMessage(), e);
-		}
-	}
-
-	/**
-	 * Empties the queue to free memory and writes the {@link ConversionResult} to
-	 * the converted report file.
-	 */
-	private static void writeConversionResults(Queue<Future<ConversionResult>> conversionResults, File convertedReport)
-			throws InterruptedException, ExecutionException, IOException {
-		while (!conversionResults.isEmpty()) {
-			ConversionResult conversionResult = conversionResults.remove().get();
-			if (conversionResult == null) {
-				// Can happen when the application is forcefully quit or a timeout occurs
-				continue;
-			}
-
-			String sourceFileHeader = conversionResult.sourceFile + System.lineSeparator();
-
-			Files.writeString(convertedReport.toPath(), sourceFileHeader, StandardOpenOption.APPEND);
-			Files.writeString(convertedReport.toPath(), conversionResult.result, StandardOpenOption.APPEND);
-		}
 	}
 
 	/**
@@ -201,15 +160,15 @@ public class XCResultConverter {
 	 * Converts the report and writes the conversion result to a file with the same
 	 * path and the {@link #XCCOV_REPORT_FILE_EXTENSION} as an added file extension.
 	 */
-	private List<ConvertedReport> doConvert(File report) throws ConversionException {
+	private List<ConvertedReport> doConvert(File reportFile) throws ConversionException {
 		try {
 			validateCommandLineTools();
 
-			File reportDirectory = getReportDirectory(report);
+			File reportDirectory = getReportDirectory(reportFile);
 			List<ConvertedReport> convertedReports = new ArrayList<>();
 
 			if (isXccovArchive(reportDirectory)) {
-				convertedReports.add(extractCoverageData(report, reportDirectory));
+				convertedReports.add(extractCoverageData(reportFile, reportDirectory));
 				return convertedReports;
 			}
 
@@ -221,13 +180,14 @@ public class XCResultConverter {
 			}
 
 			for (File convertToXccovArchive : convertToXccovArchives(reportDirectory, actionsInvocationRecord)) {
-				convertedReports.add(extractCoverageData(report, convertToXccovArchive));
+				convertedReports.add(extractCoverageData(reportFile, convertToXccovArchive));
 			}
 
 			return convertedReports;
 		} catch (IOException | InterruptedException | ExecutionException e) {
 			throw new ConversionException(
-					String.format("Error while converting report %s: %s", report.getAbsolutePath(), e.getMessage()), e);
+					String.format("Error while converting report %s: %s", reportFile.getAbsolutePath(), e.getMessage()),
+					e);
 		}
 	}
 
@@ -275,13 +235,13 @@ public class XCResultConverter {
 	 * archive the archive is extracted to a temporary bundle directory that is
 	 * returned.
 	 */
-	private File getReportDirectory(File report) throws IOException, ConversionException {
-		File reportDirectory = report;
-		String reportDirectoryName = FileSystemUtils.stripTarExtension(report.getName());
+	private File getReportDirectory(File reportFile) throws IOException, ConversionException {
+		File reportDirectory = reportFile;
+		String reportDirectoryName = FileSystemUtils.stripTarExtension(reportFile.getName());
 
-		if (FileSystemUtils.isTarFile(report)) {
+		if (FileSystemUtils.isTarFile(reportFile)) {
 			reportDirectory = new File(workingDirectory, reportDirectoryName);
-			FileSystemUtils.extractTarArchive(report, reportDirectory);
+			FileSystemUtils.extractTarArchive(reportFile, reportDirectory);
 		}
 		if (isXccovArchive(reportDirectory) || isXcresultBundle(reportDirectory)) {
 			return reportDirectory;
@@ -290,7 +250,7 @@ public class XCResultConverter {
 		throw new ConversionException(
 				"Report location must be an existing directory with a name that ends with '.xcresult' or "
 						+ "'.xccovarchive'. The directory may be contained in a tar archive indicated by the file "
-						+ "extensions '.tar', '.tar.gz' or '.tgz'." + report);
+						+ "extensions '.tar', '.tar.gz' or '.tgz'." + reportFile);
 	}
 
 	private ActionsInvocationRecord getActionsInvocationRecord(File reportDirectory)
@@ -362,6 +322,26 @@ public class XCResultConverter {
 		return conversionResults;
 	}
 
+	/**
+	 * Empties the queue to free memory and writes the {@link ConversionResult} to
+	 * the converted report file.
+	 */
+	private static void writeConversionResults(Queue<Future<ConversionResult>> conversionResults, File convertedReport)
+			throws InterruptedException, ExecutionException, IOException {
+		while (!conversionResults.isEmpty()) {
+			ConversionResult conversionResult = conversionResults.remove().get();
+			if (conversionResult == null) {
+				// Can happen when the application is forcefully quit or a timeout occurs
+				continue;
+			}
+
+			String sourceFileHeader = conversionResult.sourceFile + System.lineSeparator();
+
+			Files.writeString(convertedReport.toPath(), sourceFileHeader, StandardOpenOption.APPEND);
+			Files.writeString(convertedReport.toPath(), conversionResult.result, StandardOpenOption.APPEND);
+		}
+	}
+
 	private void waitForRunningProcessesToFinish() throws ConversionException {
 		if (executorService == null || executorService.isTerminated()) {
 			return;
@@ -380,13 +360,38 @@ public class XCResultConverter {
 	/**
 	 * Stops the conversion processes and ensures that all processes have finished.
 	 */
-	public void stopProcesses() throws ConversionException {
+	private void stopProcesses() throws ConversionException {
 		if (executorService == null || executorService.isTerminated()) {
 			return;
 		}
 
 		executorService.shutdownNow();
 		waitForRunningProcessesToFinish();
+	}
+
+	/**
+	 * Creates a {@linkplain Files#createTempDirectory temporary directory} the
+	 * converter can use to store intermediate results
+	 */
+	private static File createTemporaryWorkingDirectory() throws ConversionException {
+		try {
+			return Files.createTempDirectory(null).toFile();
+		} catch (IOException e) {
+			throw new ConversionException(
+					"Error occurred when trying to create temporary working directory:" + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Deletes the {@link #workingDirectory}. Should always be executed once the
+	 * converter finished the conversion.
+	 */
+	private void deleteWorkingDirectory() {
+		try {
+			FileUtils.deleteDirectory(workingDirectory);
+		} catch (IOException e) {
+			LogUtils.warn("Unable to delete temporary working directory " + workingDirectory.getAbsolutePath(), e);
+		}
 	}
 
 	/**
