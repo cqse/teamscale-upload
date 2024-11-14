@@ -60,6 +60,16 @@ public class XCResultConverter {
 
 	private final File workingDirectory;
 
+	/**
+	 * The installed and used XCode version. Can be determined by
+	 * {@link XCodeVersion#determine()}.
+	 * 
+	 * @implNote The version should be determined by the caller and passed to this
+	 *           class (i.e., instead of determining it in this class). This iss
+	 *           because when multiple {@link XCResultConverter} are created, we
+	 *           want to show warnings/errors related to the version determination
+	 *           only once
+	 */
 	private final XCodeVersion xcodeVersion;
 
 	private ExecutorService executorService;
