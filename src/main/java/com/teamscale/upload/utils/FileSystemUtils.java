@@ -55,18 +55,22 @@ public class FileSystemUtils {
 	private static final List<String> GZIP_FILE_EXTENSIONS = List.of(".tar.gz", ".tgz");
 
 	/**
-	 * Mask for a posix file-mode that states that any execute bit is set (owner, group, or other).
-	 * Given a unix-mode int <code>unixMode</code>, <code>(unixMode & UNIX_EXEC_MASK) != 0</code> determines whether
-	 * one of the execute permissions is set.
+	 * Mask for a posix file-mode that states that any execute bit is set (owner,
+	 * group, or other). Given a unix-mode int <code>unixMode</code>,
+	 * <code>(unixMode & UNIX_EXEC_MASK) != 0</code> determines whether one of the
+	 * execute permissions is set.
 	 * <p>
-	 * Underscores are inserted for readability (separating the read-write-execute flag groups).
+	 * Underscores are inserted for readability (separating the read-write-execute
+	 * flag groups).
 	 */
 	private static final int UNIX_EXEC_MASK = 0b001_001_001;
 
 	/**
-	 * Expected result for <code>unixMode & UNIX_EXEC_MASK</code> if only the owner of the file has execute permissions.
+	 * Expected result for <code>unixMode & UNIX_EXEC_MASK</code> if only the owner
+	 * of the file has execute permissions.
 	 * <p>
-	 * Underscores are inserted for readability (separating the read-write-execute flag groups).
+	 * Underscores are inserted for readability (separating the read-write-execute
+	 * flag groups).
 	 */
 	private static final int UNIX_EXEC_MASK_OWNER = 0b001_000_000;
 
@@ -102,14 +106,15 @@ public class FileSystemUtils {
 		}
 		return fileName;
 	}
+
 	/**
 	 * Extract entries of a ZipFile to a directory when the ZipFile is created
 	 * externally. Note that this does not close the ZipFile, so the caller has to
 	 * take care of this.
 	 * <p>
-	 * We use the apache commons ZipArchiveEntry instead of the java standard library
-	 * ZipEntry since the apache commons variant allows access to the flags on files in the zip.
-	 * In particular executable flags on shell scripts.
+	 * We use the apache commons ZipArchiveEntry instead of the java standard
+	 * library ZipEntry since the apache commons variant allows access to the flags
+	 * on files in the zip. In particular executable flags on shell scripts.
 	 */
 	public static List<String> unzip(ZipFile zip, File targetDirectory) throws IOException {
 		Enumeration<? extends ZipArchiveEntry> entries = zip.getEntries();
@@ -135,16 +140,22 @@ public class FileSystemUtils {
 	}
 
 	/**
-	 * Applies the given posix execute-file permission setting on the given file.
-	 * If only the file owner has execute permission, then this limitation is preserved.
+	 * Applies the given posix execute-file permission setting on the given file. If
+	 * only the file owner has execute permission, then this limitation is
+	 * preserved.
 	 * <p>
-	 * For example, unix mode <code>Integer.toBinaryString(unixMode) == "1000000111101101"</code>
-	 * corresponds to <code>-rwxr-xr-x</code> in ls output. Each enabled bit is represented by a 1.
-	 * In this case all users (owner/group/other) have execute permissions.
+	 * For example, unix mode
+	 * <code>Integer.toBinaryString(unixMode) == "1000000111101101"</code>
+	 * corresponds to <code>-rwxr-xr-x</code> in ls output. Each enabled bit is
+	 * represented by a 1. In this case all users (owner/group/other) have execute
+	 * permissions.
 	 *
-	 * @param file the file to which we should apply the given execute-bit settings
-	 * @param unixMode binary representation of the posix file mode
-	 *                    (each bit states enablement/disablement of a flag, order is like in the output of ls).
+	 * @param file
+	 *            the file to which we should apply the given execute-bit settings
+	 * @param unixMode
+	 *            binary representation of the posix file mode (each bit states
+	 *            enablement/disablement of a flag, order is like in the output of
+	 *            ls).
 	 */
 	private static void adoptUnixExecuteFilePermission(File file, int unixMode) {
 		if (unixMode <= 0) {
@@ -178,6 +189,7 @@ public class FileSystemUtils {
 		}
 		return size;
 	}
+
 	/**
 	 * Checks if a directory exists and is writable. If not it creates the directory
 	 * and all necessary parent directories.
@@ -211,6 +223,7 @@ public class FileSystemUtils {
 			throw new IOException("Temp directory " + directory + " exists, but is not writable.");
 		}
 	}
+
 	/**
 	 * Decompresses the contents of a Tar file to the destination folder. The Tar
 	 * file may also use Gzip but must indicate this with the *.tar.gz or *.tgz
@@ -276,7 +289,7 @@ public class FileSystemUtils {
 	 * {@link IOException} if not.
 	 *
 	 * @throws IOException
-	 *             In case 	the file is not located below the directory
+	 *             In case the file is not located below the directory
 	 */
 	@VisibleForTesting
 	static void ensureFileIsBelowDirectory(File file, File directory) throws IOException {
@@ -321,6 +334,7 @@ public class FileSystemUtils {
 			throw new IOException("Unable to create file empty file: " + file);
 		}
 	}
+
 	/**
 	 * Recursively delete directories and files. This method ignores the return
 	 * value of delete(), i.e. if anything fails, some files might still exist.

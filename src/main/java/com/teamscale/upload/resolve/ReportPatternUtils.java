@@ -1,7 +1,5 @@
 package com.teamscale.upload.resolve;
 
-import com.teamscale.upload.utils.LogUtils;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -14,6 +12,8 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import com.teamscale.upload.utils.LogUtils;
 
 /**
  * This class provides the functionality to resolve the report file patterns and
@@ -42,7 +42,7 @@ public class ReportPatternUtils {
 
 		if (inputFile != null) {
 			// Check if the specified input file via --input exists.
-			if(!inputFile.toFile().exists()) {
+			if (!inputFile.toFile().exists()) {
 				LogUtils.fail("Could not find the specified input file: '" + inputFile
 						+ "'. Please ensure that you have no typo in the file path.");
 			}
