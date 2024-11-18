@@ -129,7 +129,7 @@ extensions.runtime.targetPlatforms.get().each { targetPlatform ->
 		}
 		from(readmeFilePath) {
 			// rename copied file to "Readme.md"
-			rename (oldFilename -> "README.md")
+			rename(oldFilename -> "README.md")
 			into "${application.applicationName}"
 		}
 	}
@@ -140,5 +140,9 @@ test {
 	filter {
 		// Don't run the integration test for the graal-vm distribution artifact here. (This is the jlink build.)
 		excludeTestsMatching('com.teamscale.upload.NativeImageIT')
+	}
+	testLogging {
+		outputs.upToDateWhen { false }
+		showStandardStreams = true
 	}
 }
