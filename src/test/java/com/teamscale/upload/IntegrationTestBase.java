@@ -13,6 +13,7 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import org.assertj.core.api.SoftAssertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -36,6 +37,7 @@ public abstract class IntegrationTestBase {
 	protected abstract ProcessUtils.ProcessResult runUploader(TeamscaleUploadArguments arguments);
 
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void wrongAccessKey() {
 		ProcessUtils.ProcessResult result = runUploader(
 				new TeamscaleUploadArguments().withAccessKey("wrong-accesskey_"));
@@ -83,6 +85,7 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void wrongUser() {
 		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments().withUser("wrong-user_"));
 		assertSoftlyThat(softly -> {
@@ -93,6 +96,7 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void wrongProject() {
 		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments().withProject("wrong-project_"));
 		assertSoftlyThat(softly -> {
@@ -135,6 +139,7 @@ public abstract class IntegrationTestBase {
 	 * not known". This test ensures that this scenario is handled better now.
 	 */
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void unknownRevision() {
 		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments().withCommit("doesnt-exist"));
 		assertSoftlyThat(softly -> {
@@ -148,6 +153,7 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void patternMatchesNothing() {
 		ProcessUtils.ProcessResult result = runUploader(
 				new TeamscaleUploadArguments().withPattern("**/matches.nothing"));
@@ -159,6 +165,7 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void insufficientPermissions() {
 		ProcessUtils.ProcessResult result = runUploader(
 				new TeamscaleUploadArguments().withUser("teamscale-upload-build-test-user-no-permissions")
@@ -171,6 +178,7 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void successfulSingleFormatUpload() {
 		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments());
 		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
@@ -178,6 +186,7 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void successfulMultiFormatUpload() {
 		ProcessUtils.ProcessResult result = runUploader(
 				new TeamscaleUploadArguments().withInput("src/test/resources/coverage_files/input_file"));
@@ -222,6 +231,7 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void mustRejectTimestampPassedInSeconds() {
 		ProcessUtils.ProcessResult result = runUploader(
 				new TeamscaleUploadArguments().withTimestamp("master:1606764633"));
@@ -308,6 +318,7 @@ public abstract class IntegrationTestBase {
 
 	/** Tests that passing the access key via stdin works as expected (TS-28611). */
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void testCorrectAccessKeyFromStdIn() throws IOException {
 		Path tempFilePath = null;
 		try {
@@ -331,6 +342,7 @@ public abstract class IntegrationTestBase {
 
 	/** Tests that passing an incorrect access key via stdin fails (TS-28611). */
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void testIncorrectAccessKeyFromStdIn() {
 		ProcessUtils.ProcessResult result = runUploader(
 				new TeamscaleUploadArguments().withAccessKeyViaStdin("src/test/resources/incorrect_access_key.txt"));
@@ -346,6 +358,7 @@ public abstract class IntegrationTestBase {
 	 * (TS-28611).
 	 */
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void testCorrectAccessWithKeyFromEnvironmentVariable() {
 		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments().withoutAccessKeyInOption());
 		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
@@ -388,6 +401,7 @@ public abstract class IntegrationTestBase {
 	 * there are no further commits on this branch.
 	 */
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void successfulUploadWithRepository() {
 		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments()
 				.withRepository("cqse/teamscale-upload").withPartition("NativeImageIT > TestRepository")
@@ -397,6 +411,7 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void successfulUploadWithMoveToLastCommit() {
 		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments().withMoveToLastCommit());
 		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.errorOutput).isZero();
