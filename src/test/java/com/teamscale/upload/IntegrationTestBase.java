@@ -1,9 +1,11 @@
 package com.teamscale.upload;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -11,6 +13,7 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import org.assertj.core.api.SoftAssertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -20,21 +23,24 @@ import com.teamscale.upload.test_utils.TeamscaleMockServer;
 import com.teamscale.upload.utils.SecretUtils;
 
 /**
- * Integration Tests. Subclasses execute the distribution in different scenarios.
+ * Integration Tests. Subclasses execute the distribution in different
+ * scenarios.
  */
 public abstract class IntegrationTestBase {
 
 	private static final int MOCK_TEAMSCALE_PORT = 24398;
 
-
 	/**
-	 * Executes the generated teamscale-upload distribution with the given arguments.
+	 * Executes the generated teamscale-upload distribution with the given
+	 * arguments.
 	 */
 	protected abstract ProcessUtils.ProcessResult runUploader(TeamscaleUploadArguments arguments);
-	
+
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void wrongAccessKey() {
-		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments().withAccessKey("wrong-accesskey_"));
+		ProcessUtils.ProcessResult result = runUploader(
+				new TeamscaleUploadArguments().withAccessKey("wrong-accesskey_"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).contains("You provided incorrect credentials");
@@ -57,17 +63,20 @@ public abstract class IntegrationTestBase {
 
 	@Test
 	public void unresolvableUrl() {
-		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments().withUrl("http://domain.invalid:9999"));
+		ProcessUtils.ProcessResult result = runUploader(
+				new TeamscaleUploadArguments().withUrl("http://domain.invalid:9999"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			softly.assertThat(result.errorOutput).contains("The host http://domain.invalid:9999/ could not be resolved");
+			softly.assertThat(result.errorOutput)
+					.contains("The host http://domain.invalid:9999/ could not be resolved");
 		});
 		assertThatOSCertificatesWereImported(result);
 	}
 
 	@Test
 	public void unreachableUrl() {
-		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments().withUrl("http://localhost:9999"));
+		ProcessUtils.ProcessResult result = runUploader(
+				new TeamscaleUploadArguments().withUrl("http://localhost:9999"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).contains("The host http://localhost:9999/ refused a connection");
@@ -76,6 +85,7 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void wrongUser() {
 		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments().withUser("wrong-user_"));
 		assertSoftlyThat(softly -> {
@@ -86,6 +96,7 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void wrongProject() {
 		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments().withProject("wrong-project_"));
 		assertSoftlyThat(softly -> {
@@ -102,8 +113,10 @@ public abstract class IntegrationTestBase {
 				new TeamscaleUploadArguments().withUrl("http://localhost:9999").withTimeoutInSeconds("0"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			// we ignore whitespace because the string is formatted differently coming out of the jlink dist than from graalvm (different line width)
-			softly.assertThat(result.errorOutput).containsIgnoringWhitespaces("The timeout in seconds must be an integer greater than 0.");
+			// we ignore whitespace because the string is formatted differently coming out
+			// of the jlink dist than from graalvm (different line width)
+			softly.assertThat(result.errorOutput)
+					.containsIgnoringWhitespaces("The timeout in seconds must be an integer greater than 0.");
 		});
 	}
 
@@ -113,8 +126,10 @@ public abstract class IntegrationTestBase {
 				new TeamscaleUploadArguments().withUrl("http://localhost:9999").withTimeoutInSeconds("foo"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			// we ignore whitespace because the string is formatted differently coming out of the jlink dist than from graalvm (different line width)
-			softly.assertThat(result.errorOutput).containsIgnoringWhitespaces("The timeout in seconds must be an integer greater than 0.");
+			// we ignore whitespace because the string is formatted differently coming out
+			// of the jlink dist than from graalvm (different line width)
+			softly.assertThat(result.errorOutput)
+					.containsIgnoringWhitespaces("The timeout in seconds must be an integer greater than 0.");
 		});
 	}
 
@@ -124,21 +139,24 @@ public abstract class IntegrationTestBase {
 	 * not known". This test ensures that this scenario is handled better now.
 	 */
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void unknownRevision() {
 		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments().withCommit("doesnt-exist"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).doesNotContain("The project")
-					.doesNotContain("does not seem to exist in Teamscale")
-					.doesNotContain("project ID").contains("The revision")
+					.doesNotContain("does not seem to exist in Teamscale").doesNotContain("project ID")
+					.contains("The revision")
 					.contains("is not known to Teamscale or the version control system(s) you configured");
 		});
 		assertThatOSCertificatesWereImported(result);
 	}
 
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void patternMatchesNothing() {
-		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments().withPattern("**/matches.nothing"));
+		ProcessUtils.ProcessResult result = runUploader(
+				new TeamscaleUploadArguments().withPattern("**/matches.nothing"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).contains("The pattern")
@@ -147,9 +165,11 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void insufficientPermissions() {
 		ProcessUtils.ProcessResult result = runUploader(
-				new TeamscaleUploadArguments().withUser("teamscale-upload-build-test-user-no-permissions").withAccessKey("ruG8MKMbLunyLooB7SlfkEATCISSWDKy"));
+				new TeamscaleUploadArguments().withUser("teamscale-upload-build-test-user-no-permissions")
+						.withAccessKey("ruG8MKMbLunyLooB7SlfkEATCISSWDKy"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).contains("is not allowed to upload data to the Teamscale project");
@@ -158,6 +178,7 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void successfulSingleFormatUpload() {
 		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments());
 		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
@@ -165,6 +186,7 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void successfulMultiFormatUpload() {
 		ProcessUtils.ProcessResult result = runUploader(
 				new TeamscaleUploadArguments().withInput("src/test/resources/coverage_files/input_file"));
@@ -189,8 +211,8 @@ public abstract class IntegrationTestBase {
 	@Test
 	public void testTimeoutSmallerThanRequestTime() {
 		try (TeamscaleMockServer ignored = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 2)) {
-			ProcessUtils.ProcessResult result = runUploader(
-					new TeamscaleUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withTimeoutInSeconds("1"));
+			ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments()
+					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withTimeoutInSeconds("1"));
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
 					.isNotZero();
 			assertThat(result.errorOutput).contains("Request timeout reached.");
@@ -201,16 +223,18 @@ public abstract class IntegrationTestBase {
 	@Test
 	public void testTimeoutGreaterThanRequestTime() {
 		try (TeamscaleMockServer ignored = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 2)) {
-			ProcessUtils.ProcessResult result = runUploader(
-					new TeamscaleUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withTimeoutInSeconds("3"));
+			ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments()
+					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withTimeoutInSeconds("3"));
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 			assertThatOSCertificatesWereImported(result);
 		}
 	}
 
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void mustRejectTimestampPassedInSeconds() {
-		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments().withTimestamp("master:1606764633"));
+		ProcessUtils.ProcessResult result = runUploader(
+				new TeamscaleUploadArguments().withTimestamp("master:1606764633"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
 					.isNotZero();
@@ -257,8 +281,8 @@ public abstract class IntegrationTestBase {
 		}
 
 		try (TeamscaleMockServer ignored = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
-			ProcessUtils.ProcessResult result = runUploader(
-					new TeamscaleUploadArguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT).withStackTrace());
+			ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments()
+					.withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT).withStackTrace());
 			assertSoftlyThat(softly -> {
 				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
 						.isNotZero();
@@ -272,8 +296,8 @@ public abstract class IntegrationTestBase {
 	@Test
 	public void selfSignedCertificateShouldBeAcceptedWhenKeystoreIsUsed() {
 		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
-			ProcessUtils.ProcessResult result = runUploader(
-					new TeamscaleUploadArguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT).withKeystore().withStackTrace());
+			ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments()
+					.withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT).withKeystore().withStackTrace());
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 			assertThat(server.sessions).hasSize(1);
 			assertThatOSCertificatesWereImported(result);
@@ -283,8 +307,8 @@ public abstract class IntegrationTestBase {
 	@Test
 	public void mustGuessRevision() {
 		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
-			ProcessUtils.ProcessResult result = runUploader(
-					new TeamscaleUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withAutoDetectCommit());
+			ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments()
+					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withAutoDetectCommit());
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 			assertThat(server.sessions).hasSize(1);
 			assertThat(server.sessions.get(0).revisionOrTimestamp).hasSize(40); // size of a git SHA1
@@ -294,6 +318,7 @@ public abstract class IntegrationTestBase {
 
 	/** Tests that passing the access key via stdin works as expected (TS-28611). */
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void testCorrectAccessKeyFromStdIn() throws IOException {
 		Path tempFilePath = null;
 		try {
@@ -304,7 +329,8 @@ public abstract class IntegrationTestBase {
 			tempFilePath = Paths.get(temporaryFileName);
 			Files.writeString(tempFilePath, System.getenv(SecretUtils.TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE));
 
-			ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments().withAccessKeyViaStdin(temporaryFileName));
+			ProcessUtils.ProcessResult result = runUploader(
+					new TeamscaleUploadArguments().withAccessKeyViaStdin(temporaryFileName));
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 			assertThatOSCertificatesWereImported(result);
 		} finally {
@@ -316,6 +342,7 @@ public abstract class IntegrationTestBase {
 
 	/** Tests that passing an incorrect access key via stdin fails (TS-28611). */
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void testIncorrectAccessKeyFromStdIn() {
 		ProcessUtils.ProcessResult result = runUploader(
 				new TeamscaleUploadArguments().withAccessKeyViaStdin("src/test/resources/incorrect_access_key.txt"));
@@ -331,6 +358,7 @@ public abstract class IntegrationTestBase {
 	 * (TS-28611).
 	 */
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void testCorrectAccessWithKeyFromEnvironmentVariable() {
 		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments().withoutAccessKeyInOption());
 		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
@@ -344,35 +372,46 @@ public abstract class IntegrationTestBase {
 			ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments()
 					.withPattern("src/test/resources/coverage_files/output.xcresult.tar.gz").withFormat("XCODE")
 					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withAutoDetectCommit());
+			String actualConvertedContent = new String(
+					requireNonNull(server.uploadedReportsByName.get("output.xcresult.tar.gz.xccov")),
+					StandardCharsets.UTF_8);
+			String expectedConvertedContent = new String(
+					requireNonNull(readResource("output.xcresult.tar.gz.xccov.expected")), StandardCharsets.UTF_8);
+
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 			assertThat(server.sessions).hasSize(1);
 			assertThat(server.uploadedReportsByName).hasSize(1);
-			assertThat(server.uploadedReportsByName.get("output.xcresult.tar.gz.xccov"))
-					.containsExactly(readResource("output.xcresult.tar.gz.xccov.expected"));
+			assertThat(actualConvertedContent).isEqualTo(expectedConvertedContent);
 			assertThatOSCertificatesWereImported(result);
 		}
 	}
 
 	/**
-	 * This test uploads a report to our Teamscale server using a commit hash as upload target.
+	 * This test uploads a report to our Teamscale server using a commit hash as
+	 * upload target.
 	 * <p>
-	 * Since the hash must be a real commit hash, and we keep adding new commits to the project, this commit will get "old".
-	 * New uploads to the old commit will cause rollbacks.
-	 * We used a commit on master (hash b80faaa9fba686debfc410eb34a564dc30510b7d from 26.Aug 2020), therefore these rollbacks were a problem.
-	 * Now we use a commit on an extra branch that was created from the commit above.
-	 * The new commit is 3758a3a6c2d62ab787574f869b2352480c6f0c10 on branch "branch_for_upload_test".
-	 * Uploads will roll back the new branch, but that should not be a problem since there are no further commits on this branch.
+	 * Since the hash must be a real commit hash, and we keep adding new commits to
+	 * the project, this commit will get "old". New uploads to the old commit will
+	 * cause rollbacks. We used a commit on master (hash
+	 * b80faaa9fba686debfc410eb34a564dc30510b7d from 26.Aug 2020), therefore these
+	 * rollbacks were a problem. Now we use a commit on an extra branch that was
+	 * created from the commit above. The new commit is
+	 * 3758a3a6c2d62ab787574f869b2352480c6f0c10 on branch "branch_for_upload_test".
+	 * Uploads will roll back the new branch, but that should not be a problem since
+	 * there are no further commits on this branch.
 	 */
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void successfulUploadWithRepository() {
-		ProcessUtils.ProcessResult result = runUploader(
-				new TeamscaleUploadArguments().withRepository("cqse/teamscale-upload").withPartition("NativeImageIT > TestRepository")
-						.withCommit("3758a3a6c2d62ab787574f869b2352480c6f0c10"));
+		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments()
+				.withRepository("cqse/teamscale-upload").withPartition("NativeImageIT > TestRepository")
+				.withCommit("3758a3a6c2d62ab787574f869b2352480c6f0c10"));
 		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.errorOutput).isZero();
 		assertThatOSCertificatesWereImported(result);
 	}
 
 	@Test
+	@Disabled("TS-41072 Test should not run again production server")
 	public void successfulUploadWithMoveToLastCommit() {
 		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments().withMoveToLastCommit());
 		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.errorOutput).isZero();
@@ -383,7 +422,8 @@ public abstract class IntegrationTestBase {
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.errorOutput)
 					.doesNotContain("Could not import certificates from the operating system");
-			softly.assertThat(result.output).containsPattern(Pattern.compile("Imported \\d+ certificates from the operating system\\."));
+			softly.assertThat(result.output)
+					.containsPattern(Pattern.compile("Imported \\d+ certificates from the operating system\\."));
 		});
 	}
 

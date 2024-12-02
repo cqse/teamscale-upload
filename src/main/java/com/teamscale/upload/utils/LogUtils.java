@@ -1,5 +1,7 @@
 package com.teamscale.upload.utils;
 
+import com.teamscale.upload.client.SafeResponse;
+
 /**
  * Utilities for interacting with stdout, stderr and terminating the program due
  * to fatal errors.
@@ -22,8 +24,7 @@ public class LogUtils {
 	 */
 	public static void fail(String message, SafeResponse response) {
 		String url = response.unsafeResponse.request().url().toString();
-		fail("Upload to Teamscale failed:\n\n" + message + "\n\nTeamscale's response:\n" + url + "\n"
-				+ response.body);
+		fail("Upload to Teamscale failed:\n\n" + message + "\n\nTeamscale's response:\n" + url + "\n" + response.body);
 	}
 
 	/**
@@ -51,8 +52,7 @@ public class LogUtils {
 			throwable.printStackTrace();
 		} else {
 			System.err.println("ERROR: " + throwable.getClass().getSimpleName() + ": " + throwable.getMessage());
-			System.err.println(
-					"Stack trace suppressed. Rerun this command with --stacktrace to see the stack trace.");
+			System.err.println("Stack trace suppressed. Rerun this command with --stacktrace to see the stack trace.");
 		}
 		fail(message);
 	}
@@ -106,6 +106,20 @@ public class LogUtils {
 		if (debugLogEnabled) {
 			System.out.println("DEBUG: " + message);
 		}
+	}
+
+	/**
+	 * Print a debug message to stdout and log the given throwable.
+	 * <p>
+	 * Use to log information that is not useful during normal operations but
+	 * helpful when something goes wrong.
+	 */
+	public static void debug(String message, Throwable throwable) {
+		if (!debugLogEnabled) {
+			return;
+		}
+		debug(message);
+		throwable.printStackTrace();
 	}
 
 	/**
