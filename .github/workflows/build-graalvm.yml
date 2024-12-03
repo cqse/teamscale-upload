@@ -7,6 +7,11 @@ on:
   pull_request:
     branches: '*'
 
+env:
+  LINUX_ARTIFACT_NAME: target-linux
+  MAC_ARTIFACT_NAME: target-mac
+  WINDOWS_ARTIFACT_NAME: target-windows
+
 jobs:
   build-linux-graalvm:
     name: Linux graalvm Build
@@ -35,7 +40,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: target-linux
+          name: ${{ env.LINUX_ARTIFACT_NAME }}
           path: ./target
           retention-days: 5
 
@@ -58,7 +63,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: target-mac
+          name: ${{ env.MAC_ARTIFACT_NAME }}
           path: ./target
           retention-days: 5
 
@@ -81,7 +86,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: target-windows
+          name: ${{ env.WINDOWS_ARTIFACT_NAME }}
           path: ./target
           retention-days: 5
 
@@ -93,19 +98,25 @@ jobs:
       - build-windows-graalvm
     name: Create Release
     runs-on: ubuntu-latest
+    env:
+      DISTRIBUTIONS_DIR: ./teamscale-upload-dists
     steps:
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
+        with:
+          path: ${{ env.DISTRIBUTIONS_DIR }}
       - name: Package
         run: |
-          (cd ./target-linux && zip ../teamscale-upload-linux.zip ./teamscale-upload)
-          (cd ./target-mac && zip ../teamscale-upload-mac.zip ./teamscale-upload)
-          (cd ./target-windows && zip ../teamscale-upload-windows.zip ./teamscale-upload.exe)
+          (cd $DISTRIBUTIONS_DIR/$LINUX_ARTIFACT_NAME && zip ../teamscale-upload-linux.zip teamscale-upload)
+          (cd $DISTRIBUTIONS_DIR/$MAC_ARTIFACT_NAME && zip ../teamscale-upload-mac.zip ./teamscale-upload)
+          (cd $DISTRIBUTIONS_DIR/$WINDOWS_ARTIFACT_NAME && zip ../teamscale-upload-windows.zip ./teamscale-upload.exe)
+      - name: List downloaded distributions
+        run: ls -1 $DISTRIBUTIONS_DIR/*.zip
       - name: Upload Release Assets
         id: create_release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
-          file: teamscale-upload-*.zip
+          file: ${{ env.DISTRIBUTIONS_DIR }}/teamscale-upload-*.zip
           file_glob: true
           overwrite: true

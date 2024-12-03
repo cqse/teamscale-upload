@@ -7,6 +7,9 @@ on:
   pull_request:
     branches: '*'
 
+env:
+  ARTIFACT_NAME: target-jlink
+
 jobs:
   # builds the jlink versions of the teamscale-upload tool and stores them in a temporary gradle-workflow storage
   build-jlink:
@@ -38,7 +41,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: target-jlink
+          name: ${{ env.ARTIFACT_NAME }}
           # Path to generated jlink distributions on the current machine.
           #
           # We prefer to list the paths explicitly (rather than copy the entire folder) to document
@@ -61,23 +64,26 @@ jobs:
       - build-jlink
     name: Create Release (jlink)
     runs-on: ubuntu-latest
+    env:
+      DISTRIBUTIONS_DIR: ./teamscale-upload-dists
     steps:
-      - uses: actions/download-artifact@v3
-      - name: List downloaded distributions
-        run: ls -1 target-jlink
+      - uses: actions/download-artifact@v4
+        with:
+          path: ${{ env.DISTRIBUTIONS_DIR }}
       - name: Rename Distributions
         run: |
-          (mv ./target-jlink/teamscale-upload-linux-x86_64.zip ./target-jlink/teamscale-upload-jlink-linux-x86_64.zip)
-          (mv ./target-jlink/teamscale-upload-windows-x86_64.zip ./target-jlink/teamscale-upload-jlink-windows-x86_64.zip)
-          (mv ./target-jlink/teamscale-upload-macos-x86_64.zip ./target-jlink/teamscale-upload-jlink-macos-x86_64.zip)
-          (mv ./target-jlink/teamscale-upload-macos-aarch64.zip ./target-jlink/teamscale-upload-jlink-macos-aarch64.zip)
-          (ls -1 target-jlink)
+          (cd $DISTRIBUTIONS_DIR/${ARTIFACT_NAME} && mv teamscale-upload-linux-x86_64.zip ../teamscale-upload-jlink-linux-x86_64.zip)
+          (cd $DISTRIBUTIONS_DIR/${ARTIFACT_NAME} && mv teamscale-upload-windows-x86_64.zip ../teamscale-upload-jlink-windows-x86_64.zip)
+          (cd $DISTRIBUTIONS_DIR/${ARTIFACT_NAME} && mv teamscale-upload-macos-x86_64.zip ../teamscale-upload-jlink-macos-x86_64.zip)
+          (cd $DISTRIBUTIONS_DIR/${ARTIFACT_NAME} && mv teamscale-upload-macos-aarch64.zip ../teamscale-upload-jlink-macos-aarch64.zip)
+      - name: List downloaded distributions
+        run: ls -1 $DISTRIBUTIONS_DIR/*.zip
       - name: Upload Release Assets
         id: create_release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
-          file: target-jlink/teamscale-upload-jlink-*.zip
+          file: ${{ env.DISTRIBUTIONS_DIR }}/teamscale-upload-jlink-*.zip
           file_glob: true
           overwrite: true
