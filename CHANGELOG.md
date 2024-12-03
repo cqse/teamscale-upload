@@ -5,6 +5,9 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
+- ...
+
+# 2.9.4
 - [fix] Uploading XCode coverage files was not possible when using Xcode version 16
 
 # 2.9.3
