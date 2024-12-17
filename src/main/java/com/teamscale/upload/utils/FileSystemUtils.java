@@ -327,7 +327,7 @@ public class FileSystemUtils {
 		if (file.isDirectory()) {
 			throw new IOException("Unable to create empty file because it is a directory: " + file);
 		}
-		if (file.exists() && !file.delete()) {
+		if (file.exists()) {
 			throw new IOException("Unable to delete existing file: " + file);
 		}
 		if (!file.createNewFile()) {

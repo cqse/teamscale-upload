@@ -2,7 +2,6 @@ package com.teamscale.upload;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -12,10 +11,8 @@ import com.teamscale.upload.client.TeamscaleClient;
 import com.teamscale.upload.resolve.FilePatternResolutionException;
 import com.teamscale.upload.resolve.ReportPatternUtils;
 import com.teamscale.upload.utils.LogUtils;
-import com.teamscale.upload.xcode.ConvertedReport;
-import com.teamscale.upload.xcode.XCResultConverter;
-import com.teamscale.upload.xcode.XCResultConverter.ConversionException;
-import com.teamscale.upload.xcode.XCodeVersion;
+import com.teamscale.upload.xcode.ConversionException;
+import com.teamscale.upload.xcode.XCodeReportConverter;
 
 /**
  * Main class of the teamscale-upload project.
@@ -56,10 +53,10 @@ public class TeamscaleUpload {
 
 	/**
 	 * Returns whether the given set of file formats contains the
-	 * {@linkplain XCResultConverter#XCODE_REPORT_FORMAT XCode report format}.
+	 * {@linkplain XCodeReportConverter#XCODE_REPORT_FORMAT XCode report format}.
 	 */
 	private static boolean containsAnyXCodeReports(Set<String> fileFormats) {
-		return fileFormats.contains(XCResultConverter.XCODE_REPORT_FORMAT);
+		return fileFormats.contains(XCodeReportConverter.XCODE_REPORT_FORMAT);
 	}
 
 	/**
@@ -68,18 +65,12 @@ public class TeamscaleUpload {
 	 */
 	private static void convertXCodeReports(Map<String, Set<File>> filesByFormat) {
 		try {
-			Set<File> xcresultBundles = filesByFormat.remove(XCResultConverter.XCODE_REPORT_FORMAT);
-			XCodeVersion xcodeVersion = XCodeVersion.determine();
-			List<ConvertedReport> convertedReports = new ArrayList<>();
-			for (File xcodeReport : xcresultBundles) {
-				convertedReports.addAll(XCResultConverter.convertReport(xcodeVersion, xcodeReport));
-			}
+			Set<File> xcresultBundles = filesByFormat.remove(XCodeReportConverter.XCODE_REPORT_FORMAT);
+			List<File> convertedReports = XCodeReportConverter.convert(xcresultBundles);
 
 			// Add the converted reports back to filesByFormat
-			for (ConvertedReport convertedReport : convertedReports) {
-				filesByFormat.computeIfAbsent(convertedReport.reportFormat, format -> new HashSet<>())
-						.add(convertedReport.report);
-			}
+			filesByFormat.computeIfAbsent(XCodeReportConverter.XCODE_REPORT_FORMAT, format -> new HashSet<>())
+					.addAll(convertedReports);
 		} catch (ConversionException e) {
 			LogUtils.failWithoutStackTrace(e.getMessage(), e);
 		}
