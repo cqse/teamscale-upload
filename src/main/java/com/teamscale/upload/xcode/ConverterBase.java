@@ -12,15 +12,15 @@ import java.nio.file.Path;
 
 	/**
 	 * The installed and used XCode version. Can be determined by
-	 * {@link XCodeVersion#determine()}.
+	 * {@link XcodeVersion#determine()}.
 	 *
 	 * @implNote The version should be determined by the caller and passed to this
 	 *           class (i.e., instead of determining it in this class). This is
-	 *           because when multiple {@link XCResultConverter} are created, we
+	 *           because when multiple {@link XcresultConverter} are created, we
 	 *           want to show warnings/errors related to the version determination
 	 *           only once
 	 */
-	private final XCodeVersion xcodeVersion;
+	private final XcodeVersion xcodeVersion;
 
 	/** The directory where intermediate results can be stored. */
 	private final Path workingDirectory;
@@ -28,7 +28,7 @@ import java.nio.file.Path;
 	/** The directory where the final conversion results are stored. */
 	private Path outputDirectory;
 
-	public ConverterBase(XCodeVersion xcodeVersion, Path workingDirectory) {
+	public ConverterBase(XcodeVersion xcodeVersion, Path workingDirectory) {
 		this.xcodeVersion = xcodeVersion;
 		this.workingDirectory = workingDirectory;
 	}
@@ -52,7 +52,7 @@ import java.nio.file.Path;
 		return Files.createFile(getOutputFilePath(name)).toFile();
 	}
 
-	public XCodeVersion getXcodeVersion() {
+	public XcodeVersion getXcodeVersion() {
 		return xcodeVersion;
 	}
 

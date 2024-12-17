@@ -12,7 +12,7 @@ import com.teamscale.upload.resolve.FilePatternResolutionException;
 import com.teamscale.upload.resolve.ReportPatternUtils;
 import com.teamscale.upload.utils.LogUtils;
 import com.teamscale.upload.xcode.ConversionException;
-import com.teamscale.upload.xcode.XCodeReportConverter;
+import com.teamscale.upload.xcode.XcodeReportConverter;
 
 /**
  * Main class of the teamscale-upload project.
@@ -53,10 +53,10 @@ public class TeamscaleUpload {
 
 	/**
 	 * Returns whether the given set of file formats contains the
-	 * {@linkplain XCodeReportConverter#XCODE_REPORT_FORMAT XCode report format}.
+	 * {@linkplain XcodeReportConverter#XCODE_REPORT_FORMAT XCode report format}.
 	 */
 	private static boolean containsAnyXCodeReports(Set<String> fileFormats) {
-		return fileFormats.contains(XCodeReportConverter.XCODE_REPORT_FORMAT);
+		return fileFormats.contains(XcodeReportConverter.XCODE_REPORT_FORMAT);
 	}
 
 	/**
@@ -65,11 +65,11 @@ public class TeamscaleUpload {
 	 */
 	private static void convertXCodeReports(Map<String, Set<File>> filesByFormat) {
 		try {
-			Set<File> xcresultBundles = filesByFormat.remove(XCodeReportConverter.XCODE_REPORT_FORMAT);
-			List<File> convertedReports = XCodeReportConverter.convert(xcresultBundles);
+			Set<File> xcresultBundles = filesByFormat.remove(XcodeReportConverter.XCODE_REPORT_FORMAT);
+			List<File> convertedReports = XcodeReportConverter.convert(xcresultBundles);
 
 			// Add the converted reports back to filesByFormat
-			filesByFormat.computeIfAbsent(XCodeReportConverter.XCODE_REPORT_FORMAT, format -> new HashSet<>())
+			filesByFormat.computeIfAbsent(XcodeReportConverter.XCODE_REPORT_FORMAT, format -> new HashSet<>())
 					.addAll(convertedReports);
 		} catch (ConversionException e) {
 			LogUtils.failWithoutStackTrace(e.getMessage(), e);

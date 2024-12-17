@@ -13,18 +13,18 @@ import com.teamscale.upload.autodetect_revision.ProcessUtils;
 import com.teamscale.upload.utils.FileSystemUtils;
 
 /**
- * Converts an Xcode report (see {@link #supportsConversion(File) for supported
- * formats} into the {@value ConversionUtils#XCCOV_REPORT_FILE_EXTENSION}
+ * Converts an Xcode report (see {@link #supportsConversion(File)} for supported
+ * formats) into the {@value ConversionUtils#XCCOV_REPORT_FILE_EXTENSION}
  * format.
  */
-public class XCodeReportConverter extends ConverterBase<List<File>> {
+public class XcodeReportConverter extends ConverterBase<List<File>> {
 
 	/**
 	 * The enum name of the XCode report format.
 	 */
 	public static final String XCODE_REPORT_FORMAT = "XCODE";
 
-	private XCodeReportConverter(XCodeVersion xcodeVersion, Path workingDirectory) {
+	private XcodeReportConverter(XcodeVersion xcodeVersion, Path workingDirectory) {
 		super(xcodeVersion, workingDirectory);
 	}
 
@@ -40,11 +40,11 @@ public class XCodeReportConverter extends ConverterBase<List<File>> {
 			throw new ConversionException("Could not create a temporary directory", e);
 		}
 
-		XCodeVersion xcodeVersion = XCodeVersion.determine();
+		XcodeVersion xcodeVersion = XcodeVersion.determine();
 		List<File> convertedReports = new ArrayList<>();
 		for (File xcodeReport : xcodeReports) {
 			try {
-				List<File> filesContainingConvertedReports = new XCodeReportConverter(xcodeVersion, workingDirectory)
+				List<File> filesContainingConvertedReports = new XcodeReportConverter(xcodeVersion, workingDirectory)
 						.convert(xcodeReport);
 				convertedReports.addAll(filesContainingConvertedReports);
 			} catch (IOException e) {
@@ -62,10 +62,11 @@ public class XCodeReportConverter extends ConverterBase<List<File>> {
 		validateCommandLineTools();
 
 		if (ConversionUtils.isXccovArchive(xcodeReport)) {
-			return Collections.singletonList(
-					new XccovArchiveConverter(getXcodeVersion(), getWorkingDirectory()).convert(xcodeReport));
+			File convertedReport = new XccovArchiveConverter(getXcodeVersion(), getWorkingDirectory())
+					.convert(xcodeReport);
+			return Collections.singletonList(convertedReport);
 		} else if (ConversionUtils.isXcresultBundle(xcodeReport)) {
-			return new XCResultConverter(getXcodeVersion(), getWorkingDirectory()).convert(xcodeReport);
+			return new XcresultConverter(getXcodeVersion(), getWorkingDirectory()).convert(xcodeReport);
 		} else if (FileSystemUtils.isTarFile(xcodeReport)) {
 			return new TarArchiveConverter(getXcodeVersion(), getWorkingDirectory()).convert(xcodeReport);
 		}

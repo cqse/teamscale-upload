@@ -25,7 +25,7 @@ import com.teamscale.upload.utils.LogUtils;
  */
 /* package */ class XccovArchiveConverter extends ConverterBase<File> {
 
-	public XccovArchiveConverter(XCodeVersion xcodeVersion, Path workingDirectory) {
+	public XccovArchiveConverter(XcodeVersion xcodeVersion, Path workingDirectory) {
 		super(xcodeVersion, workingDirectory);
 	}
 
@@ -47,8 +47,9 @@ import com.teamscale.upload.utils.LogUtils;
 		 */
 		File outputFile;
 		if (result.wasSuccessful()) {
-			// TODO: Bug occurs here
-			outputFile = createOutputFile(xccovArchive.getName() + ConversionUtils.XCCOV_REPORT_FILE_EXTENSION);
+			String filename = ConversionUtils.removeSuffix(xccovArchive.getName(),
+					ConversionUtils.XCCOV_ARCHIVE_FILE_EXTENSION);
+			outputFile = createOutputFile(filename + ConversionUtils.XCCOV_REPORT_FILE_EXTENSION);
 			Files.writeString(outputFile.toPath(), result.output, StandardOpenOption.WRITE);
 		} else {
 			outputFile = new LegacyConverter(getXcodeVersion(), getWorkingDirectory(), sourceFiles)
@@ -93,7 +94,7 @@ import com.teamscale.upload.utils.LogUtils;
 		// TODO: This is bad
 		private final List<String> sourceFiles;
 
-		private LegacyConverter(XCodeVersion xcodeVersion, Path workingDirectory, List<String> sourceFiles) {
+		private LegacyConverter(XcodeVersion xcodeVersion, Path workingDirectory, List<String> sourceFiles) {
 			super(xcodeVersion, workingDirectory);
 			this.sourceFiles = sourceFiles;
 		}
@@ -116,7 +117,9 @@ import com.teamscale.upload.utils.LogUtils;
 			LogUtils.info(String.format("Using legacy conversion with %d threads.", CONVERSION_THREAD_COUNT));
 			Queue<Future<ConversionResult>> conversionResults = submitConversionTasks(xccovArchive, sourceFiles);
 
-			File outputFile = createOutputFile(xccovArchive.getName() + ConversionUtils.XCCOV_REPORT_FILE_EXTENSION);
+			String filename = ConversionUtils.removeSuffix(xccovArchive.getName(),
+					ConversionUtils.XCCOV_ARCHIVE_FILE_EXTENSION);
+			File outputFile = createOutputFile(filename + ConversionUtils.XCCOV_REPORT_FILE_EXTENSION);
 			writeResultsToFile(conversionResults, outputFile);
 			waitForExecutorServiceTermination();
 			return outputFile;

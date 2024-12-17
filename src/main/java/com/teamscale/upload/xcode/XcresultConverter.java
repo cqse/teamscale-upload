@@ -18,30 +18,31 @@ import com.teamscale.upload.utils.LogUtils;
  * Converts an {@value ConversionUtils#XCRESULT_FILE_EXTENSION} file into the
  * {@value ConversionUtils#XCCOV_REPORT_FILE_EXTENSION} format.
  */
-/* package */ class XCResultConverter extends ConverterBase<List<File>> {
+/* package */ class XcresultConverter extends ConverterBase<List<File>> {
 
-	public XCResultConverter(XCodeVersion xcodeVersion, Path workingDirectory) {
+	public XcresultConverter(XcodeVersion xcodeVersion, Path workingDirectory) {
 		super(xcodeVersion, workingDirectory);
 	}
 
 	@Override
-	public List<File> convert(File xcResult) throws ConversionException, IOException {
-		ActionsInvocationRecord actionsInvocationRecord = readActionsInvocationRecord(xcResult);
+	public List<File> convert(File xcresult) throws ConversionException, IOException {
+		ActionsInvocationRecord actionsInvocationRecord = readActionsInvocationRecord(xcresult);
 		if (!actionsInvocationRecord.hasCoverageData()) {
-			LogUtils.warn("XCResult bundle doesn't contain any coverage data: " + xcResult);
+			LogUtils.warn("XCResult bundle doesn't contain any coverage data: " + xcresult);
 			return Collections.emptyList();
 		}
 
-		List<File> xccovArchives = convertToXccovArchives(xcResult, actionsInvocationRecord);
+		List<File> xccovArchives = convertToXccovArchives(xcresult, actionsInvocationRecord);
 		List<File> convertedReports = new ArrayList<>();
 		for (File xccovArchive : xccovArchives) {
-			convertedReports
-					.add(new XccovArchiveConverter(getXcodeVersion(), getWorkingDirectory()).convert(xccovArchive));
+			File convertedReport = new XccovArchiveConverter(getXcodeVersion(), getWorkingDirectory())
+					.convert(xccovArchive);
+			convertedReports.add(convertedReport);
 		}
 		return convertedReports;
 	}
 
-	private List<File> convertToXccovArchives(File reportDirectory, ActionsInvocationRecord actionsInvocationRecord)
+	private List<File> convertToXccovArchives(File xcresult, ActionsInvocationRecord actionsInvocationRecord)
 			throws IOException, ConversionException {
 		List<File> xccovArchives = new ArrayList<>(actionsInvocationRecord.actions.length);
 
@@ -53,14 +54,14 @@ import com.teamscale.upload.utils.LogUtils;
 				continue;
 			}
 			String testPlanName = action.testPlanName;
-			String fileName = reportDirectory.getName() + "." + testPlanName + "." + i
+			String fileName = xcresult.getName() + "." + i + "." + testPlanName
 					+ ConversionUtils.XCCOV_ARCHIVE_FILE_EXTENSION;
 			Path xccovArchive = getOutputFilePath(fileName);
 
 			String archiveRef = action.actionResult.coverage.archiveRef.id;
 			List<String> command = new ArrayList<>();
 			Collections.addAll(command, "xcrun", "xcresulttool", "export", "--type", "directory", "--path",
-					reportDirectory.getAbsolutePath(), "--id", archiveRef, "--output-path",
+					xcresult.getAbsolutePath(), "--id", archiveRef, "--output-path",
 					xccovArchive.toAbsolutePath().toString());
 			if (getXcodeVersion().major >= 16) {
 				// Starting with Xcode 16 this command is marked as deprecated and will fail if

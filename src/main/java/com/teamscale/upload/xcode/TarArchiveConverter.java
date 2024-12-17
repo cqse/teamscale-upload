@@ -12,9 +12,9 @@ import com.teamscale.upload.utils.FileSystemUtils;
  * Converts a {@link FileSystemUtils#isTarFile(File) tar file} into the
  * {@value ConversionUtils#XCCOV_REPORT_FILE_EXTENSION} format.
  */
-/* package */ class TarArchiveConverter extends ConverterBase {
+/* package */ class TarArchiveConverter extends ConverterBase<List<File>> {
 
-	public TarArchiveConverter(XCodeVersion xcodeVersion, Path workingDirectory) {
+	public TarArchiveConverter(XcodeVersion xcodeVersion, Path workingDirectory) {
 		super(xcodeVersion, workingDirectory);
 	}
 
@@ -23,11 +23,10 @@ import com.teamscale.upload.utils.FileSystemUtils;
 		File xcodeReport = extractTar(tarFile);
 
 		if (ConversionUtils.isXccovArchive(xcodeReport)) {
-			File convertedFile = new XccovArchiveConverter(getXcodeVersion(), getWorkingDirectory())
-					.convert(xcodeReport);
-			return Collections.singletonList(convertedFile);
+			return Collections.singletonList(
+					new XccovArchiveConverter(getXcodeVersion(), getWorkingDirectory()).convert(xcodeReport));
 		} else if (ConversionUtils.isXcresultBundle(xcodeReport)) {
-			return new XCResultConverter(getXcodeVersion(), getWorkingDirectory()).convert(xcodeReport);
+			return new XcresultConverter(getXcodeVersion(), getWorkingDirectory()).convert(xcodeReport);
 		}
 
 		throw new ConversionException(
