@@ -47,15 +47,17 @@ import com.teamscale.upload.utils.LogUtils;
 
 		for (int i = 0; i < actionsInvocationRecord.actions.length; i++) {
 			ActionRecord action = actionsInvocationRecord.actions[i];
-			if (action == null || action.actionResult == null || action.actionResult.coverage == null
-					|| action.actionResult.coverage.archiveRef == null
+			if (action == null || action.testPlanName == null || action.actionResult == null
+					|| action.actionResult.coverage == null || action.actionResult.coverage.archiveRef == null
 					|| action.actionResult.coverage.archiveRef.id == null) {
 				continue;
 			}
-			Path xccovArchive = getOutputFilePath(
-					reportDirectory.getName() + "." + i + ConversionUtils.XCCOV_ARCHIVE_FILE_EXTENSION);
-			String archiveRef = action.actionResult.coverage.archiveRef.id;
+			String testPlanName = action.testPlanName;
+			String fileName = reportDirectory.getName() + "." + testPlanName + "." + i
+					+ ConversionUtils.XCCOV_ARCHIVE_FILE_EXTENSION;
+			Path xccovArchive = getOutputFilePath(fileName);
 
+			String archiveRef = action.actionResult.coverage.archiveRef.id;
 			List<String> command = new ArrayList<>();
 			Collections.addAll(command, "xcrun", "xcresulttool", "export", "--type", "directory", "--path",
 					reportDirectory.getAbsolutePath(), "--id", archiveRef, "--output-path",
