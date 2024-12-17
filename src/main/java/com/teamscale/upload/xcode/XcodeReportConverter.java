@@ -53,10 +53,22 @@ public class XcodeReportConverter extends ConverterBase<List<File>> {
 		for (File xcodeReport : xcodeReports) {
 			List<File> filesContainingConvertedReports = new XcodeReportConverter(xcodeVersion, workingDirectory)
 					.convert(xcodeReport);
+			filesContainingConvertedReports = copyResultsFromWorkingDirectory(xcodeReport,
+					filesContainingConvertedReports);
 			convertedReports.addAll(filesContainingConvertedReports);
-			// TODO: Write the results back to the respective folders
 		}
 		return convertedReports;
+	}
+
+	private static List<File> copyResultsFromWorkingDirectory(File xcodeReport, List<File> results) throws IOException {
+		Path destinationDirectory = xcodeReport.toPath().getParent();
+		List<File> copiedResults = new ArrayList<>();
+		for (File result : results) {
+			Path resultDestination = destinationDirectory.resolve(result.getName());
+			Files.copy(result.toPath(), resultDestination);
+			copiedResults.add(resultDestination.toFile());
+		}
+		return copiedResults;
 	}
 
 	@Override
