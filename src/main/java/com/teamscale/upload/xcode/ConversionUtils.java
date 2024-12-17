@@ -1,6 +1,7 @@
 package com.teamscale.upload.xcode;
 
 import java.io.File;
+import java.io.IOException;
 
 /** Utilities for converting Xcode coverage reports. */
 public class ConversionUtils {
@@ -39,6 +40,23 @@ public class ConversionUtils {
 	 */
 	public static boolean isXccovArchive(File file) {
 		return file.isDirectory() && file.getName().endsWith(XCCOV_ARCHIVE_FILE_EXTENSION);
+	}
+
+	/**
+	 * Runs the given conversions tasks and ensures that the given teardown is
+	 * executed, even if after an interrupt.
+	 */
+	public static <R> R runWithTeardown(ConversionFunction<R> execute, Runnable teardown)
+			throws ConversionException, IOException {
+		Thread cleanupShutdownHook = new Thread(teardown);
+		try {
+			Runtime.getRuntime().addShutdownHook(cleanupShutdownHook);
+
+			return execute.run();
+		} finally {
+			Runtime.getRuntime().removeShutdownHook(cleanupShutdownHook);
+			teardown.run();
+		}
 	}
 
 	/** Removes the suffix from the given string, if present. */

@@ -52,6 +52,7 @@ import com.teamscale.upload.utils.LogUtils;
 			outputFile = createOutputFile(filename + ConversionUtils.XCCOV_REPORT_FILE_EXTENSION);
 			Files.writeString(outputFile.toPath(), result.output, StandardOpenOption.WRITE);
 		} else {
+			// Use the legacy mechanism
 			outputFile = new LegacyConverter(getXcodeVersion(), getWorkingDirectory(), sourceFiles)
 					.convert(xccovArchive);
 		}
@@ -91,7 +92,7 @@ import com.teamscale.upload.utils.LogUtils;
 				"com.teamscale.upload.xcode.conversion-thread-count", Runtime.getRuntime().availableProcessors());
 		private ExecutorService executorService;
 
-		// TODO: This is bad
+		// TODO: This is not optimal
 		private final List<String> sourceFiles;
 
 		private LegacyConverter(XcodeVersion xcodeVersion, Path workingDirectory, List<String> sourceFiles) {
@@ -102,15 +103,7 @@ import com.teamscale.upload.utils.LogUtils;
 		@Override
 		public File convert(File file) throws ConversionException, IOException {
 			executorService = Executors.newFixedThreadPool(CONVERSION_THREAD_COUNT);
-			Thread cleanupShutdownHook = new Thread(this::teardown);
-			try {
-				Runtime.getRuntime().addShutdownHook(cleanupShutdownHook);
-
-				return doConvert(file);
-			} finally {
-				Runtime.getRuntime().removeShutdownHook(cleanupShutdownHook);
-				teardown();
-			}
+			return ConversionUtils.runWithTeardown(() -> doConvert(file), this::teardown);
 		}
 
 		private File doConvert(File xccovArchive) throws ConversionException, IOException {
