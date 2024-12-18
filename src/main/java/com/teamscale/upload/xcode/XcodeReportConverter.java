@@ -2,6 +2,7 @@ package com.teamscale.upload.xcode;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -40,6 +41,8 @@ public class XcodeReportConverter extends ConverterBase<List<File>> {
 			Path workingDirectory = Files.createTempDirectory("teamscale-upload");
 			return ConversionUtils.runWithTeardown(() -> convert(xcodeReports, workingDirectory),
 					() -> deleteWorkingDirectory(workingDirectory));
+		} catch (FileAlreadyExistsException e) {
+			throw new ConversionException("Could not write to file because it already exists: " + e.getFile(), e);
 		} catch (IOException e) {
 			throw new ConversionException("I/O error occurred while converting the reports", e);
 		}
