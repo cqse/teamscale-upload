@@ -62,6 +62,16 @@ public class XcodeReportConverter extends ConverterBase<List<File>> {
 
 	private static List<File> copyResultsFromWorkingDirectory(File xcodeReport, List<File> results) throws IOException {
 		Path destinationDirectory = xcodeReport.toPath().getParent();
+		if (results.size() == 1) {
+			// Optimize file naming when only one result is present because during the
+			// xcresult conversion,numbers are appended to the original report file name
+			File result = results.get(0);
+			Path resultDestination = destinationDirectory
+					.resolve(xcodeReport.getName() + ConversionUtils.XCCOV_REPORT_FILE_EXTENSION);
+			Files.copy(result.toPath(), resultDestination);
+			return Collections.singletonList(resultDestination.toFile());
+		}
+
 		List<File> copiedResults = new ArrayList<>();
 		for (File result : results) {
 			Path resultDestination = destinationDirectory.resolve(result.getName());
