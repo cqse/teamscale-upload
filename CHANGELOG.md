@@ -7,6 +7,9 @@ We use [semantic versioning](http://semver.org/):
 # Next Release
 - ...
 
+# 2.9.5
+- [fix] Merged Xcode result bundles were not processed properly
+
 # 2.9.4
 - [fix] Uploading XCode coverage files was not possible when using Xcode version 16
 
