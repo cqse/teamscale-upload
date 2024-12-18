@@ -92,7 +92,15 @@ import com.teamscale.upload.utils.LogUtils;
 				"com.teamscale.upload.xcode.conversion-thread-count", Runtime.getRuntime().availableProcessors());
 		private ExecutorService executorService;
 
-		// TODO: This is not optimal
+		/**
+		 * The source files affected by this archive.
+		 *
+		 * @implNote They were previously determined in {@link XccovArchiveConverter} by
+		 *           running the command <code>xcrun xccov view --file-list</code>. In
+		 *           order to not having to run the command twice on the same archive,
+		 *           they are passed to this converter as a parameter. Hence, this
+		 *           converter can only be used for a single archive.
+		 */
 		private final List<String> sourceFiles;
 
 		private LegacyConverter(XcodeVersion xcodeVersion, Path workingDirectory, List<String> sourceFiles) {
