@@ -65,26 +65,35 @@ import com.teamscale.upload.utils.LogUtils;
 			Path xccovArchive = getOutputFilePath(fileName.toString());
 
 			String archiveRef = action.actionResult.coverage.archiveRef.id;
-			List<String> command = new ArrayList<>();
-			Collections.addAll(command, "xcrun", "xcresulttool", "export", "--type", "directory", "--path",
-					xcresult.getAbsolutePath(), "--id", archiveRef, "--output-path",
-					xccovArchive.toAbsolutePath().toString());
-			if (getXcodeVersion().major >= 16) {
-				// Starting with Xcode 16 this command is marked as deprecated and will fail if
-				// ran without the legacy flag
-				// see TS-40724 for more information
-				command.add("--legacy");
-			}
-
-			ProcessResult result = ProcessUtils.run(command.toArray(new String[0]));
-			if (!result.wasSuccessful()) {
-				throw ConversionException.withProcessResult(
-						"Could not convert report to " + ConversionUtils.XCCOV_ARCHIVE_FILE_EXTENSION, result);
-			}
+			runConversionCommand(xcresult.toPath(), archiveRef, xccovArchive);
 			xccovArchives.add(xccovArchive.toFile());
 		}
 
 		return xccovArchives;
+	}
+
+	/**
+	 * Runs the command that converts the xcresult and stores the output in the file
+	 * at the given path.
+	 */
+	private void runConversionCommand(Path xcresultPath, String archiveRef, Path destinationPath)
+			throws ConversionException {
+		List<String> command = new ArrayList<>();
+		Collections.addAll(command, "xcrun", "xcresulttool", "export", "--type", "directory", "--path",
+				xcresultPath.toAbsolutePath().toString(), "--id", archiveRef, "--output-path",
+				destinationPath.toAbsolutePath().toString());
+		if (getXcodeVersion().major >= 16) {
+			// Starting with Xcode 16 this command is marked as deprecated and will fail if
+			// ran without the legacy flag
+			// see TS-40724 for more information
+			command.add("--legacy");
+		}
+
+		ProcessResult result = ProcessUtils.run(command.toArray(new String[0]));
+		if (!result.wasSuccessful()) {
+			throw ConversionException.withProcessResult(
+					"Could not convert report to " + ConversionUtils.XCCOV_ARCHIVE_FILE_EXTENSION, result);
+		}
 	}
 
 	private ActionsInvocationRecord readActionsInvocationRecord(File reportDirectory) throws ConversionException {
