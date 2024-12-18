@@ -34,7 +34,7 @@ import java.nio.file.Path;
 	}
 
 	/** Converts a single file into the expected output format. */
-	public abstract T convert(File file) throws ConversionException, IOException;
+	abstract T convert(File file) throws ConversionException, IOException;
 
 	/**
 	 * Returns the path under which an output file with the given name should be

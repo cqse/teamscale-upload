@@ -44,7 +44,7 @@ public class ConversionUtils {
 
 	/**
 	 * Runs the given conversions tasks and ensures that the given teardown is
-	 * executed, even if after an interrupt.
+	 * executed, even after an interrupt.
 	 */
 	public static <R> R runWithTeardown(ConversionFunction<R> execute, Runnable teardown)
 			throws ConversionException, IOException {

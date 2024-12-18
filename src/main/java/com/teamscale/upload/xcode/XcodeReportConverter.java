@@ -19,6 +19,18 @@ import com.teamscale.upload.utils.LogUtils;
 /**
  * Converts an Xcode report into the
  * {@value ConversionUtils#XCCOV_REPORT_FILE_EXTENSION} format.
+ * <p>
+ * This is the main entry point into the "converting pipeline" as this converter
+ * performs setup steps and delegates the respective. The converting pipeline
+ * looks as follows: <code>tar -> xcresult -> xccovarchive -> xccov</code>.
+ * Depending on which file type is passed to this converter, the conversion will
+ * start in the respective step. Each of these steps has its own converter (see
+ * {@link TarArchiveConverter}, {@link XcresultConverter}, and
+ * {@link XccovArchiveConverter}). The intermediate results will be stored in a
+ * temporary working directory that will be deleted after the conversion is done
+ * (see {@link #convert(Collection)}). In the end the final results will be
+ * copied to the same folder as the report (see
+ * {@link #copyResultsFromWorkingDirectory(File, List)}).
  */
 public class XcodeReportConverter extends ConverterBase<List<File>> {
 
