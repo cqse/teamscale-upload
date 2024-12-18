@@ -320,22 +320,6 @@ public class FileSystemUtils {
 	}
 
 	/**
-	 * Ensures that the file is an empty file. If the file already exist it is
-	 * deleted and a new empty one is created.
-	 */
-	public static void ensureEmptyFile(File file) throws IOException {
-		if (file.isDirectory()) {
-			throw new IOException("Unable to create empty file because it is a directory: " + file);
-		}
-		if (file.exists()) {
-			throw new IOException("Unable to delete existing file: " + file);
-		}
-		if (!file.createNewFile()) {
-			throw new IOException("Unable to create file empty file: " + file);
-		}
-	}
-
-	/**
 	 * Recursively delete directories and files. This method ignores the return
 	 * value of delete(), i.e. if anything fails, some files might still exist.
 	 */
