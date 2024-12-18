@@ -48,15 +48,21 @@ import com.teamscale.upload.utils.LogUtils;
 
 		for (int i = 0; i < actionsInvocationRecord.actions.length; i++) {
 			ActionRecord action = actionsInvocationRecord.actions[i];
-			if (action == null || action.testPlanName == null || action.actionResult == null
-					|| action.actionResult.coverage == null || action.actionResult.coverage.archiveRef == null
+			if (action == null || action.actionResult == null || action.actionResult.coverage == null
+					|| action.actionResult.coverage.archiveRef == null
 					|| action.actionResult.coverage.archiveRef.id == null) {
 				continue;
 			}
+			StringBuilder fileName = new StringBuilder();
+			fileName.append(xcresult.getName()).append(".").append(i);
 			String testPlanName = action.testPlanName;
-			String fileName = xcresult.getName() + "." + i + "." + testPlanName
-					+ ConversionUtils.XCCOV_ARCHIVE_FILE_EXTENSION;
-			Path xccovArchive = getOutputFilePath(fileName);
+			if (testPlanName != null) {
+				// Test plan name seems to not always be part of the data, hence, only add
+				// append it to the name if present
+				fileName.append(".").append(testPlanName);
+			}
+			fileName.append(ConversionUtils.XCCOV_ARCHIVE_FILE_EXTENSION);
+			Path xccovArchive = getOutputFilePath(fileName.toString());
 
 			String archiveRef = action.actionResult.coverage.archiveRef.id;
 			List<String> command = new ArrayList<>();
