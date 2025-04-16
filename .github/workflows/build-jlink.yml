@@ -17,7 +17,7 @@ jobs:
     # Build on a fixed version, for stability of the release artifacts.
     # In the graalvm build, this also ensures a fixed version of Glibc, but I think that is not required in the jlink
     # build (because we distribute a JVM, not build an executable).
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: 'Checkout project sources'
         uses: actions/checkout@v4

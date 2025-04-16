@@ -16,7 +16,7 @@ jobs:
   build-linux-graalvm:
     name: Linux graalvm Build
     # Build against a fixed version, as it determines our minimal Glibc requirements.
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - name: Set up GraalVM

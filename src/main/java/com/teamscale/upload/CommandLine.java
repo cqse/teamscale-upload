@@ -74,6 +74,16 @@ public class CommandLine {
 	public final List<String> files;
 	/**
 	 * The input file to use or null if none is given.
+	 * <p>
+	 * The file defines a mapping from report files to report-file-format.
+	 * For example,
+	 * <pre>
+	 * [jacoco]
+	 * src\test\resources\coverage_files\test*.simple
+	 *
+	 * [simple]
+	 * src/test/resources/coverage_files/coverage.simple
+	 * </pre>
 	 */
 	public final Path inputFile;
 	/**
@@ -177,7 +187,8 @@ public class CommandLine {
 						+ " and one for JaCoCo coverage).");
 		parser.addArgument("-f", "--format").metavar("FORMAT").required(false)
 				.help("The file format of the reports which are specified as command line arguments."
-						+ "\nSee http://cqse.eu/upload-formats for a full list of supported file formats.");
+						+ "\nSee http://cqse.eu/upload-formats for a full list of supported file formats."
+						+ "\nA report format must be supplied for each report file, either via --format or via --input.");
 		parser.addArgument("-c", "--commit").metavar("REVISION").required(false)
 				.help("The version control commit for which you obtained the report files."
 						+ " E.g. if you obtained a test coverage report in your CI pipeline, then this"
@@ -203,7 +214,8 @@ public class CommandLine {
 						+ " useful meta-information about the upload and the machine performing it.");
 		parser.addArgument("-i", "--input").metavar("INPUT").required(false)
 				.help("A file which contains additional report file patterns. See INPUTFILE for a"
-						+ " detailed description of the file format.");
+						+ " detailed description of the file format."
+						+ "\nA report format must be supplied for each report file, either via --format or via --input.");
 		parser.addArgument("-k", "--insecure").action(Arguments.storeTrue()).required(false)
 				.help("Causes SSL certificates to be accepted without validation, which makes"
 						+ " using this tool with self-signed or invalid certificates easier.");
