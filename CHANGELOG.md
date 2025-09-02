@@ -6,6 +6,10 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 - ...
+- 
+# 2.9.7
+- [feature] provide checksums for distributables.
+
 # 2.9.6
 - [fix] extended documentation on --format and --input options. Both are optional, but we need at least one of them to define the report format.
 
