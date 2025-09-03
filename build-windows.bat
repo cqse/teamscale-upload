@@ -5,8 +5,8 @@ rem propagated to the shell environment
 
 rem There are different potential paths for the vcvarsall.bat file (on the build machine it is apparently the "Enterprise" path)
 for %%f in (
-        "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat"
-        "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvarsall.bat"
+        "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat"
+        "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat"
        ) do (
          IF EXIST %%f (
            call %%f x86_amd64
