@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -137,6 +138,7 @@ public class ReportPatternUtils {
 		Set<File> fileList = new HashSet<>();
 		for (String pattern : patterns) {
 			List<File> resolvedFiles = resolver.resolveToMultipleFiles("files", pattern);
+			resolvedFiles.removeIf(Predicate.not(File::exists));
 
 			if (resolvedFiles.isEmpty()) {
 				LogUtils.fail("The pattern '" + pattern + "' could not be resolved to any files."
