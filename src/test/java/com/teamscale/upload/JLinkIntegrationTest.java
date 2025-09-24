@@ -31,7 +31,7 @@ import static com.teamscale.upload.utils.FileSystemUtils.deleteRecursively;
  * {@link SecretUtils#TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE}. It is stored
  * in 1password as "teamscale-upload-build-test-user".
  */
-//@EnabledIfEnvironmentVariable(named = SecretUtils.TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE, matches = ".*")
+@EnabledIfEnvironmentVariable(named = SecretUtils.TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE, matches = ".*")
 public class JLinkIntegrationTest extends IntegrationTestBase {
 
 	private static File executable;
