@@ -5,6 +5,8 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
+
+# 2.9.9
 - [fix] added error message when user gives input file that does not exist
 - [maintenance] updated gradle build to newer gradle version
 
