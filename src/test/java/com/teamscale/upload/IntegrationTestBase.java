@@ -388,10 +388,8 @@ public abstract class IntegrationTestBase {
 	@Test
 	public void testNonExistingFilePattern() {
 		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments().withPattern("foo.simple bar.simple"));
-		assertThat(result.errorOutput).isEqualTo("""
-				
-				The pattern 'foo.simple bar.simple' could not be resolved to any files. Please check the pattern for correctness or remove it if you do not need it.
-				""");
+		assertThat(result.errorOutput).isEqualToIgnoringNewLines(
+				"The pattern 'foo.simple bar.simple' could not be resolved to any files. Please check the pattern for correctness or remove it if you do not need it.");
 		assertThat(result.exitCode).isOne();
 	}
 	/**
