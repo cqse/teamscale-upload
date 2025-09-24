@@ -123,7 +123,7 @@ public class ReportPatternUtils {
 			List<String> filePatterns, String format) {
 		if (!filePatterns.isEmpty()) {
 			List<String> normalizedFilePatters = filePatterns.stream().map(ReportPatternUtils::normalizeFilePattern)
-					.collect(Collectors.toList());
+					.toList();
 			formatToFilePatterns.computeIfAbsent(format, k -> new HashSet<>()).addAll(normalizedFilePatters);
 		}
 	}

@@ -75,8 +75,6 @@ public class FilePatternResolver {
 			if (file.exists()) {
 				return Collections.singletonList(file);
 			}
-			LogUtils.warn("The file " + file.getAbsolutePath() + " in " + workingDirectory
-					+ " could not be found. Ignoring this input.");
 			return Collections.emptyList();
 		} catch (InvalidPathException e) {
 			throw new FilePatternResolutionException("Invalid path given for option " + optionName + ": " + pattern, e);

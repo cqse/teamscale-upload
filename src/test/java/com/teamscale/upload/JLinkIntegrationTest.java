@@ -31,7 +31,7 @@ import static com.teamscale.upload.utils.FileSystemUtils.deleteRecursively;
  * {@link SecretUtils#TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE}. It is stored
  * in 1password as "teamscale-upload-build-test-user".
  */
-@EnabledIfEnvironmentVariable(named = SecretUtils.TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE, matches = ".*")
+//@EnabledIfEnvironmentVariable(named = SecretUtils.TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE, matches = ".*")
 public class JLinkIntegrationTest extends IntegrationTestBase {
 
 	private static File executable;
@@ -58,7 +58,11 @@ public class JLinkIntegrationTest extends IntegrationTestBase {
 		executable = new File(tempDir + "/teamscale-upload/" + executableInZip);
 
 		if (!executable.exists()) {
-			try (ZipFile zipFile = new ZipFile(new File(distribution))) {
+			File distributionFile = new File(distribution);
+			if (!distributionFile.exists()) {
+				Assertions.fail("Could not find distribution file " + distributionFile.getPath());
+			}
+			try (ZipFile zipFile = new ZipFile(distributionFile)) {
 				FileSystemUtils.unzip(zipFile, tempDir.toFile());
 			}
 		}

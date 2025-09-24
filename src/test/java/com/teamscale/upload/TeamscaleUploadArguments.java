@@ -45,7 +45,7 @@ class TeamscaleUploadArguments {
 		return this;
 	}
 	/**
-	 * Sets the report-file path pattern
+	 * Sets the report-file path pattern. This sets the {@link CommandLine#files} option (i.e., "pattern" == "files").
 	 */
 	TeamscaleUploadArguments withPattern(String pattern) {
 		this.pattern = pattern;
@@ -212,6 +212,7 @@ class TeamscaleUploadArguments {
 			command.add("--input");
 			command.add(input);
 		}
+		// "files" is a positional argument. ("pattern" == "files")
 		command.add(pattern);
 		if (insecure) {
 			command.add("--insecure");

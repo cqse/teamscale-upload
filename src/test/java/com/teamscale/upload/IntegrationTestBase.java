@@ -386,10 +386,13 @@ public abstract class IntegrationTestBase {
 		}
 	}
 	@Test
-	public void test() {
+	public void testNonExistingFilePattern() {
 		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments().withPattern("foo.simple bar.simple"));
-		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
-		assertThatOSCertificatesWereImported(result);
+		assertThat(result.errorOutput).isEqualTo("""
+				
+				The pattern 'foo.simple bar.simple' could not be resolved to any files. Please check the pattern for correctness or remove it if you do not need it.
+				""");
+		assertThat(result.exitCode).isOne();
 	}
 	/**
 	 * This test uploads a report to our Teamscale server using a commit hash as
