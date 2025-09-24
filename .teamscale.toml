@@ -1,4 +1,5 @@
-# Teamscale Folder Mapping
+# Configuration for project teamscale-upload, connector code
+
 version = "1.0"
 
 root = true
@@ -8,3 +9,6 @@ url = "https://cqse.teamscale.io/"
 
 [project]
 id = "teamscale-upload"
+
+# The value has been set because the repository identifier gets prepended
+path = "code"
