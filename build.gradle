@@ -50,10 +50,13 @@ dependencies {
 	implementation group: 'org.jetbrains.nativecerts', name: 'jvm-native-trusted-roots', version: '1.0.19'
 
 	testImplementation group: 'com.sparkjava', name: 'spark-core', version: '2.9.4'
-	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.10.0'
-	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-params', version: '5.10.0'
+
+	testImplementation platform("org.junit:junit-bom:5.10.2")
+	testImplementation 'org.junit.jupiter:junit-jupiter-api'
+	testImplementation 'org.junit.jupiter:junit-jupiter-params'
+	testRuntimeOnly  'org.junit.jupiter:junit-jupiter-engine'
+
 	testImplementation group: 'org.assertj', name: 'assertj-core', version: '3.21.0'
-	testRuntimeOnly group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.10.0'
 	testRuntimeOnly group: 'javax.servlet', name: 'javax.servlet-api', version: '4.0.1'
 
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
@@ -103,35 +106,50 @@ runtime {
 	imageZip.set(layout.buildDirectory.file("runtime/zip/${application.applicationName}.zip"))
 }
 
-extensions.runtime.targetPlatforms.get().each { targetPlatform ->
-	tasks.register("customRuntimeZip-${targetPlatform.key}", Zip) {
-		dependsOn tasks.named('runtime')
-		doFirst {
-			if (Os.isFamily(Os.FAMILY_WINDOWS) && targetPlatform.key != 'windows-x86_64') {
-				/*
-				 * After unpacking the JRE on Windows, executable flags on the JRE's shell script files are lost (NTFS does not store them).
-				 * So we can't build the linux/mac distributions on a Windows system (we can build the Windows dist though because Windows does not care about the executable flags).
-				 *
-				 * Solving this might be possible if we can transfer files directly from the JRE zip to the target zip (bypassing NTFS and preserving their flags), but I did not find out how to do that in gradle.
-				 */
-				throw new GradleException("Can't build linux/mac distributions of Teamscale Upload on Windows. The 'executable' flags on the shell scripts in the resulting zip can't be preserved.")
-			}
-		}
-		// Omit the version so that archive file name is predictable.
-		archiveFileName = "${application.applicationName}-${targetPlatform.key}.zip"
-		destinationDirectory = layout.buildDirectory.dir('distributions')
+// Use afterEvaluate to defer this logic until the configuration phase is complete.
+// This guarantees that 'extensions.runtime.targetPlatforms' is populated.
+project.afterEvaluate {
+	// We still need to .get() here, but it's now safe inside afterEvaluate.
+	extensions.runtime.targetPlatforms.get().each { targetPlatform ->
+		tasks.register("customRuntimeZip-${targetPlatform.key}", Zip) {
+			group = 'Build'
+			description = "Builds a custom runtime zip for ${targetPlatform.key}"
 
-		from(runtime.imageDir.dir("${project.name}-${targetPlatform.key}")) {
-			into "${application.applicationName}"
-		}
-		var readmeFilePath = "distribution_readme/README_UNIX.md"
-		if (Os.isFamily(Os.FAMILY_WINDOWS) && targetPlatform.key == 'windows-x86_64') {
-			readmeFilePath = "distribution_readme/README_WINDOWS.md"
-		}
-		from(readmeFilePath) {
-			// rename copied file to "Readme.md"
-			rename(oldFilename -> "README.md")
-			into "${application.applicationName}"
+			dependsOn tasks.named('runtime')
+
+			// The doFirst check is an execution-time action, so it's perfectly fine.
+			doFirst {
+				// It's better to check the target, not the build host, for this logic.
+				// If building a linux zip on Windows is the issue, this check is correct.
+				if (Os.isFamily(Os.FAMILY_WINDOWS) && !targetPlatform.key.contains('windows')) {
+					throw new GradleException("Can't build non-Windows distributions on a Windows host due to lost file permissions. Target was: ${targetPlatform.key}.")
+				}
+			}
+
+			// --- LAZY PROPERTY ASSIGNMENTS ---
+			// Use .set() for modern lazy properties instead of direct assignment (=).
+			destinationDirectory.set(layout.buildDirectory.dir('distributions'))
+			// Use a provider for the applicationName to ensure it's also lazy.
+			archiveFileName.set("${application.applicationName}-${targetPlatform.key}.zip")
+
+			// --- LAZY FILE SELECTION ---
+			// The content of the zip is configured lazily.
+			from(runtime.imageDir.dir("${project.name}-${targetPlatform.key}")) {
+				into(application.applicationName) // applicationName is a Provider
+			}
+
+			// Select the README lazily based on the targetPlatform, not the build OS.
+			// This makes the build more reliable and portable.
+			from(project.provider {
+				if (targetPlatform.key.contains('windows')) {
+					return "distribution_readme/README_WINDOWS.md"
+				} else {
+					return "distribution_readme/README_UNIX.md"
+				}
+			}) {
+				rename { "README.md" }
+				into(application.applicationName)
+			}
 		}
 	}
 }

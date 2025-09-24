@@ -58,7 +58,11 @@ public class JLinkIntegrationTest extends IntegrationTestBase {
 		executable = new File(tempDir + "/teamscale-upload/" + executableInZip);
 
 		if (!executable.exists()) {
-			try (ZipFile zipFile = new ZipFile(new File(distribution))) {
+			File distributionFile = new File(distribution);
+			if (!distributionFile.exists()) {
+				Assertions.fail("Could not find distribution file " + distributionFile.getPath());
+			}
+			try (ZipFile zipFile = new ZipFile(distributionFile)) {
 				FileSystemUtils.unzip(zipFile, tempDir.toFile());
 			}
 		}
