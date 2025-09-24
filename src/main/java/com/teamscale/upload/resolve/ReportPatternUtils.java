@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -137,7 +138,7 @@ public class ReportPatternUtils {
 
 		Set<File> fileList = new HashSet<>();
 		for (String pattern : patterns) {
-			List<File> resolvedFiles = resolver.resolveToMultipleFiles("files", pattern);
+			List<File> resolvedFiles = new ArrayList<>(resolver.resolveToMultipleFiles("files", pattern));
 			resolvedFiles.removeIf(Predicate.not(File::exists));
 
 			if (resolvedFiles.isEmpty()) {
