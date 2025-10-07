@@ -6,6 +6,7 @@
 
 	<groupId>com.teamscale.upload</groupId>
 	<artifactId>teamscale-upload</artifactId>
+	<!-- Default version, the build will replace this with the actual version derived from git tags. -->
 	<version>1.0-SNAPSHOT</version>
 
 	<name>Teamscale Upload</name>
@@ -29,6 +30,7 @@
 		<maven.compiler.target>17</maven.compiler.target>
 		<graalvm.version>21.2.0</graalvm.version>
 		<junit.version>5.10.0</junit.version>
+		<ToolVersion>${project.version}</ToolVersion>
 	</properties>
 
 	<repositories>
@@ -121,36 +123,24 @@
 		<pluginManagement>
 			<plugins>
 				<plugin>
-					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-resources-plugin</artifactId>
-					<version>3.3.1</version>
+					<!--  Derive project version from git tag -->
+					<groupId>io.jgit.build.maven</groupId>
+					<artifactId>jgit-build-helper-maven-plugin</artifactId>
+					<version>1.0.0</version>
 					<executions>
 						<execution>
-							<id>generate-version-java-file</id>
-							<!-- Run this during the 'generate-sources' phase -->
-							<phase>generate-sources</phase>
+							<id>jgit-version</id>
 							<goals>
-								<goal>copy-resources</goal>
+								<goal>version</goal>
 							</goals>
+							<phase>validate</phase>
 							<configuration>
-								<!-- The output directory for the generated Java file -->
-								<outputDirectory>${project.build.directory}/generated-sources/java</outputDirectory>
-								<resources>
-									<resource>
-										<!-- The directory containing our template -->
-										<directory>src/main/java</directory>
-										<!-- Enable filtering to replace ${project.version} -->
-										<filtering>true</filtering>
-										<includes>
-											<!-- Specify the exact file to process -->
-											<include>com/mycompany/app/Version.java</include>
-										</includes>
-									</resource>
-								</resources>
+								<useSnapshot>true</useSnapshot>
 							</configuration>
 						</execution>
 					</executions>
 				</plugin>
+
 				<!--
 					Add the generated-sources directory to the compile path
 					This tells the Java compiler to look for source files in the
@@ -176,6 +166,33 @@
 					</executions>
 				</plugin>
 				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-resources-plugin</artifactId>
+					<version>3.3.1</version>
+					<executions>
+						<execution>
+							<id>generate-version-java-file</id>
+							<!-- Run this during the 'generate-sources' phase -->
+							<phase>generate-sources</phase>
+							<goals>
+								<goal>copy-resources</goal>
+							</goals>
+							<configuration>
+								<outputDirectory>${project.build.directory}/generated-sources/java</outputDirectory>
+								<resources>
+									<resource>
+										<directory>src/main/templates/java</directory>
+										<filtering>true</filtering>
+										<includes>
+											<include>**/ToolVersion.java</include>
+										</includes>
+									</resource>
+								</resources>
+							</configuration>
+						</execution>
+					</executions>
+				</plugin>
+				<plugin>
 					<groupId>org.graalvm.nativeimage</groupId>
 					<artifactId>native-image-maven-plugin</artifactId>
 					<version>${graalvm.version}</version>
@@ -189,11 +206,6 @@
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-clean-plugin</artifactId>
 					<version>3.1.0</version>
-				</plugin>
-				<plugin>
-					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-resources-plugin</artifactId>
-					<version>3.2.0</version>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
