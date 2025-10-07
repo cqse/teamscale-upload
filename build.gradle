@@ -3,6 +3,7 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
 plugins {
 	id 'org.beryx.runtime'
+	id 'java'
 }
 
 repositories {
@@ -61,9 +62,68 @@ dependencies {
 
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
+/* A provider that lazily executes 'git describe' and calculates the version.
+ * This is Configuration Cache SAFE.
+ */
+def gitVersionProvider = providers.exec {
+	// Run 'git describe --tags'. This handles both exact tags and dev commits.
+	commandLine 'git', 'describe', '--tags'
+	// Ignore the exit value so the build doesn't fail if there are no tags.
+	ignoreExitValue true
+	// We'll process the output (including errors) in the .map() block below.
+}.standardOutput.asText.map { output ->
+	def fullVersion = output.trim()
+	if (fullVersion.isEmpty()) {
+		// If git describe fails (e.g., no repo, no tags), use a default.
+		return "0.1.0-SNAPSHOT"
+	}
+	if (fullVersion.contains('-')) {
+		// It's a development commit, e.g., "v1.2.0-5-gabc123d".
+		// We want to turn this into "1.2.0-SNAPSHOT".
+		def baseVersion = fullVersion.split('-')[0]
+		baseVersion = baseVersion.startsWith('v') ? baseVersion.substring(1) : baseVersion
+		return "${baseVersion}-SNAPSHOT"
+	} else {
+		// It's an exact tag match, e.g., "v1.2.0". This is a release.
+		return fullVersion.startsWith('v') ? fullVersion.substring(1) : fullVersion
+	}
+}
+// === Set the project version using the provider ===
+version = gitVersionProvider
+// === Task to generate the Version.java source file ===
+def generatedSourcesDir = layout.buildDirectory.dir('generated/sources/java')
+
+tasks.register('generateVersionSource', Copy) {
+	description = 'Generates the Version.java class from its template.'
+	group = 'Source Generation'
+
+	// The template file is our input
+	from('src/main/java')
+	include('**/ToolVersion.java')
+
+	// The generated sources directory is our output
+	into(generatedSourcesDir)
+
+	// Replace the ${project.version} token with the actual project version
+	expand(project.properties)
+}
+
+// Add the generated sources directory to the 'main' source set.
+// This tells the 'compileJava' task to include the generated file.
+// It also automatically makes 'compileJava' depend on 'generateVersionSource'.
+sourceSets {
+	main {
+		java {
+			srcDir generatedSourcesDir
+		}
+	}
+}
+
+tasks.named('build') {
+	dependsOn(tasks.named('writeVersionFile'))
+}
 
 def RUNTIME_JDK_VERSION = '17.0.5+8'
-
 runtime {
 	options = [
 			'--compress', '2', // ZIP compression
@@ -150,6 +210,12 @@ project.afterEvaluate {
 				rename { "README.md" }
 				into(application.applicationName)
 			}
+			from(project.provider {
+				"build/version.txt"
+			}) {
+				rename { "version.txt" }
+				into(application.applicationName)
+			}
 		}
 	}
 }
@@ -166,5 +232,15 @@ test {
 		showExceptions = true
 		showCauses = true
 		exceptionFormat = TestExceptionFormat.FULL
+	}
+}
+tasks.register('printVersion') {
+	description = 'Prints the current project version to the console.'
+	group = 'Versioning' // Puts it in a nice group in `gradle tasks`
+
+	// This block runs during the Execution Phase
+	doLast {
+		// Gradle automatically unwraps the version Provider when accessed here
+		println "Project version: ${project.version.get()}"
 	}
 }

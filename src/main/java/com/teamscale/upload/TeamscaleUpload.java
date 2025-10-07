@@ -10,6 +10,7 @@ import java.util.Set;
 import com.teamscale.upload.client.TeamscaleClient;
 import com.teamscale.upload.resolve.FilePatternResolutionException;
 import com.teamscale.upload.resolve.ReportPatternUtils;
+import com.teamscale.upload.utils.FileSystemUtils;
 import com.teamscale.upload.utils.LogUtils;
 import com.teamscale.upload.xcode.ConversionException;
 import com.teamscale.upload.xcode.XcodeReportConverter;
@@ -31,10 +32,15 @@ public class TeamscaleUpload {
 		if (commandLine.printStackTrace) {
 			LogUtils.enableStackTracePrintingForKnownErrors();
 		}
+		if (commandLine.printStackTrace) {
+			System.out.println(ToolVersion.VERSION);
+			return;
+		}
 
 		Map<String, Set<File>> filesByFormat = resolveAndConvertFiles(commandLine);
 		TeamscaleClient.performUpload(commandLine, filesByFormat);
 	}
+
 
 	/**
 	 * Resolves the files that should be uploaded to Teamscale and converts them to
