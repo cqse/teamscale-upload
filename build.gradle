@@ -171,7 +171,7 @@ runtime {
 project.afterEvaluate {
 	// We still need to .get() here, but it's now safe inside afterEvaluate.
 	extensions.runtime.targetPlatforms.get().each { targetPlatform ->
-		tasks.register("customRuntimeZip-${targetPlatform.key}", Zip) {
+		tasks.register("customRuntimeZip-${targetPlatform.key.get()}", Zip) {
 			group = 'Build'
 			description = "Builds a custom runtime zip for ${targetPlatform.key}"
 
@@ -190,11 +190,11 @@ project.afterEvaluate {
 			// Use .set() for modern lazy properties instead of direct assignment (=).
 			destinationDirectory.set(layout.buildDirectory.dir('distributions'))
 			// Use a provider for the applicationName to ensure it's also lazy.
-			archiveFileName.set("${application.applicationName}-${targetPlatform.key}.zip")
+			archiveFileName.set("${application.applicationName}-${targetPlatform.key.get()}.zip")
 
 			// --- LAZY FILE SELECTION ---
 			// The content of the zip is configured lazily.
-			from(runtime.imageDir.dir("${project.name}-${targetPlatform.key}")) {
+			from(runtime.imageDir.dir("${project.name}-${targetPlatform.key.get()}")) {
 				into(application.applicationName) // applicationName is a Provider
 			}
 
