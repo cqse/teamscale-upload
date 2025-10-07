@@ -30,7 +30,8 @@
 		<maven.compiler.target>17</maven.compiler.target>
 		<graalvm.version>21.2.0</graalvm.version>
 		<junit.version>5.10.0</junit.version>
-		<ToolVersion>${project.version}</ToolVersion>
+		<!-- ${git.build.version} is the property that the git-commit-id-maven-plugin plugin will generate -->
+		<ToolVersion>${git.closest.tag.name}</ToolVersion>
 	</properties>
 
 	<repositories>
@@ -123,76 +124,6 @@
 		<pluginManagement>
 			<plugins>
 				<plugin>
-					<!--  Derive project version from git tag -->
-					<groupId>io.jgit.build.maven</groupId>
-					<artifactId>jgit-build-helper-maven-plugin</artifactId>
-					<version>1.0.0</version>
-					<executions>
-						<execution>
-							<id>jgit-version</id>
-							<goals>
-								<goal>version</goal>
-							</goals>
-							<phase>validate</phase>
-							<configuration>
-								<useSnapshot>true</useSnapshot>
-							</configuration>
-						</execution>
-					</executions>
-				</plugin>
-
-				<!--
-					Add the generated-sources directory to the compile path
-					This tells the Java compiler to look for source files in the
-					directory where we just generated our Version.java file.
-				-->
-				<plugin>
-					<groupId>org.codehaus.mojo</groupId>
-					<artifactId>build-helper-maven-plugin</artifactId>
-					<version>3.5.0</version>
-					<executions>
-						<execution>
-							<id>add-generated-sources</id>
-							<phase>generate-sources</phase>
-							<goals>
-								<goal>add-source</goal>
-							</goals>
-							<configuration>
-								<sources>
-									<source>${project.build.directory}/generated-sources/java</source>
-								</sources>
-							</configuration>
-						</execution>
-					</executions>
-				</plugin>
-				<plugin>
-					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-resources-plugin</artifactId>
-					<version>3.3.1</version>
-					<executions>
-						<execution>
-							<id>generate-version-java-file</id>
-							<!-- Run this during the 'generate-sources' phase -->
-							<phase>generate-sources</phase>
-							<goals>
-								<goal>copy-resources</goal>
-							</goals>
-							<configuration>
-								<outputDirectory>${project.build.directory}/generated-sources/java</outputDirectory>
-								<resources>
-									<resource>
-										<directory>src/main/templates/java</directory>
-										<filtering>true</filtering>
-										<includes>
-											<include>**/ToolVersion.java</include>
-										</includes>
-									</resource>
-								</resources>
-							</configuration>
-						</execution>
-					</executions>
-				</plugin>
-				<plugin>
 					<groupId>org.graalvm.nativeimage</groupId>
 					<artifactId>native-image-maven-plugin</artifactId>
 					<version>${graalvm.version}</version>
@@ -230,6 +161,87 @@
 			</plugins>
 		</pluginManagement>
 		<plugins>
+			<plugin>
+				<!-- derive version number from git tag -->
+				<groupId>io.github.git-commit-id</groupId>
+				<artifactId>git-commit-id-maven-plugin</artifactId>
+				<version>7.0.0</version>
+				<executions>
+					<execution>
+						<id>get-the-git-infos</id>
+						<goals>
+							<goal>revision</goal>
+						</goals>
+						<phase>initialize</phase>
+					</execution>
+				</executions>
+				<configuration>
+					<!-- This enables the 'git.closest.tag.name' property generation -->
+					<injectAllReactorProjects>true</injectAllReactorProjects>
+					<!-- We are providing a detailed configuration for 'git describe'. -->
+					<gitDescribe>
+						<!-- Enables 'git describe' -->
+						<skip>false</skip>
+						<!-- If no tag is found, fall back to the commit hash. This ensures a value is always produced. -->
+						<always>true</always>
+						<!-- Append this suffix if the working directory has uncommitted changes -->
+						<dirty>-dirty</dirty>
+						<!-- This is essential to find lightweight tags (git tag my-tag) -->
+						<tags>true</tags>
+					</gitDescribe>
+				</configuration>
+			</plugin>
+			<!--
+				Add the generated-sources directory to the compile path
+				This tells the Java compiler to look for source files in the
+				directory where we just generated our Version.java file.
+			-->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>3.5.0</version>
+				<executions>
+					<execution>
+						<id>add-generated-sources</id>
+						<phase>initialize</phase>
+						<goals>
+							<goal>add-source</goal>
+						</goals>
+						<configuration>
+							<sources>
+								<source>${project.build.directory}/generated-sources/java</source>
+							</sources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.3.1</version>
+				<executions>
+					<execution>
+						<id>generate-version-java-file</id>
+						<!-- Run this during the 'generate-sources' phase -->
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/generated-sources/java</outputDirectory>
+							<resources>
+								<resource>
+									<directory>src/main/templates/java</directory>
+									<filtering>true</filtering>
+									<includes>
+										<include>**/ToolVersion.java</include>
+									</includes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.graalvm.nativeimage</groupId>
 				<artifactId>native-image-maven-plugin</artifactId>
