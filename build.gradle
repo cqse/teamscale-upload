@@ -171,7 +171,7 @@ runtime {
 project.afterEvaluate {
 	// We still need to .get() here, but it's now safe inside afterEvaluate.
 	extensions.runtime.targetPlatforms.get().each { targetPlatform ->
-		tasks.register("customRuntimeZip-${targetPlatform.key.get()}", Zip) {
+		tasks.register("customRuntimeZip-${targetPlatform.key}", Zip) {
 			group = 'Build'
 			description = "Builds a custom runtime zip for ${targetPlatform.key}"
 
@@ -190,11 +190,11 @@ project.afterEvaluate {
 			// Use .set() for modern lazy properties instead of direct assignment (=).
 			destinationDirectory.set(layout.buildDirectory.dir('distributions'))
 			// Use a provider for the applicationName to ensure it's also lazy.
-			archiveFileName.set("${application.applicationName}-${targetPlatform.key.get()}.zip")
+			archiveFileName.set("${application.applicationName}-${targetPlatform.key}.zip")
 
 			// --- LAZY FILE SELECTION ---
 			// The content of the zip is configured lazily.
-			from(runtime.imageDir.dir("${project.name}-${targetPlatform.key.get()}")) {
+			from(runtime.imageDir.dir("${project.name}-${targetPlatform.key}")) {
 				into(application.applicationName) // applicationName is a Provider
 			}
 
@@ -217,6 +217,13 @@ project.afterEvaluate {
 				into(application.applicationName)
 			}
 		}
+	}
+	tasks.named('jar') {
+		// Explicitly set the archiveVersion using our provider. This is the correct lazy configuration.
+
+		// If we don't set this, then the "jar" task will implicitly use project.version (which is not a string but a provider) and append it to the application name.
+		// Result would be a "teamscale-upload-map(map(map(valueof(ProcessOutputValueSource)))).jar".
+		archiveVersion.set(gitVersionProvider)
 	}
 }
 
