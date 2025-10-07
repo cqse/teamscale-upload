@@ -5,10 +5,12 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
 import com.teamscale.upload.utils.LogUtils;
+import com.teamscale.upload.utils.MessageUtils;
 import com.teamscale.upload.utils.SecretUtils;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
@@ -91,8 +93,8 @@ public class CommandLine {
 	 */
 	public final Boolean validateSsl;
 	/**
-	 * The message given by the user or null if none was explicitly given (default
-	 * message should be used in this case).
+	 * The upload-commit message given by the user or null if none was explicitly
+	 * given (a default message is created in this case {@link MessageUtils#createDefaultMessage(String, String, Collection)}).
 	 */
 	public final String message;
 	/**

@@ -71,7 +71,11 @@ public class FilePatternResolver {
 					parseFileFromPattern(optionName, pattern, workingDirectory).getAllMatchingPaths(), Path::toFile);
 		}
 		try {
-			return Collections.singletonList(workingDirectory.toPath().resolve(Paths.get(pattern)).toFile());
+			File file = workingDirectory.toPath().resolve(Paths.get(pattern)).toFile();
+			if (file.exists()) {
+				return Collections.singletonList(file);
+			}
+			return Collections.emptyList();
 		} catch (InvalidPathException e) {
 			throw new FilePatternResolutionException("Invalid path given for option " + optionName + ": " + pattern, e);
 		}
@@ -143,7 +147,7 @@ public class FilePatternResolver {
 		}
 
 		/**
-		 * Returns all matched paths after the resolution.
+		 * Returns all matched paths after the resolution. All returned {@link Path}s are guaranteed to correspond to existing files.
 		 */
 		private List<Path> getAllMatchingPaths() {
 			if (matchingPaths.isEmpty()) {

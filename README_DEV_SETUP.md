@@ -167,9 +167,10 @@ You must manually invoke `./mvnw package`. (Or `package-windows.bat` in windows.
 
 ## Creating a Release
 
-Please update the CHANGELOG and consider semantic versioning when choosing the version number for your release.
-Wait until the build jobs are finished (they create distributables for windows/unix/mac). They take about 10 minutes.
+### Update Changelog ###
+Please update the CHANGELOG and consider semantic versioning when choosing the version number for your release. Wait until the build jobs are finished (they create distributables for windows/unix/mac). They take about 10 minutes.
 
+### Create a new Release ###
 Then simply create a release in GitHub (`Draft a new release` on https://github.com/cqse/teamscale-upload/releases) and paste the release notes from the CHANGELOG into the release description.
 > **Example Release**
 > * Tag: v2.8.2
@@ -178,5 +179,10 @@ Then simply create a release in GitHub (`Draft a new release` on https://github.
 
 GitHub Actions will automatically create and attach the binaries.
 
+### Upload the Binaries to www.teamscale.com ###
+Start the `ts-upload-cli:dist` job on a current `master` build pipeline in the [Teamscale repository](https://gitlab.com/cqse/teamscale/teamscale).
+This step copies the latest version of the `teamscale-upload` binaries to our website.
+
+### Create a new Release in Teamscale Upload Action ###
 Finally, also create a new release of the [GitHub Action](https://github.com/cqse/teamscale-upload-action) with the same version number.
 You need to adjust the version number in the [script](https://github.com/cqse/teamscale-upload-action/blob/master/src/run-teamscale-upload.sh). There are two spots where you need to adjust the number!

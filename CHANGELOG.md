@@ -5,7 +5,20 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
-- ...
+
+# 2.9.9
+- [fix] added error message when user gives input file that does not exist
+- [maintenance] updated gradle build to newer gradle version
+
+# 2.9.8
+- [fix] updated the okhttp library to fix broken pipe issues
+
+# 2.9.7
+- [feature] provide checksums for distributables.
+
+# 2.9.6
+- [fix] extended documentation on --format and --input options. Both are optional, but we need at least one of them to define the report format.
+
 
 # 2.9.5
 - [fix] Merged Xcode result bundles were not processed properly
