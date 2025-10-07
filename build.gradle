@@ -97,15 +97,18 @@ tasks.register('generateVersionSource', Copy) {
 	description = 'Generates the Version.java class from its template.'
 	group = 'Source Generation'
 
+	from('src/main/templates/java')
 	// The template file is our input
-	from('src/main/java')
 	include('**/ToolVersion.java')
-
-	// The generated sources directory is our output
+    // The generated sources directory is our output
 	into(generatedSourcesDir)
 
-	// Replace the ${project.version} token with the actual project version
-	expand(project.properties)
+	// Replace the ${ToolVersion} token with the actual project version
+	// Instead of passing all properties, we pass a map where the
+	// all values are provider. This triggers Gradle's lazy, provider-aware
+	// expansion logic. Otherwise it would just call provider.toString() and
+	// write "map(map(map(valueof(ProcessOutputValueSource))))" as version number.
+	expand([ 'ToolVersion': project.version.get() ])
 }
 
 // Add the generated sources directory to the 'main' source set.
@@ -118,9 +121,25 @@ sourceSets {
 		}
 	}
 }
-
+tasks.named('compileJava') {
+	dependsOn(tasks.named('generateVersionSource'))
+}
 tasks.named('build') {
-	dependsOn(tasks.named('writeVersionFile'))
+	dependsOn(tasks.named('generateVersionSource'))
+}
+tasks.named('distTar') {
+	archiveVersion.set(gitVersionProvider)
+}
+tasks.named('distZip') {
+	archiveVersion.set(gitVersionProvider)
+}
+
+tasks.named('jar') {
+	// Explicitly set the archiveVersion using our provider. This is the correct lazy configuration.
+
+	// If we don't set this, then the "jar" task will implicitly use project.version (which is not a string but a provider) and append it to the application name.
+	// Result would be a "teamscale-upload-map(map(map(valueof(ProcessOutputValueSource)))).jar".
+	archiveVersion.set(gitVersionProvider)
 }
 
 def RUNTIME_JDK_VERSION = '17.0.5+8'
@@ -176,6 +195,7 @@ project.afterEvaluate {
 			description = "Builds a custom runtime zip for ${targetPlatform.key}"
 
 			dependsOn tasks.named('runtime')
+			dependsOn(tasks.named('generateVersionSource'))
 
 			// The doFirst check is an execution-time action, so it's perfectly fine.
 			doFirst {
@@ -217,13 +237,6 @@ project.afterEvaluate {
 				into(application.applicationName)
 			}
 		}
-	}
-	tasks.named('jar') {
-		// Explicitly set the archiveVersion using our provider. This is the correct lazy configuration.
-
-		// If we don't set this, then the "jar" task will implicitly use project.version (which is not a string but a provider) and append it to the application name.
-		// Result would be a "teamscale-upload-map(map(map(valueof(ProcessOutputValueSource)))).jar".
-		archiveVersion.set(gitVersionProvider)
 	}
 }
 

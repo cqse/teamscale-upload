@@ -120,7 +120,7 @@ public class CommandLine {
 	/**
 	 * Whether we should just print the tool version and quit.
 	 */
-	private final boolean printToolVersion;
+	final boolean printToolVersion;
 
 	private CommandLine(Namespace namespace) {
 		this.printToolVersion = namespace.getBoolean("version");

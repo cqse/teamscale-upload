@@ -32,7 +32,7 @@ public class TeamscaleUpload {
 		if (commandLine.printStackTrace) {
 			LogUtils.enableStackTracePrintingForKnownErrors();
 		}
-		if (commandLine.printStackTrace) {
+		if (commandLine.printToolVersion) {
 			System.out.println(ToolVersion.VERSION);
 			return;
 		}

@@ -8,5 +8,5 @@ public class ToolVersion {
 	/**
 	 * The project version. This is replaced by Maven/Gradle at build time.
 	 */
-	public static final String VERSION = "${project.version}";
+	public static final String VERSION = "${ToolVersion}";
 }
