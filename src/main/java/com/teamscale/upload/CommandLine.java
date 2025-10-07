@@ -117,13 +117,8 @@ public class CommandLine {
 	public final String timeoutInSecondsAsString;
 
 	private final String keystorePathAndPassword;
-	/**
-	 * Whether we should just print the tool version and quit.
-	 */
-	final boolean printToolVersion;
 
 	private CommandLine(Namespace namespace) {
-		this.printToolVersion = namespace.getBoolean("version");
 		this.project = namespace.getString("project");
 		this.username = namespace.getString("user");
 		String accessKeyViaOption = namespace.getString("accesskey");
@@ -172,9 +167,9 @@ public class CommandLine {
 	 */
 	public static CommandLine parseArguments(String[] args) {
 		ArgumentParser parser = ArgumentParsers.newFor("teamscale-upload").build().defaultHelp(true)
-				.description("Upload coverage, findings, ... to Teamscale.");
+				.description("Upload coverage, findings, ... to Teamscale.").version("Teamscale Upload " + ToolVersion.VERSION);;
 //TODO allow that other "required" options are not required in this case
-		parser.addArgument("-v", "--version").action(Arguments.storeTrue()).required(false)
+		parser.addArgument("--version").action(Arguments.version())
 				.help("Prints the version number of this teamscale-upload tool and exits.");
 
 		parser.addArgument("-s", "--server").metavar("URL").required(true)
@@ -319,10 +314,6 @@ public class CommandLine {
 	 * any invalid configuration is detected.
 	 */
 	private void validate(ArgumentParser parser) throws ArgumentParserException {
-		if (printToolVersion) {
-			// in this case, all other parameters are ignored
-			return;
-		}
 		if (url == null) {
 			throw new ArgumentParserException("You provided an invalid URL in the --server option", parser);
 		}

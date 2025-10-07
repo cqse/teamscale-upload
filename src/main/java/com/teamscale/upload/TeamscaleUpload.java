@@ -32,10 +32,6 @@ public class TeamscaleUpload {
 		if (commandLine.printStackTrace) {
 			LogUtils.enableStackTracePrintingForKnownErrors();
 		}
-		if (commandLine.printToolVersion) {
-			System.out.println(ToolVersion.VERSION);
-			return;
-		}
 
 		Map<String, Set<File>> filesByFormat = resolveAndConvertFiles(commandLine);
 		TeamscaleClient.performUpload(commandLine, filesByFormat);
