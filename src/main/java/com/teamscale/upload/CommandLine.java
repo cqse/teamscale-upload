@@ -167,8 +167,7 @@ public class CommandLine {
 	 */
 	public static CommandLine parseArguments(String[] args) {
 		ArgumentParser parser = ArgumentParsers.newFor("teamscale-upload").build().defaultHelp(true)
-				.description("Upload coverage, findings, ... to Teamscale.").version("Teamscale Upload " + ToolVersion.VERSION);;
-//TODO allow that other "required" options are not required in this case
+				.description("Upload coverage, findings, ... to Teamscale.").version("Teamscale Upload " + ToolVersion.VERSION);
 		parser.addArgument("--version").action(Arguments.version())
 				.help("Prints the version number of this teamscale-upload tool and exits.");
 
