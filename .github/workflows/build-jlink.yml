@@ -21,8 +21,8 @@ jobs:
     steps:
       - name: 'Checkout project sources'
         uses: actions/checkout@v4
-      - name: 'Get tags'
-        run: git fetch --tags origin
+        with:
+          fetch-depth: 0 # Fetches all history for all branches and tags
       - name: 'Setup Gradle'
         uses: gradle/actions/setup-gradle@v3
       - name: 'Clean'

@@ -19,8 +19,8 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - name: 'Get tags'
-        run: git fetch --tags origin
+        with:
+          fetch-depth: 0 # Fetches all history for all branches and tags
       - name: Set up GraalVM
         uses: ayltai/setup-graalvm@v1
         with:
@@ -51,8 +51,8 @@ jobs:
     runs-on: macos-13
     steps:
       - uses: actions/checkout@v4
-      - name: 'Get tags'
-        run: git fetch --tags origin
+        with:
+          fetch-depth: 0 # Fetches all history for all branches and tags
       - name: Set up GraalVM
         uses: ayltai/setup-graalvm@v1
         with:
@@ -76,8 +76,8 @@ jobs:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
-      - name: 'Get tags'
-        run: git fetch --tags origin
+        with:
+          fetch-depth: 0 # Fetches all history for all branches and tags
       - name: Set up GraalVM
         uses: ayltai/setup-graalvm@v1
         with:
