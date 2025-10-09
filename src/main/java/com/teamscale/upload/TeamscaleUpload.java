@@ -36,6 +36,7 @@ public class TeamscaleUpload {
 		TeamscaleClient.performUpload(commandLine, filesByFormat);
 	}
 
+
 	/**
 	 * Resolves the files that should be uploaded to Teamscale and converts them to
 	 * the expected formated if needed (e.g., XCode reports).
