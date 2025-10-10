@@ -7,6 +7,8 @@
 
 **Command-line tool to upload external analysis results (coverage, findings, ...) to Teamscale.**
 
+Please see [Teamscale Docs - Upload via Command Line](https://docs.teamscale.com/howto/uploading-external-results/#upload-via-command-line) for more details.
+
 ## Tool Setup
 
 If you want to use the tool as part of a GitHub build pipeline, consider using the [GitHub Action](https://github.com/marketplace/actions/teamscale-upload).
