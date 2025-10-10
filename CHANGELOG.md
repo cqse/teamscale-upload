@@ -5,6 +5,8 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
+
+# 2.9.10
 - [feature] added --version command-line option
 - [maintenance] added link to teamscale docs in README.md
 
