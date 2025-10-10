@@ -6,6 +6,7 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 - [feature] added --version command-line option
+- [maintenance] added link to teamscale docs in README.md
 
 # 2.9.9
 - [fix] added error message when user gives input file that does not exist
