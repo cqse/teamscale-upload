@@ -5,6 +5,7 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
+- [maintenance] Removed deprecated `--move-to-last-commit` option
 
 # 2.9.10
 - [feature] added --version command-line option

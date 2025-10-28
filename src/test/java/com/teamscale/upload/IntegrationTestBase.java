@@ -416,14 +416,6 @@ public abstract class IntegrationTestBase {
 		assertThatOSCertificatesWereImported(result);
 	}
 
-	@Test
-	@Disabled("TS-41072 Test should not run against production server")
-	public void successfulUploadWithMoveToLastCommit() {
-		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments().withMoveToLastCommit());
-		assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.errorOutput).isZero();
-		assertThatOSCertificatesWereImported(result);
-	}
-
 	private void assertThatOSCertificatesWereImported(ProcessUtils.ProcessResult result) {
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.errorOutput)
