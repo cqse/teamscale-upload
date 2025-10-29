@@ -34,7 +34,6 @@ class TeamscaleUploadArguments {
 	 * The file from which the teamscale-upload executable should draw its stdin.
 	 */
 	File stdinFile = null;
-	private boolean moveToLastCommit = false;
 	private String timeoutInSeconds = null;
 
 	/**
@@ -183,14 +182,6 @@ class TeamscaleUploadArguments {
 	}
 
 	/**
-	 * Sets whether we use the "--move-to-last-commit" option
-	 */
-	TeamscaleUploadArguments withMoveToLastCommit() {
-		this.moveToLastCommit = true;
-		return this;
-	}
-
-	/**
 	 * Sets the timeout for the Teamscale-service call
 	 */
 	TeamscaleUploadArguments withTimeoutInSeconds(String timeoutInSeconds) {
@@ -227,9 +218,6 @@ class TeamscaleUploadArguments {
 		}
 		if (stackTrace) {
 			command.add("--stacktrace");
-		}
-		if (moveToLastCommit) {
-			command.add("--move-to-last-commit");
 		}
 
 		if (commit != null) {
