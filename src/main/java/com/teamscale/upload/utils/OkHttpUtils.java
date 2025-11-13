@@ -2,6 +2,8 @@ package com.teamscale.upload.utils;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.security.GeneralSecurityException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
@@ -27,6 +29,7 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
+import okhttp3.Authenticator;
 import org.jetbrains.nativecerts.NativeTrustedCertificates;
 import org.jetbrains.nativecerts.NativeTrustedRootsInternalUtils;
 import org.jetbrains.nativecerts.linux.LinuxTrustedCertificatesUtil;
@@ -60,10 +63,27 @@ public class OkHttpUtils {
 	 * @param trustStorePassword
 	 *            May be null if no trust store should be used.
 	 */
-	public static OkHttpClient createClient(boolean validateSsl, String trustStorePath, String trustStorePassword,
+	public static OkHttpClient createClient(boolean validateSsl, String proxyHost, String trustStorePath, String trustStorePassword,
 											long timeoutInSeconds) {
 		OkHttpClient.Builder builder = new OkHttpClient.Builder();
+		if(proxyHost != null) {
+			String[] proxyHostParts = proxyHost.split(":");
+			if(proxyHostParts.length == 3) {
+				String host = proxyHostParts[1].replace("/", "");
+				String port = proxyHostParts[2];
 
+				Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(host, Integer.parseInt(port)));
+				builder.proxy(proxy);
+
+				Authenticator authenticator = SecretUtils.determineProxyAuth();
+				if (authenticator != null) {
+					builder.proxyAuthenticator(authenticator);
+				}
+			} else {
+				LogUtils.fail( "Unable to set proxy host: " + proxyHost);
+			}
+
+		}
 		setTimeouts(builder, timeoutInSeconds);
 		builder.followRedirects(false).followSslRedirects(false);
 

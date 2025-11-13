@@ -36,7 +36,7 @@ public class TeamscaleClient {
 
 	/** Performs the upload of the files. */
 	public static void performUpload(CommandLine commandLine, Map<String, Set<File>> filesByFormat) throws IOException {
-		OkHttpClient client = OkHttpUtils.createClient(commandLine.validateSsl, commandLine.getKeyStorePath(),
+		OkHttpClient client = OkHttpUtils.createClient(commandLine.validateSsl, commandLine.proxyHost, commandLine.getKeyStorePath(),
 				commandLine.getKeyStorePassword(), commandLine.getTimeoutInSeconds());
 		try {
 			if (filesByFormat.isEmpty()) {

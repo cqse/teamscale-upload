@@ -88,6 +88,10 @@ public class CommandLine {
 	 */
 	public final Boolean validateSsl;
 	/**
+	 * Url and port of the proxy to use.
+	 */
+	public final String proxyHost;
+	/**
 	 * The upload-commit message given by the user or null if none was explicitly
 	 * given (a default message is created in this case {@link MessageUtils#createDefaultMessage(String, String, Collection)}).
 	 */
@@ -125,6 +129,7 @@ public class CommandLine {
 		this.files = getListSafe(namespace, "files");
 		this.url = HttpUrl.parse(namespace.getString("server"));
 		this.message = namespace.getString("message");
+		this.proxyHost = namespace.getString("proxy_host");
 		this.keystorePathAndPassword = namespace.getString("trusted_keystore");
 		this.validateSsl = !namespace.getBoolean("insecure");
 		this.additionalMessageLines = getListSafe(namespace, "append_to_message");
@@ -183,6 +188,8 @@ public class CommandLine {
 						+ " previously inserted there, so use different partitions if you'd instead"
 						+ " like to merge data from different sources (e.g. one for Findbugs findings"
 						+ " and one for JaCoCo coverage).");
+		parser.addArgument("-x", "--proxy-host").metavar("PROXY_HOST").required(false)
+				.help("The proxy url + port that should be used to connect to Teamscale. Format http(s)://url:port");
 		parser.addArgument("-f", "--format").metavar("FORMAT").required(false)
 				.help("The file format of the reports which are specified as command line arguments."
 						+ "\nSee http://cqse.eu/upload-formats for a full list of supported file formats."

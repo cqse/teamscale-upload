@@ -1,5 +1,9 @@
 package com.teamscale.upload.utils;
 
+import okhttp3.Authenticator;
+import okhttp3.Credentials;
+import okhttp3.OkHttpClient;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.NoSuchElementException;
@@ -16,6 +20,16 @@ public class SecretUtils {
 	 * key. This is not only relevant for users of the tool, but also for our tests.
 	 */
 	public static final String TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE = "TEAMSCALE_ACCESS_KEY";
+
+	/**
+	 * Name of the environment variable which is used to store the proxy user.
+	 */
+	public static final String TEAMSCALE_PROXY_USER = "TEAMSCALE_PROXY_USER";
+
+	/**
+	 * Name of the environment variable which is used to store the proxy password.
+	 */
+	public static final String TEAMSCALE_PROXY_PASS = "TEAMSCALE_PROXY_PASS";
 
 	/**
 	 * Determines the access key to be used for further authentication by using one
@@ -36,6 +50,18 @@ public class SecretUtils {
 			LogUtils.failWithoutStackTrace("Reading the access key failed", e);
 			return null;
 		}
+	}
+
+	public static Authenticator determineProxyAuth() {
+		if (System.getenv(TEAMSCALE_PROXY_PASS) != null && System.getenv(TEAMSCALE_PROXY_USER) != null) {
+			return (route, response) -> {
+				String credential = Credentials.basic(System.getenv(TEAMSCALE_PROXY_USER), System.getenv(TEAMSCALE_PROXY_PASS));
+				return response.request().newBuilder()
+						.header("Proxy-Authorization", credential)
+						.build();
+			};
+		}
+		return null;
 	}
 
 	/**
