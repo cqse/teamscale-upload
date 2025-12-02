@@ -2,7 +2,6 @@ package com.teamscale.upload.utils;
 
 import okhttp3.Authenticator;
 import okhttp3.Credentials;
-import okhttp3.OkHttpClient;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,8 +51,11 @@ public class SecretUtils {
 		}
 	}
 
+	/**
+	 * Determines if the env variables for Proxy Authentication are set and if yes, uses them to authenticate against a proxy.
+	 */
 	public static Authenticator determineProxyAuth() {
-		if (System.getenv(TEAMSCALE_PROXY_PASS) != null && System.getenv(TEAMSCALE_PROXY_USER) != null) {
+		if (System.getenv(TEAMSCALE_PROXY_USER) != null && System.getenv(TEAMSCALE_PROXY_PASS) != null) {
 			return (route, response) -> {
 				String credential = Credentials.basic(System.getenv(TEAMSCALE_PROXY_USER), System.getenv(TEAMSCALE_PROXY_PASS));
 				return response.request().newBuilder()

@@ -189,7 +189,9 @@ public class CommandLine {
 						+ " like to merge data from different sources (e.g. one for Findbugs findings"
 						+ " and one for JaCoCo coverage).");
 		parser.addArgument("-x", "--proxy-host").metavar("PROXY_HOST").required(false)
-				.help("The proxy url + port that should be used to connect to Teamscale. Format http(s)://url:port");
+				.help("The proxy url + port that should be used to connect to Teamscale. Format http(s)://url:port. " +
+						"If your proxy needs authentication, you can set the TEAMSCALE_PROXY_USER and TEAMSCALE_PROXY_PASSWORD" +
+						" environment variables and teamscale-upload will automatically respect them.");
 		parser.addArgument("-f", "--format").metavar("FORMAT").required(false)
 				.help("The file format of the reports which are specified as command line arguments."
 						+ "\nSee http://cqse.eu/upload-formats for a full list of supported file formats."

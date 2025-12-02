@@ -6,6 +6,7 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 - [maintenance] Removed deprecated `--move-to-last-commit` option
+- [feature] added `--proxy-host` option and ability to authenticate against a proxy via env variables
 
 # 2.9.10
 - [feature] added --version command-line option
