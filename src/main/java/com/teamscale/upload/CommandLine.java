@@ -131,7 +131,7 @@ public class CommandLine {
 		this.files = getListSafe(namespace, "files");
 		this.url = HttpUrl.parse(namespace.getString("server"));
 		this.message = namespace.getString("message");
-		this.proxy = namespace.getString("proxy_host");
+		this.proxy = namespace.getString("proxy");
 		this.keystorePathAndPassword = namespace.getString("trusted_keystore");
 		this.validateSsl = !namespace.getBoolean("insecure");
 		this.additionalMessageLines = getListSafe(namespace, "append_to_message");
