@@ -1,13 +1,13 @@
 package com.teamscale.upload.utils;
 
-import okhttp3.Authenticator;
-import okhttp3.Credentials;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.function.Function;
+
+import okhttp3.Authenticator;
+import okhttp3.Credentials;
 
 /**
  * Utilities for interacting with secrets, such as the Teamscale access key.
@@ -28,7 +28,7 @@ public class SecretUtils {
 	/**
 	 * Name of the environment variable which is used to store the proxy password.
 	 */
-	public static final String TEAMSCALE_PROXY_PASS = "TEAMSCALE_PROXY_PASS";
+	public static final String TEAMSCALE_PROXY_PASSWORD = "TEAMSCALE_PROXY_PASSWORD";
 
 	/**
 	 * Determines the access key to be used for further authentication by using one
@@ -52,15 +52,15 @@ public class SecretUtils {
 	}
 
 	/**
-	 * Determines if the env variables for Proxy Authentication are set and if yes, uses them to authenticate against a proxy.
+	 * Determines if the env variables for Proxy Authentication are set and if yes,
+	 * uses them to authenticate against a proxy.
 	 */
 	public static Authenticator determineProxyAuth() {
-		if (System.getenv(TEAMSCALE_PROXY_USER) != null && System.getenv(TEAMSCALE_PROXY_PASS) != null) {
+		if (System.getenv(TEAMSCALE_PROXY_USER) != null && System.getenv(TEAMSCALE_PROXY_PASSWORD) != null) {
 			return (route, response) -> {
-				String credential = Credentials.basic(System.getenv(TEAMSCALE_PROXY_USER), System.getenv(TEAMSCALE_PROXY_PASS));
-				return response.request().newBuilder()
-						.header("Proxy-Authorization", credential)
-						.build();
+				String credential = Credentials.basic(System.getenv(TEAMSCALE_PROXY_USER),
+						System.getenv(TEAMSCALE_PROXY_PASSWORD));
+				return response.request().newBuilder().header("Proxy-Authorization", credential).build();
 			};
 		}
 		return null;
@@ -70,7 +70,8 @@ public class SecretUtils {
 	 * Testable version of {@link #determineAccessKeyToUse(String)} that allows
 	 * mocking environment variables and stdin.
 	 *
-	 * @throws IOException in case reading the access key from stdin fails.
+	 * @throws IOException
+	 *             in case reading the access key from stdin fails.
 	 */
 	/* package */ static String determineAccessKeyToUse(String accessKeyViaOption,
 			Function<String, String> readEnvironmentVariable, InputStream systemIn) throws IOException {
@@ -84,8 +85,9 @@ public class SecretUtils {
 			try (Scanner scanner = new Scanner(systemIn)) {
 				return scanner.nextLine();
 			} catch (NoSuchElementException | IllegalStateException e) {
-				throw new IOException("You chose to read the access key from stdin but stdin was empty. Please provide the" +
-						" access key via stdin or change the value of the --accesskey option.");
+				throw new IOException(
+						"You chose to read the access key from stdin but stdin was empty. Please provide the"
+								+ " access key via stdin or change the value of the --accesskey option.");
 			}
 		}
 
