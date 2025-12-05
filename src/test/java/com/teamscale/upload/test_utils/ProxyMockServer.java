@@ -8,6 +8,7 @@ import spark.Service;
  * Mockserver class to simulate a proxy before Teamscale.
  */
 public class ProxyMockServer implements AutoCloseable {
+	/** The port where the proxy server is reachable. */
 	public static final int PORT = 3000;
 	private final Service spark;
 	private final boolean requireAuth;
