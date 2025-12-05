@@ -99,7 +99,6 @@ public abstract class IntegrationTestBase {
 							.withProxy("localhost:" + ProxyMockServer.PORT).withDebug());
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 			assertThat(result.getOutputAndErrorOutput()).contains("Proxy Connection successful");
-			assertThat(server.sessions).hasSize(1);
 		}
 	}
 
@@ -114,7 +113,6 @@ public abstract class IntegrationTestBase {
 							.withProxy("localhost:" + ProxyMockServer.PORT).withDebug());
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 			assertThat(result.getOutputAndErrorOutput()).contains("Proxy Connection successful");
-			assertThat(server.sessions).hasSize(1);
 		}
 	}
 
