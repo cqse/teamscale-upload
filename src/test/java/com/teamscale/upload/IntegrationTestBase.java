@@ -15,10 +15,12 @@ import java.util.regex.Pattern;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
 import com.teamscale.upload.autodetect_revision.ProcessUtils;
+import com.teamscale.upload.test_utils.ProxyMockServer;
 import com.teamscale.upload.test_utils.TeamscaleMockServer;
 import com.teamscale.upload.utils.SecretUtils;
 
@@ -82,6 +84,38 @@ public abstract class IntegrationTestBase {
 			softly.assertThat(result.errorOutput).contains("The host http://localhost:9999/ refused a connection");
 		});
 		assertThatOSCertificatesWereImported(result);
+	}
+
+	@Test
+	@EnabledIfEnvironmentVariable(named = SecretUtils.TEAMSCALE_PROXY_USER, matches = ".*")
+	@EnabledIfEnvironmentVariable(named = SecretUtils.TEAMSCALE_PROXY_PASSWORD, matches = ".*")
+	public void testProxyWithAuth() {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT);
+				// Only needs to be started.
+				ProxyMockServer ignored = new ProxyMockServer(true)) {
+
+			ProcessUtils.ProcessResult result = runUploader(
+					new TeamscaleUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT)
+							.withProxy("localhost:" + ProxyMockServer.PORT).withDebug());
+			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
+			assertThat(result.getOutputAndErrorOutput()).contains("Proxy Connection successful");
+			assertThat(server.sessions).hasSize(1);
+		}
+	}
+
+	@Test
+	public void testProxy() {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT);
+				// Only needs to be started.
+				ProxyMockServer ignored = new ProxyMockServer(false)) {
+
+			ProcessUtils.ProcessResult result = runUploader(
+					new TeamscaleUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT)
+							.withProxy("localhost:" + ProxyMockServer.PORT).withDebug());
+			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
+			assertThat(result.getOutputAndErrorOutput()).contains("Proxy Connection successful");
+			assertThat(server.sessions).hasSize(1);
+		}
 	}
 
 	@Test
@@ -385,13 +419,16 @@ public abstract class IntegrationTestBase {
 			assertThatOSCertificatesWereImported(result);
 		}
 	}
+
 	@Test
 	public void testNonExistingFilePattern() {
-		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments().withPattern("foo.simple bar.simple"));
+		ProcessUtils.ProcessResult result = runUploader(
+				new TeamscaleUploadArguments().withPattern("foo.simple bar.simple"));
 		assertThat(result.errorOutput).isEqualToIgnoringNewLines(
 				"The pattern 'foo.simple bar.simple' could not be resolved to any files. Please check the pattern for correctness or remove it if you do not need it.");
 		assertThat(result.exitCode).isOne();
 	}
+
 	/**
 	 * This test uploads a report to our Teamscale server using a commit hash as
 	 * upload target.

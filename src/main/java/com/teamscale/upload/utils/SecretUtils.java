@@ -57,6 +57,7 @@ public class SecretUtils {
 	 */
 	public static Authenticator determineProxyAuth() {
 		if (System.getenv(TEAMSCALE_PROXY_USER) != null && System.getenv(TEAMSCALE_PROXY_PASSWORD) != null) {
+			LogUtils.debug("Using proxy authentication from env variables.");
 			return (route, response) -> {
 				String credential = Credentials.basic(System.getenv(TEAMSCALE_PROXY_USER),
 						System.getenv(TEAMSCALE_PROXY_PASSWORD));
