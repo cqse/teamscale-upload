@@ -6,6 +6,9 @@ import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.function.Function;
 
+import okhttp3.Authenticator;
+import okhttp3.Credentials;
+
 /**
  * Utilities for interacting with secrets, such as the Teamscale access key.
  */
@@ -16,6 +19,16 @@ public class SecretUtils {
 	 * key. This is not only relevant for users of the tool, but also for our tests.
 	 */
 	public static final String TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE = "TEAMSCALE_ACCESS_KEY";
+
+	/**
+	 * Name of the environment variable which is used to store the proxy user.
+	 */
+	public static final String TEAMSCALE_PROXY_USER = "TEAMSCALE_PROXY_USER";
+
+	/**
+	 * Name of the environment variable which is used to store the proxy password.
+	 */
+	public static final String TEAMSCALE_PROXY_PASSWORD = "TEAMSCALE_PROXY_PASSWORD";
 
 	/**
 	 * Determines the access key to be used for further authentication by using one
@@ -39,10 +52,27 @@ public class SecretUtils {
 	}
 
 	/**
+	 * Determines if the env variables for Proxy Authentication are set and if yes,
+	 * uses them to authenticate against a proxy.
+	 */
+	public static Authenticator determineProxyAuth() {
+		if (System.getenv(TEAMSCALE_PROXY_USER) != null && System.getenv(TEAMSCALE_PROXY_PASSWORD) != null) {
+			LogUtils.debug("Using proxy authentication from env variables.");
+			return (route, response) -> {
+				String credential = Credentials.basic(System.getenv(TEAMSCALE_PROXY_USER),
+						System.getenv(TEAMSCALE_PROXY_PASSWORD));
+				return response.request().newBuilder().header("Proxy-Authorization", credential).build();
+			};
+		}
+		return null;
+	}
+
+	/**
 	 * Testable version of {@link #determineAccessKeyToUse(String)} that allows
 	 * mocking environment variables and stdin.
 	 *
-	 * @throws IOException in case reading the access key from stdin fails.
+	 * @throws IOException
+	 *             in case reading the access key from stdin fails.
 	 */
 	/* package */ static String determineAccessKeyToUse(String accessKeyViaOption,
 			Function<String, String> readEnvironmentVariable, InputStream systemIn) throws IOException {
@@ -56,8 +86,9 @@ public class SecretUtils {
 			try (Scanner scanner = new Scanner(systemIn)) {
 				return scanner.nextLine();
 			} catch (NoSuchElementException | IllegalStateException e) {
-				throw new IOException("You chose to read the access key from stdin but stdin was empty. Please provide the" +
-						" access key via stdin or change the value of the --accesskey option.");
+				throw new IOException(
+						"You chose to read the access key from stdin but stdin was empty. Please provide the"
+								+ " access key via stdin or change the value of the --accesskey option.");
 			}
 		}
 

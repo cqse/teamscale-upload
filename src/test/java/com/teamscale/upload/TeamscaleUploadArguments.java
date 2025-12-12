@@ -1,12 +1,12 @@
 package com.teamscale.upload;
 
-import com.teamscale.upload.test_utils.TeamscaleMockServer;
-import com.teamscale.upload.utils.SecretUtils;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import com.teamscale.upload.test_utils.TeamscaleMockServer;
+import com.teamscale.upload.utils.SecretUtils;
 
 /**
  * Arguments for an execution of the teamscale-upload executable.
@@ -29,6 +29,8 @@ class TeamscaleUploadArguments {
 	private String repository = null;
 	private String additionalMessageLine = null;
 	private boolean stackTrace = false;
+	private String proxy = null;
+	private boolean debug = false;
 
 	/**
 	 * The file from which the teamscale-upload executable should draw its stdin.
@@ -43,8 +45,26 @@ class TeamscaleUploadArguments {
 		this.format = format;
 		return this;
 	}
+
 	/**
-	 * Sets the report-file path pattern. This sets the {@link CommandLine#files} option (i.e., "pattern" == "files").
+	 * Sets the proxy to use when doing the upload in the format url:port.
+	 */
+	TeamscaleUploadArguments withProxy(String proxy) {
+		this.proxy = proxy;
+		return this;
+	}
+
+	/**
+	 * Enabled debug logging.
+	 */
+	TeamscaleUploadArguments withDebug() {
+		this.debug = true;
+		return this;
+	}
+
+	/**
+	 * Sets the report-file path pattern. This sets the {@link CommandLine#files}
+	 * option (i.e., "pattern" == "files").
 	 */
 	TeamscaleUploadArguments withPattern(String pattern) {
 		this.pattern = pattern;
@@ -52,7 +72,8 @@ class TeamscaleUploadArguments {
 	}
 
 	/**
-	 * Sets whether to use insecure certificate checking (i.e., skip checking entirely)
+	 * Sets whether to use insecure certificate checking (i.e., skip checking
+	 * entirely)
 	 */
 	TeamscaleUploadArguments withInsecure() {
 		this.insecure = true;
@@ -66,6 +87,7 @@ class TeamscaleUploadArguments {
 		this.commit = commit;
 		return this;
 	}
+
 	/**
 	 * sets the commit to which we upload the reports (e.g. "master:HEAD")
 	 */
@@ -83,7 +105,8 @@ class TeamscaleUploadArguments {
 	}
 
 	/**
-	 * Sets whether we should auto-detect the current commit and use it as target commit.
+	 * Sets whether we should auto-detect the current commit and use it as target
+	 * commit.
 	 */
 	TeamscaleUploadArguments withAutoDetectCommit() {
 		this.autoDetectCommit = true;
@@ -91,7 +114,8 @@ class TeamscaleUploadArguments {
 	}
 
 	/**
-	 * Sets whether to use the {@link TeamscaleMockServer#TRUSTSTORE} as parameter for --trusted-keystore.
+	 * Sets whether to use the {@link TeamscaleMockServer#TRUSTSTORE} as parameter
+	 * for --trusted-keystore.
 	 */
 	TeamscaleUploadArguments withKeystore() {
 		this.useKeystore = true;
@@ -165,8 +189,10 @@ class TeamscaleUploadArguments {
 		this.project = project;
 		return this;
 	}
+
 	/**
-	 * Configures the input (path to a file which contains additional report file patterns)
+	 * Configures the input (path to a file which contains additional report file
+	 * patterns)
 	 */
 	TeamscaleUploadArguments withInput(String input) {
 		this.input = input;
@@ -193,8 +219,8 @@ class TeamscaleUploadArguments {
 	 * Assembles the command that invokes the given teamscale-upload executable.
 	 */
 	String[] toCommand(String executable) {
-		List<String> command = new ArrayList<>(
-				Arrays.asList(executable, "--server", url, "--user", user, "--format", format, "--project", project, "--partition", partition));
+		List<String> command = new ArrayList<>(Arrays.asList(executable, "--server", url, "--user", user, "--format",
+				format, "--project", project, "--partition", partition));
 		if (accessKey != null) {
 			command.add("--accesskey");
 			command.add(accessKey);
@@ -235,6 +261,13 @@ class TeamscaleUploadArguments {
 		if (timeoutInSeconds != null) {
 			command.add("--timeout");
 			command.add(timeoutInSeconds);
+		}
+		if (proxy != null) {
+			command.add("--proxy");
+			command.add(proxy);
+		}
+		if (debug) {
+			command.add("--debug");
 		}
 		return command.toArray(new String[0]);
 	}

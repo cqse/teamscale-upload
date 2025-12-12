@@ -72,8 +72,9 @@ public class CommandLine {
 	/**
 	 * The input file to use or null if none is given.
 	 * <p>
-	 * The file defines a mapping from report files to report-file-format.
-	 * For example,
+	 * The file defines a mapping from report files to report-file-format. For
+	 * example,
+	 * 
 	 * <pre>
 	 * [jacoco]
 	 * src\test\resources\coverage_files\test*.simple
@@ -88,8 +89,13 @@ public class CommandLine {
 	 */
 	public final Boolean validateSsl;
 	/**
+	 * Url and port of the proxy to use.
+	 */
+	public final String proxy;
+	/**
 	 * The upload-commit message given by the user or null if none was explicitly
-	 * given (a default message is created in this case {@link MessageUtils#createDefaultMessage(String, String, Collection)}).
+	 * given (a default message is created in this case
+	 * {@link MessageUtils#createDefaultMessage(String, String, Collection)}).
 	 */
 	public final String message;
 	/**
@@ -125,6 +131,7 @@ public class CommandLine {
 		this.files = getListSafe(namespace, "files");
 		this.url = HttpUrl.parse(namespace.getString("server"));
 		this.message = namespace.getString("message");
+		this.proxy = namespace.getString("proxy");
 		this.keystorePathAndPassword = namespace.getString("trusted_keystore");
 		this.validateSsl = !namespace.getBoolean("insecure");
 		this.additionalMessageLines = getListSafe(namespace, "append_to_message");
@@ -161,7 +168,8 @@ public class CommandLine {
 	 */
 	public static CommandLine parseArguments(String[] args) {
 		ArgumentParser parser = ArgumentParsers.newFor("teamscale-upload").build().defaultHelp(true)
-				.description("Upload coverage, findings, ... to Teamscale.").version("Teamscale Upload " + ToolVersion.VERSION);
+				.description("Upload coverage, findings, ... to Teamscale.")
+				.version("Teamscale Upload " + ToolVersion.VERSION);
 		parser.addArgument("--version").action(Arguments.version())
 				.help("Prints the version number of this teamscale-upload tool and exits.");
 
@@ -183,6 +191,10 @@ public class CommandLine {
 						+ " previously inserted there, so use different partitions if you'd instead"
 						+ " like to merge data from different sources (e.g. one for Findbugs findings"
 						+ " and one for JaCoCo coverage).");
+		parser.addArgument("-x", "--proxy").metavar("PROXY").required(false).help(
+				"The proxy url + port that should be used to connect to Teamscale. Format url:port, e.g. localhost:8080. "
+						+ "If your proxy needs authentication, you can set the TEAMSCALE_PROXY_USER and TEAMSCALE_PROXY_PASSWORD"
+						+ " environment variables and teamscale-upload will automatically respect them.");
 		parser.addArgument("-f", "--format").metavar("FORMAT").required(false)
 				.help("The file format of the reports which are specified as command line arguments."
 						+ "\nSee http://cqse.eu/upload-formats for a full list of supported file formats."
@@ -310,6 +322,7 @@ public class CommandLine {
 		}
 
 		validateTimeoutInSeconds(parser);
+		validateProxy(parser);
 		validateKeystoreSettings(parser);
 		validateAccessKey(parser);
 
@@ -336,6 +349,26 @@ public class CommandLine {
 		}
 
 		validateBranchAndTimestamp(parser);
+	}
+
+	private void validateProxy(ArgumentParser parser) throws ArgumentParserException {
+		if (proxy == null) {
+			return;
+		}
+		String[] proxyParts = proxy.split(":");
+		if (proxyParts.length == 2) {
+			String port = proxyParts[1];
+			try {
+				Integer.parseInt(port);
+			} catch (NumberFormatException e) {
+				throw new ArgumentParserException(
+						"The proxy port is not a number. Please check that the proxy parameter follows the format proxy-url:port",
+						parser);
+			}
+		} else {
+			throw new ArgumentParserException(
+					"The proxy parameter is in the wrong format, please only specify `proxy-url:port`.", parser);
+		}
 	}
 
 	private void validateTimeoutInSeconds(ArgumentParser parser) throws ArgumentParserException {

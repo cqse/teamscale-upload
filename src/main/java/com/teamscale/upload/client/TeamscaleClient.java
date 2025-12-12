@@ -36,8 +36,8 @@ public class TeamscaleClient {
 
 	/** Performs the upload of the files. */
 	public static void performUpload(CommandLine commandLine, Map<String, Set<File>> filesByFormat) throws IOException {
-		OkHttpClient client = OkHttpUtils.createClient(commandLine.validateSsl, commandLine.getKeyStorePath(),
-				commandLine.getKeyStorePassword(), commandLine.getTimeoutInSeconds());
+		OkHttpClient client = OkHttpUtils.createClient(commandLine.validateSsl, commandLine.proxy,
+				commandLine.getKeyStorePath(), commandLine.getKeyStorePassword(), commandLine.getTimeoutInSeconds());
 		try {
 			if (filesByFormat.isEmpty()) {
 				LogUtils.warn("There are no files to upload. Skipping upload.");

@@ -31,6 +31,8 @@ jobs:
         run: ./gradlew customRuntimeZip-linux-x86_64
       - name: 'Test Dist on Linux'
         env:
+          TEAMSCALE_PROXY_USER: "User"
+          TEAMSCALE_PROXY_PASSWORD: "Pass~word"
           TEAMSCALE_ACCESS_KEY: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
         run: ./gradlew test
       - name: 'Build Windows'

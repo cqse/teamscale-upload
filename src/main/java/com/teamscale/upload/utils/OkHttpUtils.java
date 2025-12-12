@@ -2,6 +2,8 @@ package com.teamscale.upload.utils;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.security.GeneralSecurityException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
@@ -34,6 +36,7 @@ import org.jetbrains.nativecerts.mac.SecurityFramework;
 import org.jetbrains.nativecerts.mac.SecurityFrameworkUtil;
 import org.jetbrains.nativecerts.win32.Crypt32ExtUtil;
 
+import okhttp3.Authenticator;
 import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
 
@@ -60,10 +63,22 @@ public class OkHttpUtils {
 	 * @param trustStorePassword
 	 *            May be null if no trust store should be used.
 	 */
-	public static OkHttpClient createClient(boolean validateSsl, String trustStorePath, String trustStorePassword,
-											long timeoutInSeconds) {
+	public static OkHttpClient createClient(boolean validateSsl, String proxyParameter, String trustStorePath,
+			String trustStorePassword, long timeoutInSeconds) {
 		OkHttpClient.Builder builder = new OkHttpClient.Builder();
+		if (proxyParameter != null) {
+			String[] proxyParts = proxyParameter.split(":");
+			// Validated previously during arg parsing
+			String host = proxyParts[0];
+			String port = proxyParts[1];
+			Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(host, Integer.parseInt(port)));
+			builder.proxy(proxy);
+			Authenticator authenticator = SecretUtils.determineProxyAuth();
+			if (authenticator != null) {
+				builder.proxyAuthenticator(authenticator);
+			}
 
+		}
 		setTimeouts(builder, timeoutInSeconds);
 		builder.followRedirects(false).followSslRedirects(false);
 
@@ -79,7 +94,7 @@ public class OkHttpUtils {
 	 * {@link OkHttpClient} will accept the certificates stored in the keystore.
 	 */
 	private static void configureTrustStore(OkHttpClient.Builder builder, String trustStorePath,
-											String trustStorePassword) {
+			String trustStorePassword) {
 
 		try {
 			SSLContext sslContext = SSLContext.getInstance(PROTOCOL);
@@ -91,15 +106,14 @@ public class OkHttpUtils {
 
 			MultiTrustManager multiTrustManager = new MultiTrustManager(trustManagers);
 
-			sslContext.init(null, new TrustManager[] {multiTrustManager}, new SecureRandom());
+			sslContext.init(null, new TrustManager[] { multiTrustManager }, new SecureRandom());
 			builder.sslSocketFactory(sslContext.getSocketFactory(), multiTrustManager);
 		} catch (NoSuchAlgorithmException e) {
 			LogUtils.failWithStackTrace(e, "Failed to instantiate an SSLContext or TrustManagerFactory.");
 		} catch (KeyManagementException e) {
 			LogUtils.failWithStackTrace(e, "Failed to initialize the SSLContext with the trust managers.");
 		} catch (ClassCastException e) {
-			LogUtils.failWithStackTrace(
-					e, "Trust manager is not of X509 format.");
+			LogUtils.failWithStackTrace(e, "Trust manager is not of X509 format.");
 		}
 	}
 
@@ -119,7 +133,8 @@ public class OkHttpUtils {
 			List<TrustManager> trustManagers = List.of(trustManagerFactory.getTrustManagers());
 
 			if (trustManagers.isEmpty()) {
-				LogUtils.fail("No custom trust managers found. This is a bug. Please report it to CQSE (support@teamscale.com).");
+				LogUtils.fail(
+						"No custom trust managers found. This is a bug. Please report it to CQSE (support@teamscale.com).");
 			}
 
 			return trustManagers;
@@ -136,7 +151,7 @@ public class OkHttpUtils {
 			LogUtils.failWithStackTrace(e, "Failed to initialize the TrustManagerFactory with the keystore.");
 		} catch (CertificateException e) {
 			LogUtils.failWithoutStackTrace("Failed to load one of the certificates in the keystore file " + keystorePath
-							+ "\nPlease make sure that the certificate is stored correctly and the certificate version and encoding are supported.",
+					+ "\nPlease make sure that the certificate is stored correctly and the certificate version and encoding are supported.",
 					e);
 		}
 		return Collections.emptyList();
@@ -192,34 +207,43 @@ public class OkHttpUtils {
 		} catch (Exception e) {
 			// There could be reflection calls which we are missing in GraalVM
 			// Make sure the program will still run
-			LogUtils.warn("Could not import certificates from the operating system." +
-					"\nThis is a bug. Please report it to CQSE (support@teamscale.com).", e);
+			LogUtils.warn("Could not import certificates from the operating system."
+					+ "\nThis is a bug. Please report it to CQSE (support@teamscale.com).", e);
 			return Collections.emptyList();
 		}
 	}
 
 	/**
-	 * Recreation of {@link NativeTrustedCertificates#getCustomOsSpecificTrustedCertificates()} without the error handling.
-	 * This enables us to use our own logging and exception handling.
+	 * Recreation of
+	 * {@link NativeTrustedCertificates#getCustomOsSpecificTrustedCertificates()}
+	 * without the error handling. This enables us to use our own logging and
+	 * exception handling.
 	 */
 	private static Collection<X509Certificate> getCustomOsTrustedCertificates() {
 		if (NativeTrustedRootsInternalUtils.isLinux) {
 			return LinuxTrustedCertificatesUtil.getSystemCertificates();
 		} else if (NativeTrustedRootsInternalUtils.isMac) {
-			List<X509Certificate> admin = SecurityFrameworkUtil.getTrustedRoots(SecurityFramework.SecTrustSettingsDomain.admin);
-			List<X509Certificate> user = SecurityFrameworkUtil.getTrustedRoots(SecurityFramework.SecTrustSettingsDomain.user);
+			List<X509Certificate> admin = SecurityFrameworkUtil
+					.getTrustedRoots(SecurityFramework.SecTrustSettingsDomain.admin);
+			List<X509Certificate> user = SecurityFrameworkUtil
+					.getTrustedRoots(SecurityFramework.SecTrustSettingsDomain.user);
 			Set<X509Certificate> result = new HashSet<>(admin);
 			result.addAll(user);
 			return result;
 		} else if (NativeTrustedRootsInternalUtils.isWindows) {
 			return Crypt32ExtUtil.getCustomTrustedRootCertificates();
 		} else {
-			LogUtils.warn("Could not import certificates from the operating system: unsupported system, not a Linux/Mac OS/Windows: " + System.getProperty("os.name"));
+			LogUtils.warn(
+					"Could not import certificates from the operating system: unsupported system, not a Linux/Mac OS/Windows: "
+							+ System.getProperty("os.name"));
 			return Collections.emptySet();
 		}
 	}
 
-	/** Tries to disable SSL validation. Returns {@code true} if validation was successfully disabled. */
+	/**
+	 * Tries to disable SSL validation. Returns {@code true} if validation was
+	 * successfully disabled.
+	 */
 	private static boolean disableSslValidation(OkHttpClient.Builder builder) {
 		SSLSocketFactory sslSocketFactory;
 		try {
@@ -260,8 +284,8 @@ public class OkHttpUtils {
 	}
 
 	/**
-	 * Combines multiple {@link X509TrustManager}.
-	 * If one of the managers trust the certificate chain, the {@link MultiTrustManager} will trust the certificate.
+	 * Combines multiple {@link X509TrustManager}. If one of the managers trust the
+	 * certificate chain, the {@link MultiTrustManager} will trust the certificate.
 	 */
 	private static class MultiTrustManager implements X509TrustManager {
 
@@ -273,7 +297,8 @@ public class OkHttpUtils {
 
 		@Override
 		public X509Certificate[] getAcceptedIssuers() {
-			return trustManagers.stream().flatMap(manager -> Arrays.stream(manager.getAcceptedIssuers())).toArray(X509Certificate[]::new);
+			return trustManagers.stream().flatMap(manager -> Arrays.stream(manager.getAcceptedIssuers()))
+					.toArray(X509Certificate[]::new);
 		}
 
 		@Override
@@ -286,7 +311,8 @@ public class OkHttpUtils {
 			checkAll(manager -> manager.checkServerTrusted(chain, authType));
 		}
 
-		private void checkAll(ConsumerWithException<X509TrustManager, CertificateException> check) throws CertificateException {
+		private void checkAll(ConsumerWithException<X509TrustManager, CertificateException> check)
+				throws CertificateException {
 			Collection<CertificateException> exceptions = new ArrayList<>();
 
 			for (X509TrustManager trustManager : trustManagers) {
