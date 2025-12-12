@@ -5,8 +5,10 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
-- [maintenance] Removed deprecated `--move-to-last-commit` option
-- [feature] added `--proxy` option and ability to authenticate against a proxy via env variables TEAMSCALE_PROXY_USER and TEAMSCALE_PROXY_PASSWORD
+
+# 2.9.11
+- [feature] added `--proxy` option and ability to authenticate against a proxy via environment variables `TEAMSCALE_PROXY_USER` and `TEAMSCALE_PROXY_PASSWORD`
+- [maintenance] removed deprecated `--move-to-last-commit` option
 
 # 2.9.10
 - [feature] added --version command-line option
