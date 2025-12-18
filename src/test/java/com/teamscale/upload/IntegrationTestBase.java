@@ -13,6 +13,7 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import org.assertj.core.api.SoftAssertions;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -84,6 +85,8 @@ public abstract class IntegrationTestBase {
 			softly.assertThat(result.errorOutput).contains("The host http://localhost:9999/ refused a connection");
 		});
 		assertThatOSCertificatesWereImported(result);
+
+		Assertions.fail("Test failed as expected.");
 	}
 
 	@Test
