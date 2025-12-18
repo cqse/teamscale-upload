@@ -85,8 +85,6 @@ public abstract class IntegrationTestBase {
 			softly.assertThat(result.errorOutput).contains("The host http://localhost:9999/ refused a connection");
 		});
 		assertThatOSCertificatesWereImported(result);
-
-		Assertions.fail("Test failed as expected.");
 	}
 
 	@Test
