@@ -242,16 +242,13 @@ project.afterEvaluate {
 
 test {
 	useJUnitPlatform()
-	filter {
-		// Don't run the integration test for the graal-vm distribution artifact here. (This is the jlink build.)
-		excludeTestsMatching('com.teamscale.upload.NativeImageIT')
-	}
 	testLogging {
 		outputs.upToDateWhen { false }
 		showStandardStreams = true
 		showExceptions = true
 		showCauses = true
 		exceptionFormat = TestExceptionFormat.FULL
+		events "passed"
 	}
 }
 tasks.register('printVersion') {

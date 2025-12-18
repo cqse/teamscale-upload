@@ -5,6 +5,7 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
+ - [deprecation] The graalVM distribution of teamscale-upload is discontinued. The previous release (2.9.11) is the last release with a graal-vm distribution. To migrate from the graal-vm distribution to the new gradle-based distribution, simply call `bin/teamscale-upload` instead of `teamscale-upload`.
 
 # 2.9.11
 - [feature] added `--proxy` option and ability to authenticate against a proxy via environment variables `TEAMSCALE_PROXY_USER` and `TEAMSCALE_PROXY_PASSWORD`
