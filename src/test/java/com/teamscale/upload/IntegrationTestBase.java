@@ -460,6 +460,7 @@ public abstract class IntegrationTestBase {
 				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
 						.isZero();
 				softly.assertThat(result.getOutputAndErrorOutput()).contains("Failed attempt 1 / 3");
+				softly.assertThat(server.sessions).hasSize(1);
 			});
 		}
 	}
