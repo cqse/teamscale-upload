@@ -451,6 +451,43 @@ public abstract class IntegrationTestBase {
 		assertThatOSCertificatesWereImported(result);
 	}
 
+	@Test
+	public void retrySucceedsAfterIntermittentFailure() {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 0L, 1)) {
+			ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments()
+					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(3));
+			assertSoftlyThat(softly -> {
+				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
+						.isZero();
+				softly.assertThat(result.getOutputAndErrorOutput()).contains("Failed attempt 1 / 3");
+			});
+		}
+	}
+
+	@Test
+	public void retryExhaustedWithUnreachableUrl() {
+		ProcessUtils.ProcessResult result = runUploader(
+				new TeamscaleUploadArguments().withUrl("http://localhost:9999").withMaxAttempts(2));
+		assertSoftlyThat(softly -> {
+			softly.assertThat(result.exitCode).isNotZero();
+			softly.assertThat(result.errorOutput).contains("Failed attempt 1 / 2");
+			softly.assertThat(result.errorOutput).contains("Upload failed after 2 attempt(s)");
+		});
+	}
+
+	@Test
+	public void nonRetriableErrorDoesNotRetry() {
+		try (TeamscaleMockServer ignored = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
+			ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments()
+					.withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(3));
+			assertSoftlyThat(softly -> {
+				softly.assertThat(result.exitCode).isNotZero();
+				softly.assertThat(result.errorOutput).doesNotContain("Failed attempt");
+				softly.assertThat(result.errorOutput).contains("Failed to connect via HTTPS");
+			});
+		}
+	}
+
 	private void assertThatOSCertificatesWereImported(ProcessUtils.ProcessResult result) {
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.errorOutput)

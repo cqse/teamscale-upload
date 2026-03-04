@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 
@@ -38,14 +39,16 @@ public class TeamscaleMockServer implements AutoCloseable {
 			if (keystoreResource != null) {
 				KEYSTORE = new File(keystoreResource.toURI());
 			} else {
-				// will fail in constructor, a failure there is not handled properly by the test framework
+				// will fail in constructor, a failure there is not handled properly by the test
+				// framework
 				KEYSTORE = null;
 			}
 			URL truststoreResource = TeamscaleMockServer.class.getResource("truststore.jks");
 			if (truststoreResource != null) {
 				TRUSTSTORE = new File(truststoreResource.toURI());
 			} else {
-				// will fail in constructor, a failure there is not handled properly by the test framework
+				// will fail in constructor, a failure there is not handled properly by the test
+				// framework
 				TRUSTSTORE = null;
 			}
 		} catch (URISyntaxException e) {
@@ -70,20 +73,35 @@ public class TeamscaleMockServer implements AutoCloseable {
 	 */
 	private final long openSessionRequestTimeInSeconds;
 
+	/**
+	 * Number of initial session requests that should fail with HTTP 500 to simulate
+	 * intermittent server errors.
+	 */
+	private final int failFirstNSessionRequests;
+
+	private final AtomicInteger sessionRequestCounter = new AtomicInteger(0);
+
 	public TeamscaleMockServer(int port) {
 		this(port, false);
 	}
 
 	public TeamscaleMockServer(int port, boolean useSelfSignedCertificate) {
-		this(port, useSelfSignedCertificate, 0L);
+		this(port, useSelfSignedCertificate, 0L, 0);
 	}
 
 	public TeamscaleMockServer(int port, boolean useSelfSignedCertificate, long openSessionRequestTimeInSeconds) {
+		this(port, useSelfSignedCertificate, openSessionRequestTimeInSeconds, 0);
+	}
+
+	public TeamscaleMockServer(int port, boolean useSelfSignedCertificate, long openSessionRequestTimeInSeconds,
+			int failFirstNSessionRequests) {
 		if (KEYSTORE == null || TRUSTSTORE == null) {
-			Assertions.fail("Could not initialize TeamscaleMockServer: Could not find keystore.jks or truststore.jks test resources");
+			Assertions.fail(
+					"Could not initialize TeamscaleMockServer: Could not find keystore.jks or truststore.jks test resources");
 		}
 		this.spark = Service.ignite();
 		this.openSessionRequestTimeInSeconds = openSessionRequestTimeInSeconds;
+		this.failFirstNSessionRequests = failFirstNSessionRequests;
 
 		if (useSelfSignedCertificate) {
 			spark.secure(KEYSTORE.getAbsolutePath(), "password", null, null);
@@ -91,7 +109,8 @@ public class TeamscaleMockServer implements AutoCloseable {
 		spark.port(port);
 		spark.post("/api/v8.2/projects/:projectName/external-analysis/session", this::openSession);
 		spark.post("/api/v8.2/projects/:projectName/external-analysis/session/:session", this::noOpHandler);
-		spark.post("/api/v8.2/projects/:projectName/external-analysis/session/:session/report", this::receiveReportHandler);
+		spark.post("/api/v8.2/projects/:projectName/external-analysis/session/:session/report",
+				this::receiveReportHandler);
 		spark.exception(Exception.class, (Exception exception, Request request, Response response) -> {
 			response.status(SC_INTERNAL_SERVER_ERROR);
 			response.body("Exception: " + exception.getMessage());
@@ -111,6 +130,11 @@ public class TeamscaleMockServer implements AutoCloseable {
 
 	private String openSession(Request request, Response response) {
 		simulateRequestTime();
+		int requestNumber = sessionRequestCounter.incrementAndGet();
+		if (requestNumber <= failFirstNSessionRequests) {
+			response.status(SC_INTERNAL_SERVER_ERROR);
+			return "Simulated intermittent server error";
+		}
 		String message = request.queryParams("message");
 		String revisionOrTimestamp = request.queryParams("revision");
 		if (revisionOrTimestamp == null) {

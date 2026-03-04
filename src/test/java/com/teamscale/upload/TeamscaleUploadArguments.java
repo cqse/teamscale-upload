@@ -31,6 +31,7 @@ class TeamscaleUploadArguments {
 	private boolean stackTrace = false;
 	private String proxy = null;
 	private boolean debug = false;
+	private Integer maxAttempts = null;
 
 	/**
 	 * The file from which the teamscale-upload executable should draw its stdin.
@@ -51,6 +52,14 @@ class TeamscaleUploadArguments {
 	 */
 	TeamscaleUploadArguments withProxy(String proxy) {
 		this.proxy = proxy;
+		return this;
+	}
+
+	/**
+	 * Sets the maximum number of attempts for transient errors.
+	 */
+	TeamscaleUploadArguments withMaxAttempts(int maxAttempts) {
+		this.maxAttempts = maxAttempts;
 		return this;
 	}
 
@@ -268,6 +277,10 @@ class TeamscaleUploadArguments {
 		}
 		if (debug) {
 			command.add("--debug");
+		}
+		if (maxAttempts != null) {
+			command.add("--max-attempts");
+			command.add(String.valueOf(maxAttempts));
 		}
 		return command.toArray(new String[0]);
 	}
