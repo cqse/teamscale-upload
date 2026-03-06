@@ -43,12 +43,7 @@ public class TeamscaleClient {
 				LogUtils.warn("There are no files to upload. Skipping upload.");
 				return;
 			}
-			String sessionId = openSession(client, commandLine, filesByFormat.keySet());
-			for (String format : filesByFormat.keySet()) {
-				Set<File> filesFormFormat = filesByFormat.get(format);
-				sendRequestForFormat(client, commandLine, format, filesFormFormat, sessionId);
-			}
-			closeSession(client, commandLine, sessionId);
+			performUploadWithRetry(client, commandLine, filesByFormat);
 		} catch (SSLHandshakeException e) {
 			handleSslConnectionFailure(commandLine, e);
 		} finally {
@@ -56,6 +51,32 @@ public class TeamscaleClient {
 			// prevent JVM shutdown
 			client.dispatcher().executorService().shutdownNow();
 			client.connectionPool().evictAll();
+		}
+	}
+
+	private static void performUploadWithRetry(OkHttpClient client, CommandLine commandLine,
+			Map<String, Set<File>> filesByFormat) throws IOException {
+		int maxAttempts = commandLine.maxAttempts;
+		for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+			try {
+				String sessionId = openSession(client, commandLine, filesByFormat.keySet());
+				for (String format : filesByFormat.keySet()) {
+					Set<File> filesForFormat = filesByFormat.get(format);
+					sendRequestForFormat(client, commandLine, format, filesForFormat, sessionId);
+				}
+				closeSession(client, commandLine, sessionId);
+				return;
+			} catch (SSLHandshakeException e) {
+				// non-retriable, rethrow to be handled by the caller
+				throw e;
+			} catch (IOException e) {
+				if (attempt < maxAttempts) {
+					LogUtils.warn("Failed attempt " + attempt + " / " + maxAttempts + ": " + e.getMessage());
+				} else {
+					LogUtils.failWithoutStackTrace(
+							"Upload failed after " + maxAttempts + " attempt(s): " + e.getMessage(), e);
+				}
+			}
 		}
 	}
 
@@ -219,26 +240,26 @@ public class TeamscaleClient {
 					"The host " + host + " could not be resolved. Please ensure you have no typo and that"
 							+ " this host is reachable from this server.",
 					e);
-		} catch (ConnectException e) {
-			LogUtils.failWithoutStackTrace(
-					"The host " + host + " refused a connection. Please ensure that you have no typo and that"
-							+ " this endpoint is reachable and not blocked by firewalls.",
-					e);
-		} catch (SocketTimeoutException e) {
-			LogUtils.failWithoutStackTrace(
-					"Request timeout reached. Consider setting a higher timeout value using the '--timeout' option.",
-					e);
 		} catch (FileNotFoundException e) {
 			LogUtils.failWithoutStackTrace(
 					"Could not find the specified report file for uploading. Please ensure that you have no typo"
 							+ " in the file path and that the specified report file is readable.",
+					e);
+		} catch (ConnectException e) {
+			throw new IOException(
+					"The host " + host + " refused a connection. Please ensure that you have no typo and that"
+							+ " this endpoint is reachable and not blocked by firewalls.",
+					e);
+		} catch (SocketTimeoutException e) {
+			throw new IOException(
+					"Request timeout reached. Consider setting a higher timeout value using the '--timeout' option.",
 					e);
 		}
 
 		return null;
 	}
 
-	private static void handleErrors(SafeResponse response, CommandLine commandLine) {
+	private static void handleErrors(SafeResponse response, CommandLine commandLine) throws IOException {
 		if (response.unsafeResponse.isRedirect()) {
 			String location = response.unsafeResponse.header("Location");
 			if (location == null) {
@@ -272,6 +293,11 @@ public class TeamscaleClient {
 		}
 
 		if (!response.unsafeResponse.isSuccessful()) {
+			int code = response.unsafeResponse.code();
+			if (code >= 500) {
+				String url = response.unsafeResponse.request().url().toString();
+				throw new IOException("Server error (HTTP " + code + ") from " + url + ": " + response.body);
+			}
 			LogUtils.fail("Unexpected response from Teamscale", response);
 		}
 	}

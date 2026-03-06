@@ -117,6 +117,11 @@ public class CommandLine {
 	 */
 	public final String timeoutInSecondsAsString;
 
+	/**
+	 * The maximum number of attempts for transient network errors. Defaults to 3.
+	 */
+	public final int maxAttempts;
+
 	private final String keystorePathAndPassword;
 
 	private CommandLine(Namespace namespace) {
@@ -138,6 +143,7 @@ public class CommandLine {
 		this.timeoutInSecondsAsString = namespace.getString("timeout");
 		this.printStackTrace = namespace.getBoolean("stacktrace");
 		this.debugLogEnabled = namespace.getBoolean("debug");
+		this.maxAttempts = namespace.getInt("max_attempts");
 
 		String inputFilePath = namespace.getString("input");
 		if (inputFilePath != null) {
@@ -248,6 +254,9 @@ public class CommandLine {
 		parser.addArgument("--timeout").metavar("TIMEOUT_IN_SECONDS").required(false)
 				.help("Sets the timeout in seconds for TCP connect, read and write for HTTP requests. "
 						+ "Defaults to 60 seconds.");
+		parser.addArgument("--max-attempts").metavar("MAX_ATTEMPTS").type(Integer.class).setDefault(3).required(false)
+				.help("The maximum number of attempts for uploads that fail due to transient network errors"
+						+ " (e.g. connection resets, server errors). Defaults to 3.");
 		parser.epilog("For general usage help and alternative upload methods, please check our online"
 				+ " documentation at:" + "\nhttp://cqse.eu/tsu-docs" + "\n\nTARGET COMMIT"
 				+ "\n\nBy default, teamscale-upload tries to automatically detect the code commit"
@@ -322,6 +331,7 @@ public class CommandLine {
 		}
 
 		validateTimeoutInSeconds(parser);
+		validateMaxAttempts(parser);
 		validateProxy(parser);
 		validateKeystoreSettings(parser);
 		validateAccessKey(parser);
@@ -349,6 +359,12 @@ public class CommandLine {
 		}
 
 		validateBranchAndTimestamp(parser);
+	}
+
+	private void validateMaxAttempts(ArgumentParser parser) throws ArgumentParserException {
+		if (maxAttempts <= 0) {
+			throw new ArgumentParserException("The maximum number of attempts must be a positive integer.", parser);
+		}
 	}
 
 	private void validateProxy(ArgumentParser parser) throws ArgumentParserException {
