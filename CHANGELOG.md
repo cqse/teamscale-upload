@@ -5,6 +5,8 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
+
+# 2.9.12
  - [feature] added `--max-attempts` option to retry uploads on transient errors
  - [deprecation] The graalVM distribution of teamscale-upload is discontinued. The previous release (2.9.11) is the last release with a graal-vm distribution. To migrate from the graal-vm distribution to the new gradle-based distribution, simply call `bin/teamscale-upload` instead of `teamscale-upload`.
 
