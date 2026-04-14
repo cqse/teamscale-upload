@@ -8,6 +8,7 @@ We use [semantic versioning](http://semver.org/):
 
 # 2.9.13
 - [maintenance] removed `jlink` mentions from published artifacts
+- [maintenance] dropped level of "Request successful" logging to `debug`
 
 # 2.9.12
  - [feature] added `--max-attempts` option to retry uploads on transient errors
