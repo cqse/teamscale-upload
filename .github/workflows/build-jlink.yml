@@ -74,20 +74,14 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: ${{ env.DISTRIBUTIONS_DIR }}
-      - name: Rename Distributions
-        run: |
-          (cd $DISTRIBUTIONS_DIR/${ARTIFACT_NAME} && mv teamscale-upload-linux-x86_64.zip ../teamscale-upload-jlink-linux-x86_64.zip)
-          (cd $DISTRIBUTIONS_DIR/${ARTIFACT_NAME} && mv teamscale-upload-windows-x86_64.zip ../teamscale-upload-jlink-windows-x86_64.zip)
-          (cd $DISTRIBUTIONS_DIR/${ARTIFACT_NAME} && mv teamscale-upload-macos-x86_64.zip ../teamscale-upload-jlink-macos-x86_64.zip)
-          (cd $DISTRIBUTIONS_DIR/${ARTIFACT_NAME} && mv teamscale-upload-macos-aarch64.zip ../teamscale-upload-jlink-macos-aarch64.zip)
       - name: List downloaded distributions
-        run: ls -1 $DISTRIBUTIONS_DIR/*.zip
+        run: ls -1 $DISTRIBUTIONS_DIR/$ARTIFACT_NAME/*.zip
       - name: Upload Release Assets
         id: create_release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
-          file: ${{ env.DISTRIBUTIONS_DIR }}/teamscale-upload-jlink-*.zip
+          file: ${{ env.DISTRIBUTIONS_DIR }}/${{ env.ARTIFACT_NAME }}/teamscale-upload-*.zip
           file_glob: true
           overwrite: true
