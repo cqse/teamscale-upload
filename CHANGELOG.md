@@ -6,6 +6,10 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 
+# 2.9.13
+- [maintenance] removed `jlink` mentions from published artifacts
+- [maintenance] dropped level of "Request successful" logging to `debug`
+
 # 2.9.12
  - [feature] added `--max-attempts` option to retry uploads on transient errors
  - [deprecation] The graalVM distribution of teamscale-upload is discontinued. The previous release (2.9.11) is the last release with a graal-vm distribution. To migrate from the graal-vm distribution to the new gradle-based distribution, simply call `bin/teamscale-upload` instead of `teamscale-upload`.

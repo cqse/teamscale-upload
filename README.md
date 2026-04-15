@@ -15,16 +15,15 @@ If you want to use the tool as part of a GitHub build pipeline, consider using t
 
 For a local setup (on a build machine), the [Download](https://github.com/cqse/teamscale-upload/releases/latest) page offers native executables for Windows and Linux (no other tools required on the machine).
 
-Our distributions contain the `teamscale-upload` tool bundled with OS-specific java execution environment. 
+Our distributions contain the `teamscale-upload` tool bundled with OS-specific java execution environment.
 On the [Download](https://github.com/cqse/teamscale-upload/releases/latest) page, we offer a distribution based on jlink.
 
 ## Tool Usage
-### jlink Distribution for Windows
+### Distribution for Windows
 [Documentation](distribution_readme/README_WINDOWS.md)
-### jlink Distributions for Unix-based Systems
+### Distributions for Unix-based Systems
 [Documentation](distribution_readme/README_UNIX.md)
 
 ## Tool Development
 
 [Developer Documentation](README_DEV_SETUP.md)
-
