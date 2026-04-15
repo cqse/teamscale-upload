@@ -108,6 +108,13 @@ public class LogUtils {
 		}
 	}
 
+	/** See {@link #debug(String)}. Formats the message lazily via {@link String#format}. */
+	public static void debug(String template, Object... args) {
+		if (debugLogEnabled) {
+			System.out.println("DEBUG: " + String.format(template, args));
+		}
+	}
+
 	/**
 	 * Print a debug message to stdout and log the given throwable.
 	 * <p>

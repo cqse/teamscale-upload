@@ -233,7 +233,7 @@ public class TeamscaleClient {
 		try (Response response = client.newCall(request).execute()) {
 			SafeResponse safeResponse = new SafeResponse(response);
 			handleErrors(safeResponse, commandLine);
-			LogUtils.debug("Request successful: " + request.method() + " " + url + " (HTTP " + safeResponse.unsafeResponse.code() + ")");
+			LogUtils.debug("Request successful: %s %s (HTTP %d)", request.method(), url, safeResponse.unsafeResponse.code());
 			return safeResponse.body;
 		} catch (UnknownHostException e) {
 			LogUtils.failWithoutStackTrace(
