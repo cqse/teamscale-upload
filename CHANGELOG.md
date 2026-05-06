@@ -6,6 +6,9 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 
+# 2.9.16
+- [maintenance] update runtime JDK version to 17.0.19
+
 # 2.9.15
 - [maintenance] added homebrew tap
 
