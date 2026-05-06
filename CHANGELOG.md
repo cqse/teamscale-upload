@@ -6,8 +6,8 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 
-# 2.9.17
-- [fix] publish the Homebrew distribution as a cask instead of a formula. Fixes JVM startup crashes (`SIGSEGV at pc=0x0`) on macOS 26 (Tahoe), caused by Homebrew's formula installer rewriting and re-signing the bundled jLink JDK's dylibs. Existing Homebrew users must run `brew uninstall --formula teamscale-upload` once before re-installing via `brew install --cask teamscale-upload`.
+# 2.9.18
+- [fix] publish the Homebrew distribution as a cask instead of a formula.
 
 # 2.9.16
 - [maintenance] update runtime JDK version to 17.0.19
