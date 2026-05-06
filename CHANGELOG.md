@@ -6,6 +6,9 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 
+# 2.9.14
+- [maintenance] added homebrew tap
+
 # 2.9.13
 - [maintenance] removed `jlink` mentions from published artifacts
 - [maintenance] dropped level of "Request successful" logging to `debug`
