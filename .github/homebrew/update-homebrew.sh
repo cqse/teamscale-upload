@@ -7,13 +7,28 @@
 # adapted to GitHub Actions: the GitHub release flow does not publish .sha256
 # siblings next to the assets, so we download the zips and hash them locally.
 #
+# Top-level steps:
+#   1. Resolve the release tag from $GITHUB_REF_NAME (or $1) and bail out
+#      unless it matches vX.Y.Z.
+#   2. Download the macOS aarch64 and x86_64 release zips from the GitHub
+#      release and compute their SHA256 checksums.
+#   3. Clone the Homebrew tap (gitlab.com/cqse/public/homebrew-teamscale) into
+#      a throwaway temp dir.
+#   4. Render formula.rb.template twice: once as the unversioned
+#      Formula/teamscale-upload.rb (latest), once as the keg-only
+#      Formula/teamscale-upload@X.Y.Z.rb (history).
+#   5. Commit both files and push to the tap (push is skipped if DRY_RUN=1).
+#
 # Required environment variables:
 #   GITHUB_REF_NAME            - Tag name (e.g. v9.1.2). Falls back to $1.
 #   HOMEBREW_REPO_GITLAB_TOKEN - GitLab token (write_repository) for
 #                                cqse/public/homebrew-teamscale.
 #   DRY_RUN                    - Optional. If set to "1", skips the git push
 #                                so the script can be exercised on a fork
-#                                without publishing.
+#                                without publishing. The local clone, formula
+#                                generation, and git commit still happen, but
+#                                only inside the throwaway $WORK_DIR that is
+#                                removed on exit, so nothing escapes.
 
 set -euo pipefail
 
