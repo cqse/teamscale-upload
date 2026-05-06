@@ -148,7 +148,6 @@ runtime {
 			'--compress', '2', // ZIP compression
 			'--no-header-files', '--no-man-pages',
 			'--dedup-legal-notices', 'error-if-not-same-content',
-			'--strip-debug',
 	]
 
 	modules = [

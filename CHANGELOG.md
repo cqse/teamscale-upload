@@ -6,6 +6,9 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 
+# 2.9.17
+- [fix] adjust jLink options to fix unbootable CLI on macOS 26 (Tahoe)
+
 # 2.9.16
 - [maintenance] update runtime JDK version to 17.0.19
 
