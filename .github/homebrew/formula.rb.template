@@ -1,3 +1,13 @@
+# Homebrew formula template for teamscale-upload, rendered during release to
+# produce the Ruby formula published to the Homebrew tap.
+#
+# Placeholders replaced at render time:
+#   __CLASS_NAME__     - Ruby class name (e.g. TeamscaleUpload)
+#   __VERSION__        - release version without the leading "v" (e.g. 3.5.1)
+#   __KEG_ONLY_LINE__  - either an empty line or `keg_only :versioned_formula`
+#                        for versioned (non-latest) formulae
+#   __AARCH64_SHA__    - SHA256 of the macOS arm64 release archive
+#   __X86_64_SHA__     - SHA256 of the macOS x86_64 release archive
 class __CLASS_NAME__ < Formula
   desc "Command-line tool to upload coverage and other external analysis data to Teamscale"
   homepage "https://www.teamscale.com"
