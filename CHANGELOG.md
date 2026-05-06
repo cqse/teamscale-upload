@@ -6,7 +6,7 @@ We use [semantic versioning](http://semver.org/):
 
 # Next Release
 
-# 2.9.14
+# 2.9.15
 - [maintenance] added homebrew tap
 
 # 2.9.13
