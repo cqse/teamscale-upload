@@ -18,6 +18,20 @@ For a local setup (on a build machine), the [Download](https://github.com/cqse/t
 Our distributions contain the `teamscale-upload` tool bundled with OS-specific java execution environment.
 On the [Download](https://github.com/cqse/teamscale-upload/releases/latest) page, we offer a distribution based on jlink.
 
+### Installation with Homebrew
+
+On macOS, the preferred installation method is [Homebrew](https://brew.sh/) using our [custom tap](https://gitlab.com/cqse/public/homebrew-teamscale).
+
+First add the CQSE homebrew tap:
+```bash
+brew tap cqse/teamscale https://gitlab.com/cqse/public/homebrew-teamscale.git
+```
+
+Then install the `teamscale-upload` CLI:
+```bash
+brew install teamscale-upload
+```
+
 ## Tool Usage
 ### Distribution for Windows
 [Documentation](distribution_readme/README_WINDOWS.md)

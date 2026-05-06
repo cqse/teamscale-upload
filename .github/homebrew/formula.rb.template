@@ -1,0 +1,29 @@
+class __CLASS_NAME__ < Formula
+  desc "Command-line tool to upload coverage and other external analysis data to Teamscale"
+  homepage "https://www.teamscale.com"
+  version "__VERSION__"
+  license "Apache-2.0"
+__KEG_ONLY_LINE__
+
+  on_macos do
+    if Hardware::CPU.arm?
+      url "https://github.com/cqse/teamscale-upload/releases/download/v#{version}/teamscale-upload-macos-aarch64.zip"
+      sha256 "__AARCH64_SHA__"
+    else
+      url "https://github.com/cqse/teamscale-upload/releases/download/v#{version}/teamscale-upload-macos-x86_64.zip"
+      sha256 "__X86_64_SHA__"
+    end
+  end
+
+  def install
+    # Install entire jLink image to libexec
+    libexec.install Dir["*"]
+    # Create wrapper script that executes from the jLink image directory
+    # (symlinks don't work because jLink launchers use relative paths to find bundled Java)
+    bin.write_exec_script libexec/"bin/teamscale-upload"
+  end
+
+  test do
+    assert_match version.to_s, shell_output("#{bin}/teamscale-upload --version")
+  end
+end
