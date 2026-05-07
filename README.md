@@ -29,7 +29,7 @@ brew tap cqse/teamscale https://gitlab.com/cqse/public/homebrew-teamscale.git
 
 Then install the `teamscale-upload` CLI:
 ```bash
-brew install --cask teamscale-upload
+brew install teamscale-upload
 ```
 
 ## Tool Usage

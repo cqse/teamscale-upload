@@ -87,9 +87,8 @@ jobs:
           overwrite: true
 
   # Publishes the macOS jlink distributions to the Homebrew tap at
-  # https://gitlab.com/cqse/public/homebrew-teamscale as a cask. Runs after
-  # release-jlink so the GitHub release assets exist at the URL the script
-  # computes.
+  # https://gitlab.com/cqse/public/homebrew-teamscale. Runs after release-jlink
+  # so the GitHub release assets exist at the URL the script computes.
   homebrew:
     if: startsWith(github.ref, 'refs/tags/v')
     needs:

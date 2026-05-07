@@ -1,0 +1,59 @@
+# Homebrew formula template for teamscale-upload, rendered during release to
+# produce the Ruby formula published to the Homebrew tap.
+#
+# We deliberately defer extraction of the source zip to `post_install`. The
+# zip ships a self-contained jLink JDK image, and Homebrew's formula
+# installer audits and relocates Mach-O dylibs (running install_name_tool
+# and re-signing) between `def install` and `def post_install`. Letting
+# that run on lib/server/libjvm.dylib leaves the JVM unbootable on macOS 26
+# (Tahoe): every invocation crashes with SIGSEGV at pc=0x0 during early VM
+# init. By keeping the source as an unextracted .zip during `def install`
+# and unpacking it from `def post_install`, the bundled binaries never go
+# through the relocator.
+#
+# Placeholders replaced at render time (see update-homebrew.sh):
+#   class name (header), version, per-arch sha256, optional keg-only line.
+class __CLASS_NAME__ < Formula
+  desc "Command-line tool to upload coverage and other external analysis data to Teamscale"
+  homepage "https://www.teamscale.com"
+  version "__VERSION__"
+  license "Apache-2.0"
+__KEG_ONLY_LINE__
+
+  on_macos do
+    if Hardware::CPU.arm?
+      url "https://github.com/cqse/teamscale-upload/releases/download/v#{version}/teamscale-upload-macos-aarch64.zip",
+          using: :nounzip
+      sha256 "__AARCH64_SHA__"
+    else
+      url "https://github.com/cqse/teamscale-upload/releases/download/v#{version}/teamscale-upload-macos-x86_64.zip",
+          using: :nounzip
+      sha256 "__X86_64_SHA__"
+    end
+  end
+
+  def install
+    arch_zip = Hardware::CPU.arm? ? "teamscale-upload-macos-aarch64.zip" : "teamscale-upload-macos-x86_64.zip"
+    libexec.install arch_zip
+    # Write the launcher wrapper now so Homebrew's link step can symlink it
+    # into the prefix. The actual jLink image is unpacked in post_install,
+    # after Homebrew's dylib relocation has finished.
+    (bin/"teamscale-upload").write <<~SCRIPT
+      #!/bin/bash
+      exec "#{libexec}/teamscale-upload/bin/teamscale-upload" "$@"
+    SCRIPT
+    (bin/"teamscale-upload").chmod 0755
+  end
+
+  def post_install
+    arch_zip = Hardware::CPU.arm? ? "teamscale-upload-macos-aarch64.zip" : "teamscale-upload-macos-x86_64.zip"
+    cd(libexec) do
+      system "unzip", "-oq", arch_zip
+      rm arch_zip
+    end
+  end
+
+  test do
+    assert_match version.to_s, shell_output("#{bin}/teamscale-upload --version")
+  end
+end
