@@ -85,20 +85,3 @@ jobs:
           file: ${{ env.DISTRIBUTIONS_DIR }}/${{ env.ARTIFACT_NAME }}/teamscale-upload-*.zip
           file_glob: true
           overwrite: true
-
-  # Publishes the macOS jlink distributions to the Homebrew tap at
-  # https://gitlab.com/cqse/public/homebrew-teamscale. Runs after release-jlink
-  # so the GitHub release assets exist at the URL the script computes.
-  homebrew:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs:
-      - release-jlink
-    name: Update Homebrew tap
-    runs-on: ubuntu-latest
-    steps:
-      - name: 'Checkout project sources'
-        uses: actions/checkout@v4
-      - name: 'Update Homebrew tap'
-        env:
-          HOMEBREW_REPO_GITLAB_TOKEN: ${{ secrets.HOMEBREW_REPO_GITLAB_TOKEN }}
-        run: ./.github/homebrew/update-homebrew.sh
