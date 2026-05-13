@@ -1,14 +1,18 @@
-# Configuration for project teamscale-upload, connector code
+# Configuration for project teamscale-upload, connector repository1
+
+# Learn more about the Teamscale IDE Configuration File Format at
+# <https://docs.teamscale.com/reference/teamscale-toml/>.
 
 version = "1.0"
 
 root = true
 
 [server]
-url = "https://cqse.teamscale.io/"
+url = "http://localhost:8080/"
 
 [project]
 id = "teamscale-upload"
 
-# The value has been set because the repository identifier gets prepended
-path = "code"
+# The value has been set because branch analysis has been deactivated or is not supported by the connector
+branch = "default" # Optional
+
