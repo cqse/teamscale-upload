@@ -62,6 +62,12 @@ public class CommandLine {
 	 */
 	public final String timestamp;
 	/**
+	 * A path prefix for the uploaded test artifacts. For coverage reports it
+	 * restricts the project files that covered paths are matched against; for test
+	 * execution reports it is prepended to the test execution names. May be null.
+	 */
+	public final String pathPrefix;
+	/**
 	 * The Teamscale server URL.
 	 */
 	public final HttpUrl url;
@@ -133,6 +139,7 @@ public class CommandLine {
 		this.commit = namespace.getString("commit");
 		this.repository = namespace.getString("repository");
 		this.timestamp = namespace.getString("branch_and_timestamp");
+		this.pathPrefix = namespace.getString("path_prefix");
 		this.files = getListSafe(namespace, "files");
 		this.url = HttpUrl.parse(namespace.getString("server"));
 		this.message = namespace.getString("message");
@@ -222,6 +229,13 @@ public class CommandLine {
 						+ " 00:00:00 UTC Thursday, 1 January 1970 or the string 'HEAD' to upload to"
 						+ " the latest revision on that branch." + "\nFormat: BRANCH:TIMESTAMP"
 						+ "\nExample: master:1597845930000" + "\nExample: develop:HEAD");
+		parser.addArgument("--path-prefix").metavar("PATH_PREFIX").required(false)
+				.help("A path prefix for the uploaded test artifacts. For coverage reports, the covered"
+						+ " paths are only matched against those files that have the specified prefix within"
+						+ " the Teamscale project. This can be used if the same package structures and classes"
+						+ " appear in multiple subfolders of a project. For test execution reports, the prefix"
+						+ " is prepended to the test execution names, which allows to make otherwise ambiguous"
+						+ " test paths unique.");
 		parser.addArgument("--message").metavar("MESSAGE").required(false)
 				.help("The message for the commit created in Teamscale for this upload. Will be"
 						+ " visible in the Activity perspective. Defaults to a message containing"

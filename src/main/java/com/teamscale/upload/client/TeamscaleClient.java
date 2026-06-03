@@ -215,6 +215,10 @@ public class TeamscaleClient {
 				.addPathSegment(commandLine.project).addPathSegments("external-analysis/session")
 				.addPathSegment(sessionId).addPathSegment("report").addQueryParameter("format", format);
 
+		if (commandLine.pathPrefix != null) {
+			builder.addQueryParameter("path-prefix", commandLine.pathPrefix);
+		}
+
 		HttpUrl url = builder.build();
 
 		Request request = new Request.Builder()
