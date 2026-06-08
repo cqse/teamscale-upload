@@ -27,6 +27,7 @@ class TeamscaleUploadArguments {
 	private String timestamp = "master:HEAD";
 	private String commit = null;
 	private String repository = null;
+	private String pathPrefix = null;
 	private String additionalMessageLine = null;
 	private boolean stackTrace = false;
 	private String proxy = null;
@@ -110,6 +111,14 @@ class TeamscaleUploadArguments {
 	 */
 	TeamscaleUploadArguments withRepository(String repository) {
 		this.repository = repository;
+		return this;
+	}
+
+	/**
+	 * Sets the path prefix that is prepended to all paths in the uploaded reports.
+	 */
+	TeamscaleUploadArguments withPathPrefix(String pathPrefix) {
+		this.pathPrefix = pathPrefix;
 		return this;
 	}
 
@@ -266,6 +275,10 @@ class TeamscaleUploadArguments {
 		if (repository != null) {
 			command.add("--repository");
 			command.add(repository);
+		}
+		if (pathPrefix != null) {
+			command.add("--path-prefix");
+			command.add(pathPrefix);
 		}
 		if (timeoutInSeconds != null) {
 			command.add("--timeout");
