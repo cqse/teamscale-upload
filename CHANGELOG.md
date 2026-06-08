@@ -5,6 +5,8 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
+
+# 2.10.0
 - [feature] added `--path-prefix` option: for coverage reports it restricts the project files that covered paths are matched against; for test execution reports it is prepended to the test execution names
 
 # 2.9.19
