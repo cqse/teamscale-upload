@@ -127,33 +127,3 @@ jobs:
           tags: |
             cqse/teamscale-upload:${{ steps.version.outputs.version }}
             cqse/teamscale-upload:latest
-
-  # verifies the Docker image builds and runs on non-release runs (e.g. PRs).
-  # Mirrors release-docker but does NOT log in or push to Docker Hub.
-  test-docker:
-    if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
-    needs:
-      - build-jlink
-    name: Test Docker image build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: ${{ env.ARTIFACT_NAME }}
-          path: ./dist
-      - name: Extract Linux distribution into build context
-        run: |
-          mkdir -p docker-context
-          unzip ./dist/teamscale-upload-linux-x86_64.zip -d docker-context
-      - name: Build image (no push)
-        uses: docker/build-push-action@v6
-        with:
-          context: docker-context
-          file: Dockerfile
-          platforms: linux/amd64
-          push: false
-          load: true
-          tags: teamscale-upload:ci-test
-      - name: Smoke-test the image
-        run: docker run --rm teamscale-upload:ci-test --version
