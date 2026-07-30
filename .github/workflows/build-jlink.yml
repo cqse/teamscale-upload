@@ -127,3 +127,40 @@ jobs:
           tags: |
             cqse/teamscale-upload:${{ steps.version.outputs.version }}
             cqse/teamscale-upload:latest
+
+  # verifies that the Docker image builds and actually runs, on non-release runs (e.g. PRs).
+  # Mirrors release-docker, but does not log in or push to Docker Hub.
+  # Without this, a broken image would only be noticed after it has been published to Docker Hub.
+  test-docker:
+    if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+    needs:
+      - build-jlink
+    name: Test Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ./dist
+      - name: Extract Linux distribution into build context
+        run: |
+          mkdir -p docker-context
+          unzip ./dist/teamscale-upload-linux-x86_64.zip -d docker-context
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: docker-context
+          file: Dockerfile
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: teamscale-upload:ci-test
+      - name: Smoke-test the entrypoint
+        run: docker run --rm teamscale-upload:ci-test --version
+      # Consumers that override the entrypoint rely on the tool being on the PATH, so check that
+      # separately: it exercises the symlink in /usr/local/bin, which the entrypoint above does not.
+      - name: Smoke-test the tool on the PATH
+        run: docker run --rm --entrypoint sh teamscale-upload:ci-test -c 'teamscale-upload --version'
