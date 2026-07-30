@@ -5,7 +5,7 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
-- [feature] publish a Docker image `cqse/teamscale-upload` to Docker Hub on each release, tagged with the release version and `latest`
+- [feature] publish a Docker image `cqse/teamscale-upload` to Docker Hub on each release, tagged with the release version and `latest`. `teamscale-upload` is on the `PATH` inside the image, so it can also be called by name if you override the entrypoint
 
 # 2.10.0
 - [feature] added `--path-prefix` option: for coverage reports it restricts the project files that covered paths are matched against; for test execution reports it is prepended to the test execution names
