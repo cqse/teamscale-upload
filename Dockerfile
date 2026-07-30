@@ -4,7 +4,9 @@ RUN groupadd --system teamscale \
  && useradd --system --gid teamscale --create-home teamscale
 
 # Self-contained jlink distribution: launcher + bundled (glibc) JVM + all jars.
-# Extracted from teamscale-upload-linux-x86_64.zip into the build context.
+# Extracted from teamscale-upload-linux-x86_64.zip (./gradlew customRuntimeZip-linux-x86_64) into
+# the build context. Not the `distZip` output (teamscale-upload-<version>.zip): that one ships no
+# JVM and a launcher that expects JAVA_HOME to be set or java to be on the PATH.
 COPY teamscale-upload/ /opt/teamscale-upload/
 
 # Make the tool callable by name, so consumers don't have to hardcode the path above: users who
