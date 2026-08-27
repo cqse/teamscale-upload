@@ -5,6 +5,8 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
+- [fix] the Docker image now contains a `git` binary, so revision auto-detection works for a mounted repository
+- [feature] the Docker image now uses `/workspace` as its working directory, so a repository can be mounted with `-v "$PWD:/workspace:ro"` without passing `-w`
 
 # 2.10.1
 - [feature] publish a Docker image `cqse/teamscale-upload` to Docker Hub on each release, tagged with the release version and `latest`. `teamscale-upload` is on the `PATH` inside the image, so it can also be called by name if you override the entrypoint
