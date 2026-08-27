@@ -5,6 +5,8 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
+
+# 2.10.2
 - [fix] the Docker image now contains a `git` binary, so revision auto-detection works for a mounted repository
 - [feature] the Docker image now uses `/workspace` as its working directory, so a repository can be mounted with `-v "$PWD:/workspace:ro"` without passing `-w`
 
