@@ -31,3 +31,4 @@ gradle-app.setting
 # Avoid ignoring Gradle wrappper properties
 !/gradle/wrapper/gradle-wrapper.properties
 
+docker-context
