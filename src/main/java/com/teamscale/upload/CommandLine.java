@@ -188,7 +188,11 @@ public class CommandLine extends CommonCommandLineOptions {
 				+ " report format. The report file patterns have the same format as used on the command"
 				+ " line. The entries in the file are separated by line breaks. Blank lines are ignored."
 				+ "\n\nExample:" + "\n\n[jacoco]" + "\npattern1/**.xml" + "\npattern2/**.xml" + "\n[findbugs]"
-				+ "\npattern1/**.findbugs.xml" + "\npattern2/**.findbugs.xml");
+				+ "\npattern1/**.findbugs.xml" + "\npattern2/**.findbugs.xml" + "\n\nCOMMANDS"
+				+ "\n\nBesides uploading external analysis reports, this tool provides the following"
+				+ " additional commands:" + "\n\n" + SbomCommandLine.COMMAND_NAME
+				+ ": upload a Software Bill of Materials (SBOM) to Teamscale."
+				+ "\nRun 'teamscale-upload " + SbomCommandLine.COMMAND_NAME + " --help' for its options.");
 
 		return parseAndValidate(parser, args, CommandLine::new);
 	}

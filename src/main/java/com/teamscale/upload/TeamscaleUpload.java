@@ -2,11 +2,13 @@ package com.teamscale.upload;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.teamscale.upload.client.SbomUploadClient;
 import com.teamscale.upload.client.TeamscaleClient;
 import com.teamscale.upload.resolve.FilePatternResolutionException;
 import com.teamscale.upload.resolve.ReportPatternUtils;
@@ -23,11 +25,28 @@ public class TeamscaleUpload {
 	 * This method serves as entry point to the teamscale-upload application.
 	 */
 	public static void main(String[] args) throws FilePatternResolutionException, IOException {
+		if (args.length > 0 && SbomCommandLine.COMMAND_NAME.equals(args[0])) {
+			uploadSbom(Arrays.copyOfRange(args, 1, args.length));
+			return;
+		}
+
 		CommandLine commandLine = CommandLine.parseArguments(args);
 		configureLogging(commandLine);
 
 		Map<String, Set<File>> filesByFormat = resolveAndConvertFiles(commandLine);
 		TeamscaleClient.performUpload(commandLine, filesByFormat);
+	}
+
+	/**
+	 * Uploads a Software Bill of Materials. The given arguments must not include
+	 * the {@link SbomCommandLine#COMMAND_NAME} command itself.
+	 */
+	private static void uploadSbom(String[] args) throws FilePatternResolutionException, IOException {
+		SbomCommandLine commandLine = SbomCommandLine.parseArguments(args);
+		configureLogging(commandLine);
+
+		File sbomFile = commandLine.resolveSbomFile();
+		SbomUploadClient.performUpload(commandLine, sbomFile);
 	}
 
 	private static void configureLogging(CommonCommandLineOptions commandLine) {
