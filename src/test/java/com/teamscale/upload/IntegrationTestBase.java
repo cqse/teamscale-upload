@@ -36,7 +36,7 @@ public abstract class IntegrationTestBase {
 	 * Executes the generated teamscale-upload distribution with the given
 	 * arguments.
 	 */
-	protected abstract ProcessUtils.ProcessResult runUploader(TeamscaleUploadArguments arguments);
+	protected abstract ProcessUtils.ProcessResult runUploader(UploadArguments arguments);
 
 	@Test
 	@Disabled("TS-41072 Test should not run against production server")
@@ -487,6 +487,144 @@ public abstract class IntegrationTestBase {
 				softly.assertThat(result.errorOutput).contains("Failed to connect via HTTPS");
 			});
 		}
+	}
+
+	@Test
+	public void sbomUploadSendsAllParameters() throws IOException {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
+			ProcessUtils.ProcessResult result = runUploader(
+					new SbomUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT)
+							.withBuildName("my-service").withBuildVersion("1.4.2").withCommit("abcdef1234"));
+
+			Path expectedSbom = Paths.get(SbomUploadArguments.DEFAULT_SBOM_PATH);
+			byte[] expectedContent = Files.readAllBytes(expectedSbom);
+
+			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
+			assertThat(server.sbomUploads).hasSize(1);
+
+			TeamscaleMockServer.SbomUpload upload = server.sbomUploads.get(0);
+			assertSoftlyThat(softly -> {
+				softly.assertThat(upload.buildName).isEqualTo("my-service");
+				softly.assertThat(upload.version).isEqualTo("1.4.2");
+				softly.assertThat(upload.revision).isEqualTo("abcdef1234");
+				softly.assertThat(upload.fileName).isEqualTo(expectedSbom.getFileName().toString());
+				softly.assertThat(upload.content).isEqualTo(expectedContent);
+			});
+		}
+	}
+
+	@Test
+	public void sbomUploadAutodetectsCommit() {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
+			ProcessUtils.ProcessResult result = runUploader(new SbomUploadArguments()
+					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withAutoDetectCommit());
+			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
+			assertThat(server.sbomUploads).hasSize(1);
+			// The revision is auto-detected from $GITHUB_SHA and friends in CI, or
+			// otherwise from the teamscale-upload Git checkout the tests run in. We only
+			// assert the length of the git SHA1 because the two sources disagree on the
+			// exact value: on pull requests, $GITHUB_SHA is the merge commit, not the
+			// checked-out HEAD.
+			assertThat(server.sbomUploads.get(0).revision).hasSize(40);
+		}
+	}
+
+	@Test
+	public void sbomUploadWithoutBuildNameIsRejected() {
+		ProcessUtils.ProcessResult result = runUploader(
+				new SbomUploadArguments().withUrl("http://localhost:9999").withoutBuildName());
+		assertSoftlyThat(softly -> {
+			softly.assertThat(result.exitCode).isNotZero();
+			softly.assertThat(result.errorOutput).containsIgnoringWhitespaces("--build-name");
+		});
+	}
+
+	@Test
+	public void sbomUploadWithoutBuildVersionIsRejected() {
+		ProcessUtils.ProcessResult result = runUploader(
+				new SbomUploadArguments().withUrl("http://localhost:9999").withoutBuildVersion());
+		assertSoftlyThat(softly -> {
+			softly.assertThat(result.exitCode).isNotZero();
+			softly.assertThat(result.errorOutput).containsIgnoringWhitespaces("--build-version");
+		});
+	}
+
+	@Test
+	public void sbomUploadRejectsReservedCharacterInBuildName() {
+		ProcessUtils.ProcessResult result = runUploader(
+				new SbomUploadArguments().withUrl("http://localhost:9999").withBuildName("my#service"));
+		assertSoftlyThat(softly -> {
+			softly.assertThat(result.exitCode).isNotZero();
+			// the command line library adjusts the word spacing based on the terminal width
+			softly.assertThat(result.errorOutput).containsIgnoringWhitespaces("--build-name")
+					.containsIgnoringWhitespaces("must not appear");
+		});
+	}
+
+	@Test
+	public void sbomUploadWithoutFileIsRejected() {
+		ProcessUtils.ProcessResult result = runUploader(
+				new SbomUploadArguments().withUrl("http://localhost:9999").withoutPattern());
+		assertSoftlyThat(softly -> {
+			softly.assertThat(result.exitCode).isNotZero();
+			softly.assertThat(result.errorOutput).containsIgnoringWhitespaces("did not provide an SBOM file");
+		});
+	}
+
+	@Test
+	public void sbomUploadWithNonExistentFileIsRejected() {
+		ProcessUtils.ProcessResult result = runUploader(new SbomUploadArguments().withUrl("http://localhost:9999")
+				.withPattern("src/test/resources/sbom/does-not-exist.json"));
+		assertSoftlyThat(softly -> {
+			softly.assertThat(result.exitCode).isNotZero();
+			softly.assertThat(result.errorOutput).contains("could not be resolved to any files");
+		});
+	}
+
+	@Test
+	public void sbomUploadRejectsPatternMatchingSeveralFiles() {
+		ProcessUtils.ProcessResult result = runUploader(new SbomUploadArguments().withUrl("http://localhost:9999")
+				.withPattern("src/test/resources/sbom/*.json"));
+		assertSoftlyThat(softly -> {
+			softly.assertThat(result.exitCode).isNotZero();
+			softly.assertThat(result.errorOutput).contains("overwrite each other");
+		});
+	}
+
+	@Test
+	public void sbomUploadRetriesAfterIntermittentFailure() {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 0L, 1)) {
+			ProcessUtils.ProcessResult result = runUploader(new SbomUploadArguments()
+					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(3));
+			assertSoftlyThat(softly -> {
+				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
+						.isZero();
+				softly.assertThat(result.getOutputAndErrorOutput()).contains("Failed attempt 1 / 3");
+				softly.assertThat(server.sbomUploads).hasSize(1);
+			});
+		}
+	}
+
+	@Test
+	public void sbomHelpIsAvailable() {
+		ProcessUtils.ProcessResult result = runUploader(new SbomUploadArguments().withHelp());
+		assertSoftlyThat(softly -> {
+			softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
+					.isZero();
+			softly.assertThat(result.getOutputAndErrorOutput()).containsIgnoringWhitespaces("--build-name")
+					.containsIgnoringWhitespaces("--build-version");
+		});
+	}
+
+	@Test
+	public void sbomCommandIsMentionedInMainHelp() {
+		ProcessUtils.ProcessResult result = runUploader(
+				executable -> new String[] { executable, "--help" });
+		assertSoftlyThat(softly -> {
+			softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
+					.isZero();
+			softly.assertThat(result.getOutputAndErrorOutput()).containsIgnoringWhitespaces("sbom");
+		});
 	}
 
 	private void assertThatOSCertificatesWereImported(ProcessUtils.ProcessResult result) {

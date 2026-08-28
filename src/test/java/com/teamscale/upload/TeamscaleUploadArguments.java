@@ -11,7 +11,7 @@ import com.teamscale.upload.utils.SecretUtils;
 /**
  * Arguments for an execution of the teamscale-upload executable.
  */
-class TeamscaleUploadArguments {
+class TeamscaleUploadArguments implements UploadArguments {
 	private static final String TEAMSCALE_TEST_USER = "teamscale-upload-build-test-user";
 	private String partition = "NativeImageIT";
 	private String url = "https://cqse.teamscale.io/";
@@ -233,10 +233,16 @@ class TeamscaleUploadArguments {
 		return this;
 	}
 
+	@Override
+	public File getStdinFile() {
+		return stdinFile;
+	}
+
 	/**
 	 * Assembles the command that invokes the given teamscale-upload executable.
 	 */
-	String[] toCommand(String executable) {
+	@Override
+	public String[] toCommand(String executable) {
 		List<String> command = new ArrayList<>(Arrays.asList(executable, "--server", url, "--user", user, "--format",
 				format, "--project", project, "--partition", partition));
 		if (accessKey != null) {
