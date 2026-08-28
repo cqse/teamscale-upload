@@ -5,6 +5,7 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
+- [feature] added `sbom` command for uploading Software Bill of Materials to Teamscale. Supported formats: CycloneDX (JSON or XML) and SPDX 2.x (JSON)
 - [feature] publish a Docker image `cqse/teamscale-upload` to Docker Hub on each release, tagged with the release version and `latest`. `teamscale-upload` is on the `PATH` inside the image, so it can also be called by name if you override the entrypoint
 
 # 2.10.0
