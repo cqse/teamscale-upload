@@ -13,6 +13,7 @@ import java.util.Set;
 import javax.net.ssl.SSLHandshakeException;
 
 import com.teamscale.upload.CommandLine;
+import com.teamscale.upload.CommonCommandLineOptions;
 import com.teamscale.upload.autodetect_revision.AutodetectCommitUtils;
 import com.teamscale.upload.utils.LogUtils;
 import com.teamscale.upload.utils.MessageUtils;
@@ -56,31 +57,21 @@ public class TeamscaleClient {
 
 	private static void performUploadWithRetry(OkHttpClient client, CommandLine commandLine,
 			Map<String, Set<File>> filesByFormat) throws IOException {
-		int maxAttempts = commandLine.maxAttempts;
-		for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-			try {
-				String sessionId = openSession(client, commandLine, filesByFormat.keySet());
-				for (String format : filesByFormat.keySet()) {
-					Set<File> filesForFormat = filesByFormat.get(format);
-					sendRequestForFormat(client, commandLine, format, filesForFormat, sessionId);
-				}
-				closeSession(client, commandLine, sessionId);
-				return;
-			} catch (SSLHandshakeException e) {
-				// non-retriable, rethrow to be handled by the caller
-				throw e;
-			} catch (IOException e) {
-				if (attempt < maxAttempts) {
-					LogUtils.warn("Failed attempt " + attempt + " / " + maxAttempts + ": " + e.getMessage());
-				} else {
-					LogUtils.failWithoutStackTrace(
-							"Upload failed after " + maxAttempts + " attempt(s): " + e.getMessage(), e);
-				}
+		RetryUtils.performWithRetry(commandLine.maxAttempts, () -> {
+			String sessionId = openSession(client, commandLine, filesByFormat.keySet());
+			for (String format : filesByFormat.keySet()) {
+				Set<File> filesForFormat = filesByFormat.get(format);
+				sendRequestForFormat(client, commandLine, format, filesForFormat, sessionId);
 			}
-		}
+			closeSession(client, commandLine, sessionId);
+		});
 	}
 
-	private static void handleSslConnectionFailure(CommandLine commandLine, SSLHandshakeException e) {
+	/**
+	 * Terminates the program with an error message explaining why the SSL
+	 * connection to Teamscale could not be established.
+	 */
+	public static void handleSslConnectionFailure(CommonCommandLineOptions commandLine, SSLHandshakeException e) {
 		if (commandLine.getKeyStorePath() != null) {
 			LogUtils.failWithoutStackTrace("Failed to connect via HTTPS to " + commandLine.url
 					+ "\nYou enabled certificate validation and provided a keystore with certificates"
@@ -229,8 +220,12 @@ public class TeamscaleClient {
 		sendRequest(client, commandLine, url, request);
 	}
 
-	private static String sendRequest(OkHttpClient client, CommandLine commandLine, HttpUrl url, Request request)
-			throws IOException {
+	/**
+	 * Sends the given request, handles the common error cases and returns the
+	 * response body.
+	 */
+	public static String sendRequest(OkHttpClient client, CommonCommandLineOptions commandLine, HttpUrl url,
+			Request request) throws IOException {
 
 		HttpUrl host = new HttpUrl.Builder().scheme(url.scheme()).host(url.host()).port(url.port()).build();
 
@@ -263,7 +258,7 @@ public class TeamscaleClient {
 		return null;
 	}
 
-	private static void handleErrors(SafeResponse response, CommandLine commandLine) throws IOException {
+	private static void handleErrors(SafeResponse response, CommonCommandLineOptions commandLine) throws IOException {
 		if (response.unsafeResponse.isRedirect()) {
 			String location = response.unsafeResponse.header("Location");
 			if (location == null) {
@@ -296,6 +291,11 @@ public class TeamscaleClient {
 			handleError404(response, commandLine);
 		}
 
+		if (response.unsafeResponse.code() == 400) {
+			LogUtils.fail("Teamscale rejected the upload as invalid."
+					+ " Its response below explains what exactly it did not accept.", response);
+		}
+
 		if (!response.unsafeResponse.isSuccessful()) {
 			int code = response.unsafeResponse.code();
 			if (code >= 500) {
@@ -306,9 +306,9 @@ public class TeamscaleClient {
 		}
 	}
 
-	private static void handleError404(SafeResponse response, CommandLine commandLine) {
+	private static void handleError404(SafeResponse response, CommonCommandLineOptions commandLine) {
 		if (responseBodyIndicatesInvalidRevision(response)) {
-			LogUtils.fail("The revision '" + commandLine.commit + "' is not known to Teamscale or the version"
+			LogUtils.fail("The revision '" + commandLine.getRevision() + "' is not known to Teamscale or the version"
 					+ " control system(s) you configured in the Teamscale project '" + commandLine.project + "'."
 					+ " Please ensure that you used a valid version control revision:"
 					+ " (e.g. a Git SHA1, SVN revision number or TFS changeset ID) and"
@@ -317,12 +317,16 @@ public class TeamscaleClient {
 					+ " (e.g. your Git commit has been pushed).", response);
 		}
 
-		LogUtils.fail("The project with ID '" + commandLine.project + "' does not seem to exist in Teamscale."
+		String message = "The project with ID '" + commandLine.project + "' does not seem to exist in Teamscale."
 				+ " Please ensure that you used one of the project IDs, NOT the project name."
 				+ " You can see the IDs of all projects at "
 				+ TeamscaleUrlUtils.getProjectPerspectiveUrl(commandLine.url)
-				+ "\nPlease also ensure that the Teamscale URL is correct and no proxy is required to access it.",
-				response);
+				+ "\nPlease also ensure that the Teamscale URL is correct and no proxy is required to access it.";
+		String notFoundHint = commandLine.getNotFoundHint();
+		if (notFoundHint != null) {
+			message += "\n" + notFoundHint;
+		}
+		LogUtils.fail(message, response);
 	}
 
 	private static boolean responseBodyIndicatesInvalidRevision(SafeResponse response) {

@@ -24,18 +24,20 @@ public class TeamscaleUpload {
 	 */
 	public static void main(String[] args) throws FilePatternResolutionException, IOException {
 		CommandLine commandLine = CommandLine.parseArguments(args);
+		configureLogging(commandLine);
 
+		Map<String, Set<File>> filesByFormat = resolveAndConvertFiles(commandLine);
+		TeamscaleClient.performUpload(commandLine, filesByFormat);
+	}
+
+	private static void configureLogging(CommonCommandLineOptions commandLine) {
 		if (commandLine.debugLogEnabled) {
 			LogUtils.enableDebugLogging();
 		}
 		if (commandLine.printStackTrace) {
 			LogUtils.enableStackTracePrintingForKnownErrors();
 		}
-
-		Map<String, Set<File>> filesByFormat = resolveAndConvertFiles(commandLine);
-		TeamscaleClient.performUpload(commandLine, filesByFormat);
 	}
-
 
 	/**
 	 * Resolves the files that should be uploaded to Teamscale and converts them to
