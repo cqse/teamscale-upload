@@ -7,7 +7,7 @@ import java.util.List;
  * Arguments for an execution of the teamscale-upload executable's default
  * command, which uploads external analysis reports.
  */
-class TeamscaleUploadArguments extends CommonUploadArguments<TeamscaleUploadArguments> {
+class ReportUploadArguments extends CommonUploadArguments<ReportUploadArguments> {
 
 	private String partition = "NativeImageIT";
 	private String format = "simple";
@@ -25,7 +25,7 @@ class TeamscaleUploadArguments extends CommonUploadArguments<TeamscaleUploadArgu
 	 * Requests the help screen. All other options are omitted, as argparse4j prints
 	 * the help screen before it complains about missing required options.
 	 */
-	TeamscaleUploadArguments withHelp() {
+	ReportUploadArguments withHelp() {
 		this.help = true;
 		return this;
 	}
@@ -33,7 +33,7 @@ class TeamscaleUploadArguments extends CommonUploadArguments<TeamscaleUploadArgu
 	/**
 	 * Sets the report format.
 	 */
-	TeamscaleUploadArguments withFormat(String format) {
+	ReportUploadArguments withFormat(String format) {
 		this.format = format;
 		return this;
 	}
@@ -42,7 +42,7 @@ class TeamscaleUploadArguments extends CommonUploadArguments<TeamscaleUploadArgu
 	 * Sets the report-file path pattern. This sets the {@link ReportCommandLineOptions#files}
 	 * option (i.e., "pattern" == "files").
 	 */
-	TeamscaleUploadArguments withPattern(String pattern) {
+	ReportUploadArguments withPattern(String pattern) {
 		this.pattern = pattern;
 		return this;
 	}
@@ -50,7 +50,7 @@ class TeamscaleUploadArguments extends CommonUploadArguments<TeamscaleUploadArgu
 	/**
 	 * Sets the commit (hash) to which we upload the reports.
 	 */
-	TeamscaleUploadArguments withCommit(String commit) {
+	ReportUploadArguments withCommit(String commit) {
 		this.commit = commit;
 		return this;
 	}
@@ -58,7 +58,7 @@ class TeamscaleUploadArguments extends CommonUploadArguments<TeamscaleUploadArgu
 	/**
 	 * Sets the commit to which we upload the reports e.g. "master:HEAD".
 	 */
-	TeamscaleUploadArguments withTimestamp(String timestamp) {
+	ReportUploadArguments withTimestamp(String timestamp) {
 		this.timestamp = timestamp;
 		return this;
 	}
@@ -66,7 +66,7 @@ class TeamscaleUploadArguments extends CommonUploadArguments<TeamscaleUploadArgu
 	/**
 	 * Sets the target-repository name (name of repo connector in a Teamscale project).
 	 */
-	TeamscaleUploadArguments withRepository(String repository) {
+	ReportUploadArguments withRepository(String repository) {
 		this.repository = repository;
 		return this;
 	}
@@ -74,7 +74,7 @@ class TeamscaleUploadArguments extends CommonUploadArguments<TeamscaleUploadArgu
 	/**
 	 * Sets the path prefix prepended to all paths in the uploaded reports.
 	 */
-	TeamscaleUploadArguments withPathPrefix(String pathPrefix) {
+	ReportUploadArguments withPathPrefix(String pathPrefix) {
 		this.pathPrefix = pathPrefix;
 		return this;
 	}
@@ -83,7 +83,7 @@ class TeamscaleUploadArguments extends CommonUploadArguments<TeamscaleUploadArgu
 	 * Sets whether we should auto-detect the current commit and use it as a target
 	 * commit.
 	 */
-	TeamscaleUploadArguments withAutoDetectCommit() {
+	ReportUploadArguments withAutoDetectCommit() {
 		this.autoDetectCommit = true;
 		return this;
 	}
@@ -91,7 +91,7 @@ class TeamscaleUploadArguments extends CommonUploadArguments<TeamscaleUploadArgu
 	/**
 	 * Uses the given line for the "--append-to-message" parameter.
 	 */
-	TeamscaleUploadArguments withAdditionalMessageLine(String line) {
+	ReportUploadArguments withAdditionalMessageLine(String line) {
 		this.additionalMessageLine = line;
 		return this;
 	}
@@ -100,7 +100,7 @@ class TeamscaleUploadArguments extends CommonUploadArguments<TeamscaleUploadArgu
 	 * Configures the input (path to a file which contains additional report file
 	 * patterns).
 	 */
-	TeamscaleUploadArguments withInput(String input) {
+	ReportUploadArguments withInput(String input) {
 		this.input = input;
 		return this;
 	}
@@ -108,7 +108,7 @@ class TeamscaleUploadArguments extends CommonUploadArguments<TeamscaleUploadArgu
 	/**
 	 * Sets the partition into which the data is inserted in Teamscale.
 	 */
-	TeamscaleUploadArguments withPartition(String partition) {
+	ReportUploadArguments withPartition(String partition) {
 		this.partition = partition;
 		return this;
 	}
