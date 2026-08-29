@@ -292,8 +292,7 @@ public class TeamscaleClient {
 		}
 
 		if (response.unsafeResponse.code() == 400) {
-			LogUtils.fail("Teamscale rejected the upload as invalid."
-					+ " Its response below explains what exactly it did not accept.", response);
+			LogUtils.fail("Teamscale rejected the upload request as invalid.", response);
 		}
 
 		if (!response.unsafeResponse.isSuccessful()) {
