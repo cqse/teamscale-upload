@@ -176,7 +176,7 @@ public abstract class CommonCommandLineOptions {
 	 * answers a request with HTTP 404. Returns null if this command has no
 	 * additional hint to offer.
 	 */
-	public String getNotFoundHint() {
+	public String getAdditionalHttp404Hint() {
 		return null;
 	}
 

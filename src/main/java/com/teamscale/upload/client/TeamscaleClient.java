@@ -321,7 +321,7 @@ public class TeamscaleClient {
 				+ " You can see the IDs of all projects at "
 				+ TeamscaleUrlUtils.getProjectPerspectiveUrl(commandLine.url)
 				+ "\nPlease also ensure that the Teamscale URL is correct and no proxy is required to access it.";
-		String notFoundHint = commandLine.getNotFoundHint();
+		String notFoundHint = commandLine.getAdditionalHttp404Hint();
 		if (notFoundHint != null) {
 			message += "\n" + notFoundHint;
 		}

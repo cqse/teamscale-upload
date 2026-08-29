@@ -163,7 +163,7 @@ public class SbomCommandLine extends CommonCommandLineOptions {
 	}
 
 	@Override
-	public String getNotFoundHint() {
+	public String getAdditionalHttp404Hint() {
 		return "If the project ID and the URL are correct, your Teamscale server may be too old to"
 				+ " support SBOM uploads. Please check with your Teamscale administrator whether your"
 				+ " Teamscale version already offers this feature.";
