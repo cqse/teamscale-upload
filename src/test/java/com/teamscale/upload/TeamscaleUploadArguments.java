@@ -1,74 +1,40 @@
 package com.teamscale.upload;
 
-import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-import com.teamscale.upload.test_utils.TeamscaleMockServer;
-import com.teamscale.upload.utils.SecretUtils;
-
 /**
- * Arguments for an execution of the teamscale-upload executable.
+ * Arguments for an execution of the teamscale-upload executable's default
+ * command, which uploads external analysis reports.
  */
-class TeamscaleUploadArguments implements UploadArguments {
-	private static final String TEAMSCALE_TEST_USER = "teamscale-upload-build-test-user";
+class TeamscaleUploadArguments extends CommonUploadArguments<TeamscaleUploadArguments> {
+
 	private String partition = "NativeImageIT";
-	private String url = "https://cqse.teamscale.io/";
-	private String user = TEAMSCALE_TEST_USER;
-	private String accessKey = getAccessKeyFromCi();
-	private String project = "teamscale-upload";
 	private String format = "simple";
 	private String pattern = "src/test/resources/coverage_files\\*.simple";
 	private String input = null;
-	private boolean insecure = false;
-	private boolean useKeystore = false;
 	private boolean autoDetectCommit = false;
 	private String timestamp = "master:HEAD";
 	private String commit = null;
 	private String repository = null;
 	private String pathPrefix = null;
 	private String additionalMessageLine = null;
-	private boolean stackTrace = false;
-	private String proxy = null;
-	private boolean debug = false;
-	private Integer maxAttempts = null;
+	private boolean help = false;
 
 	/**
-	 * The file from which the teamscale-upload executable should draw its stdin.
+	 * Requests the help screen. All other options are omitted, as argparse4j prints
+	 * the help screen before it complains about missing required options.
 	 */
-	File stdinFile = null;
-	private String timeoutInSeconds = null;
+	TeamscaleUploadArguments withHelp() {
+		this.help = true;
+		return this;
+	}
 
 	/**
-	 * Sets the report format
+	 * Sets the report format.
 	 */
 	TeamscaleUploadArguments withFormat(String format) {
 		this.format = format;
-		return this;
-	}
-
-	/**
-	 * Sets the proxy to use when doing the upload in the format url:port.
-	 */
-	TeamscaleUploadArguments withProxy(String proxy) {
-		this.proxy = proxy;
-		return this;
-	}
-
-	/**
-	 * Sets the maximum number of attempts for transient errors.
-	 */
-	TeamscaleUploadArguments withMaxAttempts(int maxAttempts) {
-		this.maxAttempts = maxAttempts;
-		return this;
-	}
-
-	/**
-	 * Enabled debug logging.
-	 */
-	TeamscaleUploadArguments withDebug() {
-		this.debug = true;
 		return this;
 	}
 
@@ -82,16 +48,7 @@ class TeamscaleUploadArguments implements UploadArguments {
 	}
 
 	/**
-	 * Sets whether to use insecure certificate checking (i.e., skip checking
-	 * entirely)
-	 */
-	TeamscaleUploadArguments withInsecure() {
-		this.insecure = true;
-		return this;
-	}
-
-	/**
-	 * sets the commit (hash) to which we upload the reports
+	 * Sets the commit (hash) to which we upload the reports.
 	 */
 	TeamscaleUploadArguments withCommit(String commit) {
 		this.commit = commit;
@@ -99,7 +56,7 @@ class TeamscaleUploadArguments implements UploadArguments {
 	}
 
 	/**
-	 * sets the commit to which we upload the reports (e.g. "master:HEAD")
+	 * Sets the commit to which we upload the reports e.g. "master:HEAD".
 	 */
 	TeamscaleUploadArguments withTimestamp(String timestamp) {
 		this.timestamp = timestamp;
@@ -107,7 +64,7 @@ class TeamscaleUploadArguments implements UploadArguments {
 	}
 
 	/**
-	 * Sets the target-repository name (name of repo connector in Teamscale project)
+	 * Sets the target-repository name (name of repo connector in a Teamscale project).
 	 */
 	TeamscaleUploadArguments withRepository(String repository) {
 		this.repository = repository;
@@ -115,7 +72,7 @@ class TeamscaleUploadArguments implements UploadArguments {
 	}
 
 	/**
-	 * Sets the path prefix that is prepended to all paths in the uploaded reports.
+	 * Sets the path prefix prepended to all paths in the uploaded reports.
 	 */
 	TeamscaleUploadArguments withPathPrefix(String pathPrefix) {
 		this.pathPrefix = pathPrefix;
@@ -123,7 +80,7 @@ class TeamscaleUploadArguments implements UploadArguments {
 	}
 
 	/**
-	 * Sets whether we should auto-detect the current commit and use it as target
+	 * Sets whether we should auto-detect the current commit and use it as a target
 	 * commit.
 	 */
 	TeamscaleUploadArguments withAutoDetectCommit() {
@@ -132,16 +89,7 @@ class TeamscaleUploadArguments implements UploadArguments {
 	}
 
 	/**
-	 * Sets whether to use the {@link TeamscaleMockServer#TRUSTSTORE} as parameter
-	 * for --trusted-keystore.
-	 */
-	TeamscaleUploadArguments withKeystore() {
-		this.useKeystore = true;
-		return this;
-	}
-
-	/**
-	 * uses the given line for the "--append-to-message" parameter
+	 * Uses the given line for the "--append-to-message" parameter.
 	 */
 	TeamscaleUploadArguments withAdditionalMessageLine(String line) {
 		this.additionalMessageLine = line;
@@ -149,68 +97,8 @@ class TeamscaleUploadArguments implements UploadArguments {
 	}
 
 	/**
-	 * Configures the given url as Teamscale server
-	 */
-	TeamscaleUploadArguments withUrl(String url) {
-		this.url = url;
-		return this;
-	}
-
-	/**
-	 * sets whether to use the --stacktrace option
-	 */
-	TeamscaleUploadArguments withStackTrace() {
-		this.stackTrace = true;
-		return this;
-	}
-
-	/**
-	 * Confiures the access key for the Teamscale server
-	 */
-	TeamscaleUploadArguments withAccessKey(String accessKey) {
-		this.accessKey = accessKey;
-		return this;
-	}
-
-	/**
-	 * No access key is specified as option. The key which is specified in the
-	 * environment variable should be used instead.
-	 */
-	TeamscaleUploadArguments withoutAccessKeyInOption() {
-		this.accessKey = null;
-		return this;
-	}
-
-	/**
-	 * Configures that the access key is read from the given file
-	 */
-	TeamscaleUploadArguments withAccessKeyViaStdin(String stdinFilePath) {
-		this.accessKey = "-";
-		// If the access key is set to '-', we need to pipe the key from a file via
-		// stdin.
-		this.stdinFile = new File(stdinFilePath);
-		return this;
-	}
-
-	/**
-	 * Configures the Teamscale user
-	 */
-	TeamscaleUploadArguments withUser(String user) {
-		this.user = user;
-		return this;
-	}
-
-	/**
-	 * Configures the Teamscale project
-	 */
-	TeamscaleUploadArguments withProject(String project) {
-		this.project = project;
-		return this;
-	}
-
-	/**
 	 * Configures the input (path to a file which contains additional report file
-	 * patterns)
+	 * patterns).
 	 */
 	TeamscaleUploadArguments withInput(String input) {
 		this.input = input;
@@ -218,7 +106,7 @@ class TeamscaleUploadArguments implements UploadArguments {
 	}
 
 	/**
-	 * sets the partition into which the data is inserted in Teamscale
+	 * Sets the partition into which the data is inserted in Teamscale.
 	 */
 	TeamscaleUploadArguments withPartition(String partition) {
 		this.partition = partition;
@@ -226,48 +114,30 @@ class TeamscaleUploadArguments implements UploadArguments {
 	}
 
 	/**
-	 * Sets the timeout for the Teamscale-service call
-	 */
-	TeamscaleUploadArguments withTimeoutInSeconds(String timeoutInSeconds) {
-		this.timeoutInSeconds = timeoutInSeconds;
-		return this;
-	}
-
-	@Override
-	public File getStdinFile() {
-		return stdinFile;
-	}
-
-	/**
 	 * Assembles the command that invokes the given teamscale-upload executable.
 	 */
 	@Override
 	public String[] toCommand(String executable) {
-		List<String> command = new ArrayList<>(Arrays.asList(executable, "--server", url, "--user", user, "--format",
-				format, "--project", project, "--partition", partition));
-		if (accessKey != null) {
-			command.add("--accesskey");
-			command.add(accessKey);
+		if (help) {
+			return new String[] { executable, "--help" };
 		}
+
+		List<String> command = new ArrayList<>(List.of(executable));
+		addCommonOptions(command);
+
+		command.add("--format");
+		command.add(format);
+		command.add("--partition");
+		command.add(partition);
 		if (input != null) {
 			command.add("--input");
 			command.add(input);
 		}
 		// "files" is a positional argument. ("pattern" == "files")
 		command.add(pattern);
-		if (insecure) {
-			command.add("--insecure");
-		}
-		if (useKeystore) {
-			command.add("--trusted-keystore");
-			command.add(TeamscaleMockServer.TRUSTSTORE.getAbsolutePath() + ";password");
-		}
 		if (additionalMessageLine != null) {
 			command.add("--append-to-message");
 			command.add(additionalMessageLine);
-		}
-		if (stackTrace) {
-			command.add("--stacktrace");
 		}
 
 		if (commit != null) {
@@ -286,29 +156,6 @@ class TeamscaleUploadArguments implements UploadArguments {
 			command.add("--path-prefix");
 			command.add(pathPrefix);
 		}
-		if (timeoutInSeconds != null) {
-			command.add("--timeout");
-			command.add(timeoutInSeconds);
-		}
-		if (proxy != null) {
-			command.add("--proxy");
-			command.add(proxy);
-		}
-		if (debug) {
-			command.add("--debug");
-		}
-		if (maxAttempts != null) {
-			command.add("--max-attempts");
-			command.add(String.valueOf(maxAttempts));
-		}
 		return command.toArray(new String[0]);
-	}
-
-	private static String getAccessKeyFromCi() {
-		String accessKey = System.getenv(SecretUtils.TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE);
-		if (accessKey == null) {
-			return "not-a-ci-build";
-		}
-		return accessKey;
 	}
 }

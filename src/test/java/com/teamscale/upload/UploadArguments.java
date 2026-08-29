@@ -6,7 +6,6 @@ import java.io.File;
  * Arguments for an execution of the teamscale-upload executable. Implemented
  * once per command the tool offers.
  */
-@FunctionalInterface
 public interface UploadArguments {
 
 	/**
@@ -18,7 +17,5 @@ public interface UploadArguments {
 	 * The file from which the teamscale-upload executable should draw its stdin, or
 	 * null if stdin is not used.
 	 */
-	default File getStdinFile() {
-		return null;
-	}
+	File getStdinFile();
 }

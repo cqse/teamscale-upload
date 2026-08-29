@@ -618,8 +618,7 @@ public abstract class IntegrationTestBase {
 
 	@Test
 	public void sbomCommandIsMentionedInMainHelp() {
-		ProcessUtils.ProcessResult result = runUploader(
-				executable -> new String[] { executable, "--help" });
+		ProcessUtils.ProcessResult result = runUploader(new TeamscaleUploadArguments().withHelp());
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
 					.isZero();
