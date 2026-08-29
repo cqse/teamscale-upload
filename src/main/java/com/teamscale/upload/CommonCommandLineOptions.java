@@ -86,10 +86,27 @@ public abstract class CommonCommandLineOptions {
 	 * Registers the options shared by all commands on the given parser.
 	 */
 	public static void addCommonArguments(ArgumentParser parser) {
-		parser.addArgument("-s", "--server").metavar("URL").required(true)
-				.help("The url under which the Teamscale server can be reached.");
+		addConnectionRelatedArguments(parser);
+
 		parser.addArgument("-p", "--project").metavar("PROJECT").required(true)
 				.help("The project ID (NOT the project name!) to which to upload the data.");
+		parser.addArgument("--max-attempts").metavar("MAX_ATTEMPTS").type(Integer.class).setDefault(3).required(false)
+				.help("The maximum number of attempts for uploads that fail due to transient network errors"
+						+ " (e.g. connection resets, server errors). Defaults to 3.");
+		parser.addArgument("--stacktrace").action(Arguments.storeTrue()).required(false)
+				.help("Enables printing stack traces in all cases where errors occur. Used for debugging.");
+		parser.addArgument("--debug").action(Arguments.storeTrue()).required(false)
+				.help("Enables printing debug log output. This automatically enables --stacktrace.");
+	}
+
+	/**
+	 * Registers the options that configure the connection to Teamscale: where to
+	 * reach it, how to authenticate against it and how to establish the
+	 * {@link OkHttpClient} used for the requests.
+	 */
+	private static void addConnectionRelatedArguments(ArgumentParser parser) {
+		parser.addArgument("-s", "--server").metavar("URL").required(true)
+				.help("The url under which the Teamscale server can be reached.");
 		parser.addArgument("-u", "--user").metavar("USER").required(true)
 				.help("The username used to perform the upload. Must have the"
 						+ " 'Perform External Uploads' permission for the given Teamscale project.");
@@ -112,16 +129,9 @@ public abstract class CommonCommandLineOptions {
 						+ "\n/path/to/keystore.jks;PASSWORD"
 						+ "\nThe path to the keystore must not contain a semicolon. When this option"
 						+ " is used, --validate-ssl will automatically be enabled as well.");
-		parser.addArgument("--stacktrace").action(Arguments.storeTrue()).required(false)
-				.help("Enables printing stack traces in all cases where errors occur. Used for debugging.");
-		parser.addArgument("--debug").action(Arguments.storeTrue()).required(false)
-				.help("Enables printing debug log output. This automatically enables --stacktrace.");
 		parser.addArgument("--timeout").metavar("TIMEOUT_IN_SECONDS").required(false)
 				.help("Sets the timeout in seconds for TCP connect, read and write for HTTP requests. "
 						+ "Defaults to 60 seconds.");
-		parser.addArgument("--max-attempts").metavar("MAX_ATTEMPTS").type(Integer.class).setDefault(3).required(false)
-				.help("The maximum number of attempts for uploads that fail due to transient network errors"
-						+ " (e.g. connection resets, server errors). Defaults to 3.");
 	}
 
 	/**
