@@ -5,7 +5,7 @@ import java.io.IOException;
 
 import javax.net.ssl.SSLHandshakeException;
 
-import com.teamscale.upload.SbomCommandLine;
+import com.teamscale.upload.SbomCommandLineOptions;
 import com.teamscale.upload.utils.LogUtils;
 import com.teamscale.upload.utils.OkHttpUtils;
 
@@ -32,7 +32,7 @@ public class SbomUploadClient {
 	private static final String FILE_PARAMETER_NAME = "file";
 
 	/** Performs the upload of the given SBOM file. */
-	public static void performUpload(SbomCommandLine commandLine, File sbomFile) throws IOException {
+	public static void performUpload(SbomCommandLineOptions commandLine, File sbomFile) throws IOException {
 		OkHttpClient client = OkHttpUtils.createClient(commandLine.validateSsl, commandLine.proxy,
 				commandLine.getKeyStorePath(), commandLine.getKeyStorePassword(), commandLine.getTimeoutInSeconds());
 		try {
@@ -47,7 +47,7 @@ public class SbomUploadClient {
 		}
 	}
 
-	private static void sendUploadRequest(OkHttpClient client, SbomCommandLine commandLine, File sbomFile)
+	private static void sendUploadRequest(OkHttpClient client, SbomCommandLineOptions commandLine, File sbomFile)
 			throws IOException {
 		HttpUrl url = buildUploadUrl(commandLine);
 
@@ -72,7 +72,7 @@ public class SbomUploadClient {
 	 * the URL must not contain an API version segment (as opposed to the report
 	 * upload performed by {@link TeamscaleClient}).
 	 */
-	private static HttpUrl buildUploadUrl(SbomCommandLine commandLine) {
+	private static HttpUrl buildUploadUrl(SbomCommandLineOptions commandLine) {
 		return commandLine.url.newBuilder().addPathSegments("api/projects").addPathSegment(commandLine.project)
 				.addPathSegment("vulnerability-report").addQueryParameter("build-name", commandLine.buildName)
 				.addQueryParameter("version", commandLine.buildVersion)

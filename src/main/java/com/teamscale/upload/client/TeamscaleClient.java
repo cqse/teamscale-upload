@@ -12,7 +12,7 @@ import java.util.Set;
 
 import javax.net.ssl.SSLHandshakeException;
 
-import com.teamscale.upload.CommandLine;
+import com.teamscale.upload.ReportCommandLineOptions;
 import com.teamscale.upload.CommonCommandLineOptions;
 import com.teamscale.upload.autodetect_revision.AutodetectCommitUtils;
 import com.teamscale.upload.utils.LogUtils;
@@ -36,7 +36,7 @@ public class TeamscaleClient {
 	private static final String MINIMUM_REQUIRED_API_VERSION = "v8.2";
 
 	/** Performs the upload of the files. */
-	public static void performUpload(CommandLine commandLine, Map<String, Set<File>> filesByFormat) throws IOException {
+	public static void performUpload(ReportCommandLineOptions commandLine, Map<String, Set<File>> filesByFormat) throws IOException {
 		OkHttpClient client = OkHttpUtils.createClient(commandLine.validateSsl, commandLine.proxy,
 				commandLine.getKeyStorePath(), commandLine.getKeyStorePassword(), commandLine.getTimeoutInSeconds());
 		try {
@@ -55,7 +55,7 @@ public class TeamscaleClient {
 		}
 	}
 
-	private static void performUploadWithRetry(OkHttpClient client, CommandLine commandLine,
+	private static void performUploadWithRetry(OkHttpClient client, ReportCommandLineOptions commandLine,
 			Map<String, Set<File>> filesByFormat) throws IOException {
 		RetryUtils.performWithRetry(commandLine.maxAttempts, () -> {
 			String sessionId = openSession(client, commandLine, filesByFormat.keySet());
@@ -107,7 +107,7 @@ public class TeamscaleClient {
 		}
 	}
 
-	private static String openSession(OkHttpClient client, CommandLine commandLine, Collection<String> formats)
+	private static String openSession(OkHttpClient client, ReportCommandLineOptions commandLine, Collection<String> formats)
 			throws IOException {
 		HttpUrl.Builder builder = commandLine.url.newBuilder().addPathSegments("api")
 				.addPathSegments(MINIMUM_REQUIRED_API_VERSION).addPathSegments("projects")
@@ -151,7 +151,7 @@ public class TeamscaleClient {
 	 *
 	 * @return the revision or branch:timestamp coordinate used.
 	 */
-	private static String handleRevisionAndBranchTimestamp(CommandLine commandLine, HttpUrl.Builder builder) {
+	private static String handleRevisionAndBranchTimestamp(ReportCommandLineOptions commandLine, HttpUrl.Builder builder) {
 		if (commandLine.commit != null) {
 			builder.addQueryParameter("revision", commandLine.commit);
 			if (commandLine.repository != null) {
@@ -174,7 +174,7 @@ public class TeamscaleClient {
 		}
 	}
 
-	private static void closeSession(OkHttpClient client, CommandLine commandLine, String sessionId)
+	private static void closeSession(OkHttpClient client, ReportCommandLineOptions commandLine, String sessionId)
 			throws IOException {
 		HttpUrl.Builder builder = commandLine.url.newBuilder().addPathSegments("api")
 				.addPathSegments(MINIMUM_REQUIRED_API_VERSION).addPathSegments("projects")
@@ -190,7 +190,7 @@ public class TeamscaleClient {
 		sendRequest(client, commandLine, url, request);
 	}
 
-	private static void sendRequestForFormat(OkHttpClient client, CommandLine commandLine, String format,
+	private static void sendRequestForFormat(OkHttpClient client, ReportCommandLineOptions commandLine, String format,
 			Set<File> fileList, String sessionId) throws IOException {
 		MultipartBody.Builder multipartBodyBuilder = new MultipartBody.Builder().setType(MultipartBody.FORM);
 

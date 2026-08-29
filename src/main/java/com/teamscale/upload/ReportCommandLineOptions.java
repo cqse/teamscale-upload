@@ -20,7 +20,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
  * Parses and validates the command line arguments of the default command, which
  * uploads external analysis reports.
  */
-public class CommandLine extends CommonCommandLineOptions {
+public class ReportCommandLineOptions extends CommonCommandLineOptions {
 
 	/**
 	 * The Teamscale partition.
@@ -81,7 +81,7 @@ public class CommandLine extends CommonCommandLineOptions {
 	 */
 	public final List<String> additionalMessageLines;
 
-	private CommandLine(Namespace namespace) {
+	private ReportCommandLineOptions(Namespace namespace) {
 		super(namespace);
 		this.partition = namespace.getString("partition");
 		this.commit = namespace.getString("commit");
@@ -116,7 +116,7 @@ public class CommandLine extends CommonCommandLineOptions {
 	/**
 	 * Parses the given command line arguments and validates them.
 	 */
-	public static CommandLine parseArguments(String[] args) {
+	public static ReportCommandLineOptions parseArguments(String[] args) {
 		ArgumentParser parser = ArgumentParsers.newFor("teamscale-upload").build().defaultHelp(true)
 				.description("Upload coverage, findings, ... to Teamscale.")
 				.version("Teamscale Upload " + ToolVersion.VERSION);
@@ -190,11 +190,11 @@ public class CommandLine extends CommonCommandLineOptions {
 				+ "\n\nExample:" + "\n\n[jacoco]" + "\npattern1/**.xml" + "\npattern2/**.xml" + "\n[findbugs]"
 				+ "\npattern1/**.findbugs.xml" + "\npattern2/**.findbugs.xml" + "\n\nCOMMANDS"
 				+ "\n\nBesides uploading external analysis reports, this tool provides the following"
-				+ " additional commands:" + "\n\n" + SbomCommandLine.COMMAND_NAME
+				+ " additional commands:" + "\n\n" + SbomCommandLineOptions.COMMAND_NAME
 				+ ": upload a Software Bill of Materials (SBOM) to Teamscale."
-				+ "\nRun 'teamscale-upload " + SbomCommandLine.COMMAND_NAME + " --help' for its options.");
+				+ "\nRun 'teamscale-upload " + SbomCommandLineOptions.COMMAND_NAME + " --help' for its options.");
 
-		return parseAndValidate(parser, args, CommandLine::new);
+		return parseAndValidate(parser, args, ReportCommandLineOptions::new);
 	}
 
 	/**

@@ -18,7 +18,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
  * Parses and validates the command line arguments of the
  * {@value #COMMAND_NAME} command, which uploads a Software Bill of Materials.
  */
-public class SbomCommandLine extends CommonCommandLineOptions {
+public class SbomCommandLineOptions extends CommonCommandLineOptions {
 
 	/**
 	 * The name under which this command is invoked, i.e.
@@ -56,7 +56,7 @@ public class SbomCommandLine extends CommonCommandLineOptions {
 	 */
 	private String revision;
 
-	private SbomCommandLine(Namespace namespace) {
+	private SbomCommandLineOptions(Namespace namespace) {
 		super(namespace);
 		this.buildName = namespace.getString("build_name");
 		this.buildVersion = namespace.getString("build_version");
@@ -68,7 +68,7 @@ public class SbomCommandLine extends CommonCommandLineOptions {
 	 * Parses the given command line arguments and validates them. The arguments
 	 * must not include the {@value #COMMAND_NAME} command itself.
 	 */
-	public static SbomCommandLine parseArguments(String[] args) {
+	public static SbomCommandLineOptions parseArguments(String[] args) {
 		ArgumentParser parser = ArgumentParsers.newFor("teamscale-upload " + COMMAND_NAME).build().defaultHelp(true)
 				.description("Upload a Software Bill of Materials (SBOM) to Teamscale.");
 
@@ -101,7 +101,7 @@ public class SbomCommandLine extends CommonCommandLineOptions {
 				+ " GitHub Actions, Travis CI etc. If automatic detection fails, the upload will fail"
 				+ " and you must specify the commit manually via --commit.");
 
-		return parseAndValidate(parser, args, SbomCommandLine::new);
+		return parseAndValidate(parser, args, SbomCommandLineOptions::new);
 	}
 
 	@Override

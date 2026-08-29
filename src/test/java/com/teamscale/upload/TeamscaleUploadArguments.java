@@ -39,7 +39,7 @@ class TeamscaleUploadArguments extends CommonUploadArguments<TeamscaleUploadArgu
 	}
 
 	/**
-	 * Sets the report-file path pattern. This sets the {@link CommandLine#files}
+	 * Sets the report-file path pattern. This sets the {@link ReportCommandLineOptions#files}
 	 * option (i.e., "pattern" == "files").
 	 */
 	TeamscaleUploadArguments withPattern(String pattern) {

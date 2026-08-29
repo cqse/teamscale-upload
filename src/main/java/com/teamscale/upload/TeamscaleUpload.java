@@ -25,12 +25,12 @@ public class TeamscaleUpload {
 	 * This method serves as entry point to the teamscale-upload application.
 	 */
 	public static void main(String[] args) throws FilePatternResolutionException, IOException {
-		if (args.length > 0 && SbomCommandLine.COMMAND_NAME.equals(args[0])) {
+		if (args.length > 0 && SbomCommandLineOptions.COMMAND_NAME.equals(args[0])) {
 			uploadSbom(Arrays.copyOfRange(args, 1, args.length));
 			return;
 		}
 
-		CommandLine commandLine = CommandLine.parseArguments(args);
+		ReportCommandLineOptions commandLine = ReportCommandLineOptions.parseArguments(args);
 		configureLogging(commandLine);
 
 		Map<String, Set<File>> filesByFormat = resolveAndConvertFiles(commandLine);
@@ -39,10 +39,10 @@ public class TeamscaleUpload {
 
 	/**
 	 * Uploads a Software Bill of Materials. The given arguments must not include
-	 * the {@link SbomCommandLine#COMMAND_NAME} command itself.
+	 * the {@link SbomCommandLineOptions#COMMAND_NAME} command itself.
 	 */
 	private static void uploadSbom(String[] args) throws FilePatternResolutionException, IOException {
-		SbomCommandLine commandLine = SbomCommandLine.parseArguments(args);
+		SbomCommandLineOptions commandLine = SbomCommandLineOptions.parseArguments(args);
 		configureLogging(commandLine);
 
 		File sbomFile = commandLine.resolveSbomFile();
@@ -62,7 +62,7 @@ public class TeamscaleUpload {
 	 * Resolves the files that should be uploaded to Teamscale and converts them to
 	 * the expected formated if needed (e.g., XCode reports).
 	 */
-	private static Map<String, Set<File>> resolveAndConvertFiles(CommandLine commandLine)
+	private static Map<String, Set<File>> resolveAndConvertFiles(ReportCommandLineOptions commandLine)
 			throws FilePatternResolutionException, IOException {
 		Map<String, Set<File>> filesByFormat = ReportPatternUtils.resolveInputFilePatterns(commandLine.inputFile,
 				commandLine.files, commandLine.format);

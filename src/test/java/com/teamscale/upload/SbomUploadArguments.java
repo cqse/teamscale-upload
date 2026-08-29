@@ -6,7 +6,7 @@ import java.util.List;
 
 /**
  * Arguments for an execution of the teamscale-upload executable's
- * {@link SbomCommandLine#COMMAND_NAME} command.
+ * {@link SbomCommandLineOptions#COMMAND_NAME} command.
  */
 class SbomUploadArguments extends CommonUploadArguments<SbomUploadArguments> {
 
@@ -88,10 +88,10 @@ class SbomUploadArguments extends CommonUploadArguments<SbomUploadArguments> {
 	@Override
 	public String[] toCommand(String executable) {
 		if (help) {
-			return new String[] { executable, SbomCommandLine.COMMAND_NAME, "--help" };
+			return new String[] { executable, SbomCommandLineOptions.COMMAND_NAME, "--help" };
 		}
 
-		List<String> command = new ArrayList<>(Arrays.asList(executable, SbomCommandLine.COMMAND_NAME));
+		List<String> command = new ArrayList<>(Arrays.asList(executable, SbomCommandLineOptions.COMMAND_NAME));
 		addCommonOptions(command);
 
 		if (buildName != null) {
