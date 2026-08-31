@@ -19,12 +19,8 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 /**
- * Performs the requests that an upload to Teamscale consists of.
- * <p>
- * This is what the individual upload clients have in common: they all need an
- * {@link OkHttpClient} configured from the connection options, retries for
- * transient network errors and the same handling of Teamscale's responses. What
- * requests they send in between is up to them.
+ * Performs the requests that an upload to Teamscale requires and takes care of
+ * retrying after failed attempts plus handling error responses.
  */
 public class TeamscaleRequestExecutor {
 
@@ -39,10 +35,8 @@ public class TeamscaleRequestExecutor {
 	}
 
 	/**
-	 * Creates a client from the given connection options, performs the given upload
-	 * with it and shuts the client down afterwards.
-	 * <p>
-	 * The upload is retried if it fails due to a transient network error.
+	 * Performs an upload to Teamscale using a {@link OkHttpClient}. The upload is retried if it fails
+	 * due to a transient network error.
 	 */
 	public static void performUpload(CommonCommandLineOptions commandLine, Upload upload) throws IOException {
 		OkHttpClient client = OkHttpUtils.createClient(commandLine.validateSsl, commandLine.proxy,

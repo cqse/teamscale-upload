@@ -85,7 +85,7 @@ public class ReportUploadClient {
 	}
 
 	/**
-	 * Adds either a revision or t parameter to the given builder, based on the
+	 * Adds either a revision or timestamp parameter to the given builder, based on the
 	 * input.
 	 * <p>
 	 * We track revision or branch:timestamp for the session as it should be the
