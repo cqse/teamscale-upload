@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.teamscale.upload.autodetect_revision.AutodetectCommitUtils;
 import com.teamscale.upload.resolve.FilePatternResolutionException;
 import com.teamscale.upload.resolve.FilePatternResolver;
 import com.teamscale.upload.utils.LogUtils;
@@ -41,26 +40,14 @@ public class SbomCommandLineOptions extends CommonCommandLineOptions {
 	 */
 	public final String buildVersion;
 	/**
-	 * The commit to which to upload. May be null, in which case it is
-	 * auto-detected.
-	 */
-	public final String commit;
-	/**
 	 * The path or pattern of the SBOM file to upload, as given on the command line.
 	 */
 	public final List<String> files;
-
-	/**
-	 * The revision resolved from {@link #commit} or auto-detection. Resolved
-	 * lazily, see {@link #getRevision()}.
-	 */
-	private String revision;
 
 	private SbomCommandLineOptions(Namespace namespace) {
 		super(namespace);
 		this.buildName = namespace.getString("build_name");
 		this.buildVersion = namespace.getString("build_version");
-		this.commit = namespace.getString("commit");
 		this.files = getListSafe(namespace, "files");
 	}
 
@@ -81,11 +68,10 @@ public class SbomCommandLineOptions extends CommonCommandLineOptions {
 				.help("The version (e.g. the build number) identifying this upload within the build."
 						+ " Uploading again with the same --build-name and --build-version overwrites"
 						+ " the previously uploaded SBOM. Must not contain '" + RESERVED_CHARACTER + "'.");
-		parser.addArgument("-c", "--commit").metavar("REVISION").required(false)
-				.help("The version control commit the build was produced from. This links the SBOM to"
-						+ " a commit in Teamscale. Can be either a Git SHA1, a SVN revision number or a"
-						+ " Team Foundation changeset ID. If omitted, teamscale-upload tries to detect"
-						+ " the commit automatically.");
+		addCommitArgument(parser, "The version control commit the build was produced from. This links the SBOM to"
+				+ " a commit in Teamscale. Can be either a Git SHA1, a SVN revision number or a"
+				+ " Team Foundation changeset ID. If omitted, teamscale-upload tries to detect"
+				+ " the commit automatically.");
 		parser.addArgument("files").metavar("SBOM").nargs("*")
 				.help("Path or pattern of the SBOM file to upload. Exactly one file must be uploaded"
 						+ " per --build-name and --build-version. Supported formats are CycloneDX"
@@ -167,21 +153,5 @@ public class SbomCommandLineOptions extends CommonCommandLineOptions {
 		return "If the project ID and the URL are correct, your Teamscale server may be too old to"
 				+ " support SBOM uploads. Please check with your Teamscale administrator whether your"
 				+ " Teamscale version already offers this feature.";
-	}
-
-	/**
-	 * Returns the revision to which to upload, either the one given via --commit or
-	 * an auto-detected one. Terminates the program if no revision can be
-	 * determined.
-	 */
-	@Override
-	public String getRevision() {
-		if (revision == null) {
-			revision = commit != null ? commit : AutodetectCommitUtils.detectCommit();
-			if (revision == null) {
-				LogUtils.fail("Failed to automatically detect the commit. Please specify it manually via --commit");
-			}
-		}
-		return revision;
 	}
 }

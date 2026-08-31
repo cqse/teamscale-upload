@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 
 import com.teamscale.upload.SbomCommandLineOptions;
+import com.teamscale.upload.autodetect_revision.AutodetectCommitUtils;
 import com.teamscale.upload.utils.LogUtils;
 
 import okhttp3.Credentials;
@@ -30,13 +31,30 @@ public class SbomUploadClient {
 
 	/** Performs the upload of the given SBOM file. */
 	public static void performUpload(SbomCommandLineOptions commandLine, File sbomFile) throws IOException {
+		String revision = determineRevision(commandLine);
 		TeamscaleRequestExecutor.performUpload(commandLine,
-				client -> sendUploadRequest(client, commandLine, sbomFile));
+				client -> sendUploadRequest(client, commandLine, sbomFile, revision));
 	}
 
-	private static void sendUploadRequest(OkHttpClient client, SbomCommandLineOptions commandLine, File sbomFile)
-			throws IOException {
-		HttpUrl url = buildUploadUrl(commandLine);
+	/**
+	 * Returns the revision the SBOM is uploaded for: the one given via --commit or,
+	 * if that option was omitted, an auto-detected one.
+	 */
+	private static String determineRevision(SbomCommandLineOptions commandLine) {
+		if (commandLine.commit != null) {
+			return commandLine.commit;
+		}
+
+		String detectedCommit = AutodetectCommitUtils.detectCommit();
+		if (detectedCommit == null) {
+			LogUtils.fail("Failed to automatically detect the commit. Please specify it manually via --commit");
+		}
+		return detectedCommit;
+	}
+
+	private static void sendUploadRequest(OkHttpClient client, SbomCommandLineOptions commandLine, File sbomFile,
+			String revision) throws IOException {
+		HttpUrl url = buildUploadUrl(commandLine, revision);
 
 		RequestBody requestBody = new MultipartBody.Builder().setType(MultipartBody.FORM)
 				.addFormDataPart(FILE_PARAMETER_NAME, sbomFile.getName(),
@@ -59,10 +77,9 @@ public class SbomUploadClient {
 	 * the URL must not contain an API version segment (as opposed to the report
 	 * upload performed by {@link ReportUploadClient}).
 	 */
-	private static HttpUrl buildUploadUrl(SbomCommandLineOptions commandLine) {
+	private static HttpUrl buildUploadUrl(SbomCommandLineOptions commandLine, String revision) {
 		return commandLine.url.newBuilder().addPathSegments("api/projects").addPathSegment(commandLine.project)
 				.addPathSegment("vulnerability-report").addQueryParameter("build-name", commandLine.buildName)
-				.addQueryParameter("version", commandLine.buildVersion)
-				.addQueryParameter("revision", commandLine.getRevision()).build();
+				.addQueryParameter("version", commandLine.buildVersion).addQueryParameter("revision", revision).build();
 	}
 }

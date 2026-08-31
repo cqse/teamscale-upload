@@ -31,10 +31,6 @@ public class ReportCommandLineOptions extends CommonCommandLineOptions {
 	 */
 	public final String format;
 	/**
-	 * The commit to which to upload. May be null.
-	 */
-	public final String commit;
-	/**
 	 * The repository can be specified in combination with the commit/revision to
 	 * identify the correct commit in situations where the same revision exists in
 	 * multiple repositories.
@@ -84,7 +80,6 @@ public class ReportCommandLineOptions extends CommonCommandLineOptions {
 	private ReportCommandLineOptions(Namespace namespace) {
 		super(namespace);
 		this.partition = namespace.getString("partition");
-		this.commit = namespace.getString("commit");
 		this.repository = namespace.getString("repository");
 		this.timestamp = namespace.getString("branch_and_timestamp");
 		this.pathPrefix = namespace.getString("path_prefix");
@@ -106,11 +101,6 @@ public class ReportCommandLineOptions extends CommonCommandLineOptions {
 			this.format = null;
 		}
 
-	}
-
-	@Override
-	public String getRevision() {
-		return commit;
 	}
 
 	/**
@@ -135,11 +125,10 @@ public class ReportCommandLineOptions extends CommonCommandLineOptions {
 				.help("The file format of the reports which are specified as command line arguments."
 						+ "\nSee http://cqse.eu/upload-formats for a full list of supported file formats."
 						+ "\nA report format must be supplied for each report file, either via --format or via --input.");
-		parser.addArgument("-c", "--commit").metavar("REVISION").required(false)
-				.help("The version control commit for which you obtained the report files."
-						+ " E.g. if you obtained a test coverage report in your CI pipeline, then this"
-						+ " is the commit the CI pipeline built before running the tests."
-						+ " Can be either a Git SHA1, a SVN revision number or an Team Foundation changeset ID.");
+		addCommitArgument(parser, "The version control commit for which you obtained the report files."
+				+ " E.g. if you obtained a test coverage report in your CI pipeline, then this"
+				+ " is the commit the CI pipeline built before running the tests."
+				+ " Can be either a Git SHA1, a SVN revision number or an Team Foundation changeset ID.");
 		parser.addArgument("-r", "--repository").metavar("REPOSITORY").required(false)
 				.help("When using the revision parameter, this parameter allows to pass a repository name which"
 						+ " is used to identify the correct commit in situations where the same revision exists"
