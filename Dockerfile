@@ -3,6 +3,19 @@ FROM ubuntu:26.04@sha256:3131b4cc82a783df6c9df078f86e01819a13594b865c2cad47bd1bc
 RUN groupadd --system teamscale \
  && useradd --system --gid teamscale --create-home teamscale
 
+# teamscale-upload auto-detects the uploaded revision by running `git rev-parse` in the working
+# directory, so the image needs a git binary. --no-install-recommends keeps out git-man and friends.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git \
+ && rm -rf /var/lib/apt/lists/*
+
+# A repository bind-mounted from the host belongs to the host user's UID, not to the `teamscale`
+# user this image runs as. git would refuse such a repository as "dubious ownership" and
+# auto-detection would fail with a misleading "not within a Git repository" message. We accept the
+# weakened ownership check: the container has a single purpose and the user mounts their own
+# repository on purpose.
+RUN git config --system --add safe.directory '*'
+
 # Self-contained jlink distribution: launcher + bundled (glibc) JVM + all jars.
 # Extracted from teamscale-upload-linux-x86_64.zip (./gradlew customRuntimeZip-linux-x86_64) into
 # the build context. Not the `distZip` output (teamscale-upload-<version>.zip): that one ships no
@@ -18,6 +31,11 @@ COPY teamscale-upload/ /opt/teamscale-upload/
 # would shadow a real JDK installed in a derived image with our stripped 4-module runtime, which
 # then fails in confusing ways for anything but teamscale-upload itself.
 RUN ln -s /opt/teamscale-upload/bin/teamscale-upload /usr/local/bin/teamscale-upload
+
+# Default mount point for report files with plain `docker run -v "$PWD:/workspace:ro"`.
+# CI systems (GitLab, Jenkins, Azure DevOps) override this with their own workspace path.
+RUN install -d -o teamscale -g teamscale /workspace
+WORKDIR /workspace
 
 USER teamscale
 ENTRYPOINT ["teamscale-upload"]
