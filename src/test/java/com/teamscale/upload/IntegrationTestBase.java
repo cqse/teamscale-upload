@@ -606,6 +606,53 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
+	public void rejectedSbomUploadShowsItsExplanation() {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
+			server.respondWith(400, "The 'build-name' must not contain '#'.");
+			ProcessUtils.ProcessResult result = runUploader(
+					new SbomUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT));
+			assertSoftlyThat(softly -> {
+				softly.assertThat(result.exitCode).isNotZero();
+				softly.assertThat(result.errorOutput).contains("Teamscale rejected the upload request as invalid.");
+				softly.assertThat(result.errorOutput).contains("The 'build-name' must not contain '#'.");
+			});
+		}
+	}
+
+	@Test
+	public void sbomUploadToUnknownProjectShowsDetailedHints() {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
+			server.respondWith(404, "Not found");
+			ProcessUtils.ProcessResult result = runUploader(
+					new SbomUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT));
+			assertSoftlyThat(softly -> {
+				softly.assertThat(result.exitCode).isNotZero();
+				softly.assertThat(result.errorOutput).contains("does not seem to exist in Teamscale");
+				// a 404 may also mean the endpoint is missing, which only the sbom command says
+				softly.assertThat(result.errorOutput).contains("may be too old to support SBOM uploads");
+			});
+		}
+	}
+
+	/**
+	 * The hint that Teamscale may not support SBOM uploads yet would be misleading
+	 * for the report upload, whose endpoint has existed for a long time.
+	 */
+	@Test
+	public void reportUploadToUnknownProjectDoesNotHintAtSbomSupport() {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
+			server.respondWith(404, "Not found");
+			ProcessUtils.ProcessResult result = runUploader(
+					new ReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT));
+			assertSoftlyThat(softly -> {
+				softly.assertThat(result.exitCode).isNotZero();
+				softly.assertThat(result.errorOutput).contains("does not seem to exist in Teamscale");
+				softly.assertThat(result.errorOutput).doesNotContain("SBOM");
+			});
+		}
+	}
+
+	@Test
 	public void sbomHelpIsAvailable() {
 		ProcessUtils.ProcessResult result = runUploader(new SbomUploadArguments().withHelp());
 		assertSoftlyThat(softly -> {

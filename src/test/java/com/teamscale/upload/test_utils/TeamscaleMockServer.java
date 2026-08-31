@@ -89,6 +89,18 @@ public class TeamscaleMockServer implements AutoCloseable {
 
 	private final AtomicInteger sbomRequestCounter = new AtomicInteger(0);
 
+	/**
+	 * The status code with which every request is answered, or null to answer them
+	 * normally. See {@link #respondWith(int, String)}.
+	 */
+	private Integer forcedStatusCode = null;
+
+	/**
+	 * The response body with which every request is answered, or null to answer them
+	 * normally. See {@link #respondWith(int, String)}.
+	 */
+	private String forcedResponseBody = "";
+
 	public TeamscaleMockServer(int port) {
 		this(port, false);
 	}
@@ -115,6 +127,11 @@ public class TeamscaleMockServer implements AutoCloseable {
 			spark.secure(KEYSTORE.getAbsolutePath(), "password", null, null);
 		}
 		spark.port(port);
+		spark.before((request, response) -> {
+			if (forcedStatusCode != null) {
+				spark.halt(forcedStatusCode, forcedResponseBody);
+			}
+		});
 		spark.post("/api/v8.2/projects/:projectName/external-analysis/session", this::openSession);
 		spark.post("/api/v8.2/projects/:projectName/external-analysis/session/:session", this::noOpHandler);
 		spark.post("/api/v8.2/projects/:projectName/external-analysis/session/:session/report",
@@ -127,6 +144,18 @@ public class TeamscaleMockServer implements AutoCloseable {
 			response.body("Exception: " + exception.getMessage());
 		});
 		spark.awaitInitialization();
+	}
+
+	/**
+	 * Makes this server answer every request with the given status code and body,
+	 * instead of processing it. Use this to simulate the error responses Teamscale
+	 * sends, e.g. a 400 for an upload it rejects or a 404 for a project that does
+	 * not exist.
+	 */
+	public TeamscaleMockServer respondWith(int statusCode, String body) {
+		this.forcedStatusCode = statusCode;
+		this.forcedResponseBody = body;
+		return this;
 	}
 
 	private void simulateRequestTime() {
