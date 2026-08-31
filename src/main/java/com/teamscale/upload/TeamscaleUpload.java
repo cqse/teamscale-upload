@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.teamscale.upload.client.ReportUploadClient;
 import com.teamscale.upload.client.SbomUploadClient;
-import com.teamscale.upload.client.TeamscaleClient;
 import com.teamscale.upload.resolve.FilePatternResolutionException;
 import com.teamscale.upload.resolve.ReportPatternUtils;
 import com.teamscale.upload.utils.LogUtils;
@@ -34,7 +34,7 @@ public class TeamscaleUpload {
 		configureLogging(commandLine);
 
 		Map<String, Set<File>> filesByFormat = resolveAndConvertFiles(commandLine);
-		TeamscaleClient.performUpload(commandLine, filesByFormat);
+		ReportUploadClient.performUpload(commandLine, filesByFormat);
 	}
 
 	/**

@@ -3,11 +3,8 @@ package com.teamscale.upload.client;
 import java.io.File;
 import java.io.IOException;
 
-import javax.net.ssl.SSLHandshakeException;
-
 import com.teamscale.upload.SbomCommandLineOptions;
 import com.teamscale.upload.utils.LogUtils;
-import com.teamscale.upload.utils.OkHttpUtils;
 
 import okhttp3.Credentials;
 import okhttp3.HttpUrl;
@@ -20,9 +17,9 @@ import okhttp3.RequestBody;
 /**
  * Client to upload a Software Bill of Materials (SBOM) to Teamscale.
  * <p>
- * Unlike the upload of external analysis reports (see {@link TeamscaleClient}),
- * this uses a dedicated endpoint and does not open an external-analysis session:
- * a single request stores the SBOM.
+ * Unlike the upload of external analysis reports (see
+ * {@link ReportUploadClient}), this uses a dedicated endpoint and does not open
+ * an external-analysis session: a single request stores the SBOM.
  */
 public class SbomUploadClient {
 
@@ -33,18 +30,8 @@ public class SbomUploadClient {
 
 	/** Performs the upload of the given SBOM file. */
 	public static void performUpload(SbomCommandLineOptions commandLine, File sbomFile) throws IOException {
-		OkHttpClient client = OkHttpUtils.createClient(commandLine.validateSsl, commandLine.proxy,
-				commandLine.getKeyStorePath(), commandLine.getKeyStorePassword(), commandLine.getTimeoutInSeconds());
-		try {
-			RetryUtils.performWithRetry(commandLine.maxAttempts, () -> sendUploadRequest(client, commandLine, sbomFile));
-		} catch (SSLHandshakeException e) {
-			TeamscaleClient.handleSslConnectionFailure(commandLine, e);
-		} finally {
-			// we must shut down OkHttp as otherwise it will leave threads running and
-			// prevent JVM shutdown
-			client.dispatcher().executorService().shutdownNow();
-			client.connectionPool().evictAll();
-		}
+		TeamscaleRequestExecutor.performUpload(commandLine,
+				client -> sendUploadRequest(client, commandLine, sbomFile));
 	}
 
 	private static void sendUploadRequest(OkHttpClient client, SbomCommandLineOptions commandLine, File sbomFile)
@@ -62,7 +49,7 @@ public class SbomUploadClient {
 
 		LogUtils.info("Uploading SBOM " + sbomFile.getName() + " for build " + commandLine.buildName + " version "
 				+ commandLine.buildVersion);
-		TeamscaleClient.sendRequest(client, commandLine, url, request);
+		TeamscaleRequestExecutor.sendRequest(client, commandLine, url, request);
 	}
 
 	/**
@@ -70,7 +57,7 @@ public class SbomUploadClient {
 	 * <p>
 	 * Note that this endpoint is not part of Teamscale's versioned public API, so
 	 * the URL must not contain an API version segment (as opposed to the report
-	 * upload performed by {@link TeamscaleClient}).
+	 * upload performed by {@link ReportUploadClient}).
 	 */
 	private static HttpUrl buildUploadUrl(SbomCommandLineOptions commandLine) {
 		return commandLine.url.newBuilder().addPathSegments("api/projects").addPathSegment(commandLine.project)
