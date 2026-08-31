@@ -582,6 +582,21 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
+	public void sbomUploadWithDirectoryInsteadOfFileIsRejected() {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
+			ProcessUtils.ProcessResult result = runUploader(
+					new SbomUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT)
+							.withPattern("src/test/resources/sbom"));
+			assertSoftlyThat(softly -> {
+				softly.assertThat(result.exitCode).isNotZero();
+				softly.assertThat(result.errorOutput).contains("could not be resolved to any files");
+				softly.assertThat(result.errorOutput).doesNotContain("Could not find the specified report file");
+				softly.assertThat(server.sbomUploads).isEmpty();
+			});
+		}
+	}
+
+	@Test
 	public void sbomUploadRejectsPatternMatchingSeveralFiles() {
 		ProcessUtils.ProcessResult result = runUploader(new SbomUploadArguments().withUrl("http://localhost:9999")
 				.withPattern("src/test/resources/sbom/*.json"));

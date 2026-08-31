@@ -129,11 +129,12 @@ public class SbomCommandLineOptions extends CommonCommandLineOptions {
 	public File resolveSbomFile() throws FilePatternResolutionException {
 		String pattern = files.get(0).replaceAll("\\\\", "/");
 		List<File> resolvedFiles = new FilePatternResolver().resolveToMultipleFiles("SBOM", pattern).stream()
-				.filter(File::exists).toList();
+				.filter(f -> f.isFile() && f.exists()).toList();
 
 		if (resolvedFiles.isEmpty()) {
 			LogUtils.fail("The pattern '" + pattern + "' could not be resolved to any files."
-					+ " Please check the path for correctness and ensure that the SBOM file exists.");
+					+ " Please check the path for correctness and ensure that the SBOM file exists"
+					+ " and is a file, not a directory.");
 		}
 
 		if (resolvedFiles.size() > 1) {
