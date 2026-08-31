@@ -82,9 +82,9 @@ public class JLinkIntegrationTest extends IntegrationTestBase {
 	}
 
 	@Override
-	protected ProcessUtils.ProcessResult runUploader(TeamscaleUploadArguments arguments) {
+	protected ProcessUtils.ProcessResult runUploader(UploadArguments arguments) {
 		validateExecutable();
-		return ProcessUtils.runWithStdIn(arguments.stdinFile, arguments.toCommand(executable.getPath()));
+		return ProcessUtils.runWithStdIn(arguments.getStdinFile(), arguments.toCommand(executable.getPath()));
 	}
 
 }

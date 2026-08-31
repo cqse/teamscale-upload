@@ -2,12 +2,14 @@ package com.teamscale.upload;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.teamscale.upload.client.TeamscaleClient;
+import com.teamscale.upload.client.ReportUploadClient;
+import com.teamscale.upload.client.SbomUploadClient;
 import com.teamscale.upload.resolve.FilePatternResolutionException;
 import com.teamscale.upload.resolve.ReportPatternUtils;
 import com.teamscale.upload.utils.LogUtils;
@@ -23,25 +25,44 @@ public class TeamscaleUpload {
 	 * This method serves as entry point to the teamscale-upload application.
 	 */
 	public static void main(String[] args) throws FilePatternResolutionException, IOException {
-		CommandLine commandLine = CommandLine.parseArguments(args);
+		if (args.length > 0 && SbomCommandLineOptions.COMMAND_NAME.equals(args[0])) {
+			uploadSbom(Arrays.copyOfRange(args, 1, args.length));
+			return;
+		}
 
+		ReportCommandLineOptions commandLine = ReportCommandLineOptions.parseArguments(args);
+		configureLogging(commandLine);
+
+		Map<String, Set<File>> filesByFormat = resolveAndConvertFiles(commandLine);
+		ReportUploadClient.performUpload(commandLine, filesByFormat);
+	}
+
+	/**
+	 * Uploads a Software Bill of Materials. The given arguments must not include
+	 * the {@link SbomCommandLineOptions#COMMAND_NAME} command itself.
+	 */
+	private static void uploadSbom(String[] args) throws FilePatternResolutionException, IOException {
+		SbomCommandLineOptions commandLine = SbomCommandLineOptions.parseArguments(args);
+		configureLogging(commandLine);
+
+		File sbomFile = commandLine.resolveSbomFile();
+		SbomUploadClient.performUpload(commandLine, sbomFile);
+	}
+
+	private static void configureLogging(CommonCommandLineOptions commandLine) {
 		if (commandLine.debugLogEnabled) {
 			LogUtils.enableDebugLogging();
 		}
 		if (commandLine.printStackTrace) {
 			LogUtils.enableStackTracePrintingForKnownErrors();
 		}
-
-		Map<String, Set<File>> filesByFormat = resolveAndConvertFiles(commandLine);
-		TeamscaleClient.performUpload(commandLine, filesByFormat);
 	}
-
 
 	/**
 	 * Resolves the files that should be uploaded to Teamscale and converts them to
 	 * the expected formated if needed (e.g., XCode reports).
 	 */
-	private static Map<String, Set<File>> resolveAndConvertFiles(CommandLine commandLine)
+	private static Map<String, Set<File>> resolveAndConvertFiles(ReportCommandLineOptions commandLine)
 			throws FilePatternResolutionException, IOException {
 		Map<String, Set<File>> filesByFormat = ReportPatternUtils.resolveInputFilePatterns(commandLine.inputFile,
 				commandLine.files, commandLine.format);

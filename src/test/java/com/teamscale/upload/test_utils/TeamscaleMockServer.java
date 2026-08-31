@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+import static javax.servlet.http.HttpServletResponse.SC_NO_CONTENT;
 
 /**
  * Mocks a Teamscale server: stores all report upload sessions.
@@ -65,6 +66,11 @@ public class TeamscaleMockServer implements AutoCloseable {
 	 */
 	public final Map<String, byte[]> uploadedReportsByName = new HashMap<>();
 
+	/**
+	 * All SBOMs uploaded to this Teamscale instance.
+	 */
+	public final List<SbomUpload> sbomUploads = new ArrayList<>();
+
 	private final Service spark;
 
 	/**
@@ -80,6 +86,20 @@ public class TeamscaleMockServer implements AutoCloseable {
 	private final int failFirstNSessionRequests;
 
 	private final AtomicInteger sessionRequestCounter = new AtomicInteger(0);
+
+	private final AtomicInteger sbomRequestCounter = new AtomicInteger(0);
+
+	/**
+	 * The status code with which every request is answered, or null to answer them
+	 * normally. See {@link #respondWith(int, String)}.
+	 */
+	private Integer forcedStatusCode = null;
+
+	/**
+	 * The response body with which every request is answered, or null to answer them
+	 * normally. See {@link #respondWith(int, String)}.
+	 */
+	private String forcedResponseBody = "";
 
 	public TeamscaleMockServer(int port) {
 		this(port, false);
@@ -107,15 +127,35 @@ public class TeamscaleMockServer implements AutoCloseable {
 			spark.secure(KEYSTORE.getAbsolutePath(), "password", null, null);
 		}
 		spark.port(port);
+		spark.before((request, response) -> {
+			if (forcedStatusCode != null) {
+				spark.halt(forcedStatusCode, forcedResponseBody);
+			}
+		});
 		spark.post("/api/v8.2/projects/:projectName/external-analysis/session", this::openSession);
 		spark.post("/api/v8.2/projects/:projectName/external-analysis/session/:session", this::noOpHandler);
 		spark.post("/api/v8.2/projects/:projectName/external-analysis/session/:session/report",
 				this::receiveReportHandler);
+		// The SBOM upload endpoint is not part of Teamscale's versioned public API, so it
+		// is served without an API version segment.
+		spark.post("/api/projects/:projectName/vulnerability-report", this::receiveSbomHandler);
 		spark.exception(Exception.class, (Exception exception, Request request, Response response) -> {
 			response.status(SC_INTERNAL_SERVER_ERROR);
 			response.body("Exception: " + exception.getMessage());
 		});
 		spark.awaitInitialization();
+	}
+
+	/**
+	 * Makes this server answer every request with the given status code and body,
+	 * instead of processing it. Use this to simulate the error responses Teamscale
+	 * sends, e.g. a 400 for an upload it rejects or a 404 for a project that does
+	 * not exist.
+	 */
+	public TeamscaleMockServer respondWith(int statusCode, String body) {
+		this.forcedStatusCode = statusCode;
+		this.forcedResponseBody = body;
+		return this;
 	}
 
 	private void simulateRequestTime() {
@@ -156,6 +196,28 @@ public class TeamscaleMockServer implements AutoCloseable {
 		return "Report uploaded";
 	}
 
+	private String receiveSbomHandler(Request request, Response response) throws ServletException, IOException {
+		int requestNumber = sbomRequestCounter.incrementAndGet();
+		if (requestNumber <= failFirstNSessionRequests) {
+			response.status(SC_INTERNAL_SERVER_ERROR);
+			return "Simulated intermittent server error";
+		}
+
+		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement(""));
+		Part sbom = request.raw().getPart("file");
+
+		byte[] content;
+		try (InputStream is = sbom.getInputStream()) {
+			content = is.readAllBytes();
+		}
+		sbomUploads.add(new SbomUpload(request.queryParams("build-name"), request.queryParams("version"),
+				request.queryParams("revision"), sbom.getSubmittedFileName(), content));
+
+		// the real endpoint returns 204 with an empty body
+		response.status(SC_NO_CONTENT);
+		return "Report uploaded";
+	}
+
 	private String noOpHandler(Request request, Response response) {
 		return "";
 	}
@@ -163,6 +225,35 @@ public class TeamscaleMockServer implements AutoCloseable {
 	@Override
 	public void close() {
 		spark.stop();
+	}
+
+	/**
+	 * An SBOM uploaded to this Teamscale instance.
+	 */
+	public static class SbomUpload {
+
+		/** The value of the "build-name" query parameter. */
+		public final String buildName;
+
+		/** The value of the "version" query parameter. */
+		public final String version;
+
+		/** The value of the "revision" query parameter. */
+		public final String revision;
+
+		/** The file name submitted for the "file" part. */
+		public final String fileName;
+
+		/** The raw content of the uploaded SBOM. */
+		public final byte[] content;
+
+		public SbomUpload(String buildName, String version, String revision, String fileName, byte[] content) {
+			this.buildName = buildName;
+			this.version = version;
+			this.revision = revision;
+			this.fileName = fileName;
+			this.content = content;
+		}
 	}
 
 	/**

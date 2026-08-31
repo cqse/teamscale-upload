@@ -6,39 +6,22 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
-import com.teamscale.upload.utils.LogUtils;
 import com.teamscale.upload.utils.MessageUtils;
-import com.teamscale.upload.utils.SecretUtils;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
-import net.sourceforge.argparse4j.helper.HelpScreenException;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
-import okhttp3.HttpUrl;
-import okhttp3.OkHttpClient;
 
 /**
- * Parses and validates the command line arguments.
+ * Parses and validates the command line arguments of the default command, which
+ * uploads external analysis reports.
  */
-public class CommandLine {
+public class ReportCommandLineOptions extends CommonCommandLineOptions {
 
-	/**
-	 * The Teamscale project ID.
-	 */
-	public final String project;
-	/**
-	 * The Teamscale username.
-	 */
-	public final String username;
-	/**
-	 * Teamscale access key used for authentication.
-	 */
-	public final String accessKey;
 	/**
 	 * The Teamscale partition.
 	 */
@@ -47,10 +30,6 @@ public class CommandLine {
 	 * The uploaded data's report format.
 	 */
 	public final String format;
-	/**
-	 * The commit to which to upload. May be null.
-	 */
-	public final String commit;
 	/**
 	 * The repository can be specified in combination with the commit/revision to
 	 * identify the correct commit in situations where the same revision exists in
@@ -68,10 +47,6 @@ public class CommandLine {
 	 */
 	public final String pathPrefix;
 	/**
-	 * The Teamscale server URL.
-	 */
-	public final HttpUrl url;
-	/**
 	 * The files to upload given on the command-line directly
 	 */
 	public final List<String> files;
@@ -80,7 +55,7 @@ public class CommandLine {
 	 * <p>
 	 * The file defines a mapping from report files to report-file-format. For
 	 * example,
-	 * 
+	 *
 	 * <pre>
 	 * [jacoco]
 	 * src\test\resources\coverage_files\test*.simple
@@ -90,14 +65,6 @@ public class CommandLine {
 	 * </pre>
 	 */
 	public final Path inputFile;
-	/**
-	 * Whether to validate SSL certificates and hostnames.
-	 */
-	public final Boolean validateSsl;
-	/**
-	 * Url and port of the proxy to use.
-	 */
-	public final String proxy;
 	/**
 	 * The upload-commit message given by the user or null if none was explicitly
 	 * given (a default message is created in this case
@@ -109,48 +76,16 @@ public class CommandLine {
 	 * line-terminators at the end of each entry.
 	 */
 	public final List<String> additionalMessageLines;
-	/**
-	 * Whether to print stack traces for handled exceptions.
-	 */
-	public final boolean printStackTrace;
-	/**
-	 * Whether to print debug log output.
-	 */
-	public final boolean debugLogEnabled;
-	/**
-	 * The timeout in seconds for TCP connect, read and write of the
-	 * {@link OkHttpClient} used for requests. Defaults to 60 seconds.
-	 */
-	public final String timeoutInSecondsAsString;
 
-	/**
-	 * The maximum number of attempts for transient network errors. Defaults to 3.
-	 */
-	public final int maxAttempts;
-
-	private final String keystorePathAndPassword;
-
-	private CommandLine(Namespace namespace) {
-		this.project = namespace.getString("project");
-		this.username = namespace.getString("user");
-		String accessKeyViaOption = namespace.getString("accesskey");
-		this.accessKey = SecretUtils.determineAccessKeyToUse(accessKeyViaOption);
+	private ReportCommandLineOptions(Namespace namespace) {
+		super(namespace);
 		this.partition = namespace.getString("partition");
-		this.commit = namespace.getString("commit");
 		this.repository = namespace.getString("repository");
 		this.timestamp = namespace.getString("branch_and_timestamp");
 		this.pathPrefix = namespace.getString("path_prefix");
 		this.files = getListSafe(namespace, "files");
-		this.url = HttpUrl.parse(namespace.getString("server"));
 		this.message = namespace.getString("message");
-		this.proxy = namespace.getString("proxy");
-		this.keystorePathAndPassword = namespace.getString("trusted_keystore");
-		this.validateSsl = !namespace.getBoolean("insecure");
 		this.additionalMessageLines = getListSafe(namespace, "append_to_message");
-		this.timeoutInSecondsAsString = namespace.getString("timeout");
-		this.printStackTrace = namespace.getBoolean("stacktrace");
-		this.debugLogEnabled = namespace.getBoolean("debug");
-		this.maxAttempts = namespace.getInt("max_attempts");
 
 		String inputFilePath = namespace.getString("input");
 		if (inputFilePath != null) {
@@ -168,55 +103,32 @@ public class CommandLine {
 
 	}
 
-	private static List<String> getListSafe(Namespace namespace, String key) {
-		List<String> list = namespace.getList(key);
-		if (list == null) {
-			return Collections.emptyList();
-		}
-		return list;
-	}
-
 	/**
 	 * Parses the given command line arguments and validates them.
 	 */
-	public static CommandLine parseArguments(String[] args) {
+	public static ReportCommandLineOptions parseArguments(String[] args) {
 		ArgumentParser parser = ArgumentParsers.newFor("teamscale-upload").build().defaultHelp(true)
 				.description("Upload coverage, findings, ... to Teamscale.")
 				.version("Teamscale Upload " + ToolVersion.VERSION);
 		parser.addArgument("--version").action(Arguments.version())
 				.help("Prints the version number of this teamscale-upload tool and exits.");
 
-		parser.addArgument("-s", "--server").metavar("URL").required(true)
-				.help("The url under which the Teamscale server can be reached.");
-		parser.addArgument("-p", "--project").metavar("PROJECT").required(true)
-				.help("The project ID (NOT the project name!) to which to upload the data.");
-		parser.addArgument("-u", "--user").metavar("USER").required(true)
-				.help("The username used to perform the upload. Must have the"
-						+ " 'Perform External Uploads' permission for the given Teamscale project.");
-		parser.addArgument("-a", "--accesskey").metavar("ACCESSKEY").required(false)
-				.help("The IDE access key of the given user. Can be retrieved in Teamscale under Admin > Users."
-						+ "If the argument is a single dash, i.e. '--accesskey -', teamscale-upload will read the"
-						+ " access key from standard input. As a third option, you can provide the access key in the"
-						+ " environment variable $" + SecretUtils.TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE + ".");
+		addCommonArguments(parser);
+
 		parser.addArgument("-t", "--partition").metavar("PARTITION").required(true)
 				.help("The partition into which the data is inserted in Teamscale."
 						+ " Successive uploads into the same partition will overwrite the data"
 						+ " previously inserted there, so use different partitions if you'd instead"
 						+ " like to merge data from different sources (e.g. one for Findbugs findings"
 						+ " and one for JaCoCo coverage).");
-		parser.addArgument("-x", "--proxy").metavar("PROXY").required(false).help(
-				"The proxy url + port that should be used to connect to Teamscale. Format url:port, e.g. localhost:8080. "
-						+ "If your proxy needs authentication, you can set the TEAMSCALE_PROXY_USER and TEAMSCALE_PROXY_PASSWORD"
-						+ " environment variables and teamscale-upload will automatically respect them.");
 		parser.addArgument("-f", "--format").metavar("FORMAT").required(false)
 				.help("The file format of the reports which are specified as command line arguments."
 						+ "\nSee http://cqse.eu/upload-formats for a full list of supported file formats."
 						+ "\nA report format must be supplied for each report file, either via --format or via --input.");
-		parser.addArgument("-c", "--commit").metavar("REVISION").required(false)
-				.help("The version control commit for which you obtained the report files."
-						+ " E.g. if you obtained a test coverage report in your CI pipeline, then this"
-						+ " is the commit the CI pipeline built before running the tests."
-						+ " Can be either a Git SHA1, a SVN revision number or an Team Foundation changeset ID.");
+		addCommitArgument(parser, "The version control commit for which you obtained the report files."
+				+ " E.g. if you obtained a test coverage report in your CI pipeline, then this"
+				+ " is the commit the CI pipeline built before running the tests."
+				+ " Can be either a Git SHA1, a SVN revision number or an Team Foundation changeset ID.");
 		parser.addArgument("-r", "--repository").metavar("REPOSITORY").required(false)
 				.help("When using the revision parameter, this parameter allows to pass a repository name which"
 						+ " is used to identify the correct commit in situations where the same revision exists"
@@ -244,16 +156,6 @@ public class CommandLine {
 				.help("A file which contains additional report file patterns. See INPUTFILE for a"
 						+ " detailed description of the file format."
 						+ "\nA report format must be supplied for each report file, either via --format or via --input.");
-		parser.addArgument("-k", "--insecure").action(Arguments.storeTrue()).required(false)
-				.help("Causes SSL certificates to be accepted without validation, which makes"
-						+ " using this tool with self-signed or invalid certificates easier.");
-		parser.addArgument("--trusted-keystore").required(false)
-				.help("A Java keystore file and its corresponding password. The keystore contains"
-						+ " additional certificates that should be trusted when performing SSL requests."
-						+ " Separate the path from the password with a semicolon, e.g:"
-						+ "\n/path/to/keystore.jks;PASSWORD"
-						+ "\nThe path to the keystore must not contain a semicolon. When this option"
-						+ " is used, --validate-ssl will automatically be enabled as well.");
 		parser.addArgument("--append-to-message").metavar("LINE").action(Arguments.append()).required(false)
 				.help("Appends the given line to the message. Use this to augment the autogenerated"
 						+ " message instead of replacing it. You may specify this parameter multiple"
@@ -261,16 +163,6 @@ public class CommandLine {
 		parser.addArgument("files").metavar("FILES").nargs("*")
 				.help("Path(s) or pattern(s) of the report files to upload. Alternatively, you may"
 						+ " provide input files via -i or --input");
-		parser.addArgument("--stacktrace").action(Arguments.storeTrue()).required(false)
-				.help("Enables printing stack traces in all cases where errors occur. Used for debugging.");
-		parser.addArgument("--debug").action(Arguments.storeTrue()).required(false)
-				.help("Enables printing debug log output. This automatically enables --stacktrace.");
-		parser.addArgument("--timeout").metavar("TIMEOUT_IN_SECONDS").required(false)
-				.help("Sets the timeout in seconds for TCP connect, read and write for HTTP requests. "
-						+ "Defaults to 60 seconds.");
-		parser.addArgument("--max-attempts").metavar("MAX_ATTEMPTS").type(Integer.class).setDefault(3).required(false)
-				.help("The maximum number of attempts for uploads that fail due to transient network errors"
-						+ " (e.g. connection resets, server errors). Defaults to 3.");
 		parser.epilog("For general usage help and alternative upload methods, please check our online"
 				+ " documentation at:" + "\nhttp://cqse.eu/tsu-docs" + "\n\nTARGET COMMIT"
 				+ "\n\nBy default, teamscale-upload tries to automatically detect the code commit"
@@ -285,70 +177,22 @@ public class CommandLine {
 				+ " report format. The report file patterns have the same format as used on the command"
 				+ " line. The entries in the file are separated by line breaks. Blank lines are ignored."
 				+ "\n\nExample:" + "\n\n[jacoco]" + "\npattern1/**.xml" + "\npattern2/**.xml" + "\n[findbugs]"
-				+ "\npattern1/**.findbugs.xml" + "\npattern2/**.findbugs.xml");
+				+ "\npattern1/**.findbugs.xml" + "\npattern2/**.findbugs.xml" + "\n\nCOMMANDS"
+				+ "\n\nBesides uploading external analysis reports, this tool provides the following"
+				+ " additional commands:" + "\n\n" + SbomCommandLineOptions.COMMAND_NAME
+				+ ": upload a Software Bill of Materials (SBOM) to Teamscale."
+				+ "\nRun 'teamscale-upload " + SbomCommandLineOptions.COMMAND_NAME + " --help' for its options.");
 
-		try {
-			Namespace namespace = parser.parseArgs(args);
-			CommandLine commandLine = new CommandLine(namespace);
-			commandLine.validate(parser);
-			return commandLine;
-		} catch (HelpScreenException e) {
-			System.exit(0); // teamscale-upload -h should return exit code 0
-			return null;
-		} catch (ArgumentParserException e) {
-			parser.handleError(e);
-			System.exit(1);
-			return null;
-		}
-
-	}
-
-	/**
-	 * Returns the path to the keystore to use for self-signed certificates or null
-	 * if none was configured.
-	 */
-	public String getKeyStorePath() {
-		if (keystorePathAndPassword == null) {
-			return null;
-		}
-		return keystorePathAndPassword.split(";", 2)[0];
-	}
-
-	/**
-	 * Returns the password for the keystore to use for self-signed certificates or
-	 * null if none was configured.
-	 */
-	public String getKeyStorePassword() {
-		if (keystorePathAndPassword == null) {
-			return null;
-		}
-		return keystorePathAndPassword.split(";", 2)[1];
-	}
-
-	/**
-	 * Returns the timeout in seconds as a {@link Long}.
-	 */
-	public long getTimeoutInSeconds() {
-		if (timeoutInSecondsAsString == null) {
-			return 60L;
-		}
-		return Long.parseLong(timeoutInSecondsAsString);
+		return parseAndValidate(parser, args, ReportCommandLineOptions::new);
 	}
 
 	/**
 	 * Checks the validity of the command line arguments and throws an exception if
 	 * any invalid configuration is detected.
 	 */
-	private void validate(ArgumentParser parser) throws ArgumentParserException {
-		if (url == null) {
-			throw new ArgumentParserException("You provided an invalid URL in the --server option", parser);
-		}
-
-		validateTimeoutInSeconds(parser);
-		validateMaxAttempts(parser);
-		validateProxy(parser);
-		validateKeystoreSettings(parser);
-		validateAccessKey(parser);
+	@Override
+	protected void validate(ArgumentParser parser) throws ArgumentParserException {
+		validateCommonOptions(parser);
 
 		if (hasMoreThanOneCommitOptionSet()) {
 			throw new ArgumentParserException("You used more than one of --commit and --branch-and-timestamp."
@@ -373,70 +217,6 @@ public class CommandLine {
 		}
 
 		validateBranchAndTimestamp(parser);
-	}
-
-	private void validateMaxAttempts(ArgumentParser parser) throws ArgumentParserException {
-		if (maxAttempts <= 0) {
-			throw new ArgumentParserException("The maximum number of attempts must be a positive integer.", parser);
-		}
-	}
-
-	private void validateProxy(ArgumentParser parser) throws ArgumentParserException {
-		if (proxy == null) {
-			return;
-		}
-		String[] proxyParts = proxy.split(":");
-		if (proxyParts.length == 2) {
-			String port = proxyParts[1];
-			try {
-				Integer.parseInt(port);
-			} catch (NumberFormatException e) {
-				throw new ArgumentParserException(
-						"The proxy port is not a number. Please check that the proxy parameter follows the format proxy-url:port",
-						parser);
-			}
-		} else {
-			throw new ArgumentParserException(
-					"The proxy parameter is in the wrong format, please only specify `proxy-url:port`.", parser);
-		}
-	}
-
-	private void validateTimeoutInSeconds(ArgumentParser parser) throws ArgumentParserException {
-		if (timeoutInSecondsAsString == null) {
-			return;
-		}
-		try {
-			long timeoutInSeconds = Long.parseLong(timeoutInSecondsAsString);
-			if (timeoutInSeconds <= 0L) {
-				throw new ArgumentParserException("The timeout in seconds must be an integer greater than 0.", parser);
-			}
-		} catch (NumberFormatException e) {
-			throw new ArgumentParserException("The timeout in seconds must be an integer greater than 0.", parser);
-		}
-	}
-
-	private void validateKeystoreSettings(ArgumentParser parser) throws ArgumentParserException {
-		if (!validateSsl && keystorePathAndPassword != null) {
-			LogUtils.warn("You specified a trusted keystore via --trust-keystore but also disabled SSL"
-					+ " validation via --insecure. SSL validation is now disabled and your keystore"
-					+ " will not be used.");
-		}
-
-		if (keystorePathAndPassword != null && !keystorePathAndPassword.contains(";")) {
-			throw new ArgumentParserException("You forgot to add the password for the --trust-keystore file "
-					+ keystorePathAndPassword + "."
-					+ " You must add it to the end of the path, separated by a semicolon, e.g: --trust-keystore "
-					+ keystorePathAndPassword + ";PASSWORD", parser);
-		}
-	}
-
-	private void validateAccessKey(ArgumentParser parser) throws ArgumentParserException {
-		if (accessKey == null) {
-			throw new ArgumentParserException("You did not specify a Teamscale access key. You can either specify "
-					+ "it via --accesskey, via the environment variable $"
-					+ SecretUtils.TEAMSCALE_ACCESS_KEY_ENVIRONMENT_VARIABLE + " or via stdin using '--accesskey -'.",
-					parser);
-		}
 	}
 
 	private void validateBranchAndTimestamp(ArgumentParser parser) throws ArgumentParserException {
