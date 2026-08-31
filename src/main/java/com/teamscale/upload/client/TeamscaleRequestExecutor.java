@@ -42,7 +42,7 @@ public class TeamscaleRequestExecutor {
 		OkHttpClient client = OkHttpUtils.createClient(commandLine.validateSsl, commandLine.proxy,
 				commandLine.getKeyStorePath(), commandLine.getKeyStorePassword(), commandLine.getTimeoutInSeconds());
 		try {
-			RetryUtils.performWithRetry(commandLine.maxAttempts, () -> upload.perform(client));
+			performWithRetry(client, upload, commandLine.maxAttempts);
 		} catch (SSLHandshakeException e) {
 			handleSslConnectionFailure(commandLine, e);
 		} finally {
@@ -50,6 +50,32 @@ public class TeamscaleRequestExecutor {
 			// prevent JVM shutdown
 			client.dispatcher().executorService().shutdownNow();
 			client.connectionPool().evictAll();
+		}
+	}
+
+	/**
+	 * Performs the given upload, retrying it up to {@code maxAttempts} times if it
+	 * fails with an {@link IOException}.
+	 * <p>
+	 * An {@link SSLHandshakeException} is not retried but rethrown, as retrying will
+	 * not make a broken certificate setup work. If all attempts fail, the program is
+	 * terminated with an error message.
+	 */
+	private static void performWithRetry(OkHttpClient client, Upload upload, int maxAttempts) throws IOException {
+		for (int attemptNumber = 1; attemptNumber <= maxAttempts; attemptNumber++) {
+			try {
+				upload.perform(client);
+				return;
+			} catch (SSLHandshakeException e) {
+				throw e;
+			} catch (IOException e) {
+				if (attemptNumber < maxAttempts) {
+					LogUtils.warn("Failed attempt " + attemptNumber + " / " + maxAttempts + ": " + e.getMessage());
+				} else {
+					LogUtils.failWithoutStackTrace(
+							"Upload failed after " + maxAttempts + " attempt(s): " + e.getMessage(), e);
+				}
+			}
 		}
 	}
 
