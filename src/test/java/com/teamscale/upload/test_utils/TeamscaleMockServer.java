@@ -23,7 +23,8 @@ import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 import static javax.servlet.http.HttpServletResponse.SC_NO_CONTENT;
 
 /**
- * Mocks a Teamscale server: stores all report upload sessions.
+ * Mocks a Teamscale server: stores all report upload sessions and all uploaded
+ * SBOMs.
  */
 public class TeamscaleMockServer implements AutoCloseable {
 
@@ -80,10 +81,14 @@ public class TeamscaleMockServer implements AutoCloseable {
 	private final long openSessionRequestTimeInSeconds;
 
 	/**
-	 * Number of initial session requests that should fail with HTTP 500 to simulate
+	 * Number of initial requests that should fail with HTTP 500 to simulate
 	 * intermittent server errors.
+	 * <p>
+	 * Counted per endpoint rather than over all requests: the session endpoint and
+	 * the SBOM endpoint each answer this many requests with an error before they
+	 * start processing them.
 	 */
-	private final int failFirstNSessionRequests;
+	private final int countOfInitialFailedRequestsPerEndpoint;
 
 	private final AtomicInteger sessionRequestCounter = new AtomicInteger(0);
 
@@ -114,14 +119,14 @@ public class TeamscaleMockServer implements AutoCloseable {
 	}
 
 	public TeamscaleMockServer(int port, boolean useSelfSignedCertificate, long openSessionRequestTimeInSeconds,
-			int failFirstNSessionRequests) {
+			int countOfInitialFailedRequestsPerEndpoint) {
 		if (KEYSTORE == null || TRUSTSTORE == null) {
 			Assertions.fail(
 					"Could not initialize TeamscaleMockServer: Could not find keystore.jks or truststore.jks test resources");
 		}
 		this.spark = Service.ignite();
 		this.openSessionRequestTimeInSeconds = openSessionRequestTimeInSeconds;
-		this.failFirstNSessionRequests = failFirstNSessionRequests;
+		this.countOfInitialFailedRequestsPerEndpoint = countOfInitialFailedRequestsPerEndpoint;
 
 		if (useSelfSignedCertificate) {
 			spark.secure(KEYSTORE.getAbsolutePath(), "password", null, null);
@@ -171,7 +176,7 @@ public class TeamscaleMockServer implements AutoCloseable {
 	private String openSession(Request request, Response response) {
 		simulateRequestTime();
 		int requestNumber = sessionRequestCounter.incrementAndGet();
-		if (requestNumber <= failFirstNSessionRequests) {
+		if (requestNumber <= countOfInitialFailedRequestsPerEndpoint) {
 			response.status(SC_INTERNAL_SERVER_ERROR);
 			return "Simulated intermittent server error";
 		}
@@ -198,7 +203,7 @@ public class TeamscaleMockServer implements AutoCloseable {
 
 	private String receiveSbomHandler(Request request, Response response) throws ServletException, IOException {
 		int requestNumber = sbomRequestCounter.incrementAndGet();
-		if (requestNumber <= failFirstNSessionRequests) {
+		if (requestNumber <= countOfInitialFailedRequestsPerEndpoint) {
 			response.status(SC_INTERNAL_SERVER_ERROR);
 			return "Simulated intermittent server error";
 		}
