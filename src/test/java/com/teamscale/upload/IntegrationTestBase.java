@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.io.TempDir;
 
 import com.teamscale.upload.autodetect_revision.ProcessUtils;
 import com.teamscale.upload.test_utils.ProxyMockServer;
@@ -601,13 +602,19 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
-	public void sbomUploadRejectsPatternMatchingSeveralFiles() {
-		ProcessUtils.ProcessResult result = runUploader(new SbomUploadArguments().withUrl("http://localhost:9999")
-				.withPattern("src/test/resources/**/bom*.json"));
+	public void sbomUploadRejectsPatternMatchingSeveralFiles(@TempDir Path sbomDirectory) throws IOException {
+		Path sbom = Paths.get(SbomUploadArguments.DEFAULT_SBOM_PATH);
+		Files.copy(sbom, sbomDirectory.resolve("bom.json"));
+		Files.copy(sbom, sbomDirectory.resolve("another-bom.json"));
+
+		String pattern = sbomDirectory.toString().replace('\\', '/') + "/**/*.json";
+		ProcessUtils.ProcessResult result = runUploader(
+				new SbomUploadArguments().withUrl("http://localhost:9999").withPattern(pattern));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).contains("matches more than one file")
 					.contains("overwrite each other");
+			softly.assertThat(result.errorOutput).contains("bom.json").contains("another-bom.json");
 		});
 	}
 
