@@ -535,7 +535,7 @@ public abstract class IntegrationTestBase {
 				new SbomUploadArguments().withUrl("http://localhost:9999").withoutBuildName());
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			softly.assertThat(result.errorOutput).containsIgnoringWhitespaces("--build-name");
+			softly.assertThat(result.errorOutput).containsIgnoringWhitespaces("argument --build-name is required");
 		});
 	}
 
@@ -545,7 +545,7 @@ public abstract class IntegrationTestBase {
 				new SbomUploadArguments().withUrl("http://localhost:9999").withoutBuildVersion());
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			softly.assertThat(result.errorOutput).containsIgnoringWhitespaces("--build-version");
+			softly.assertThat(result.errorOutput).containsIgnoringWhitespaces("argument --build-version is required");
 		});
 	}
 
@@ -555,8 +555,11 @@ public abstract class IntegrationTestBase {
 				new SbomUploadArguments().withUrl("http://localhost:9999").withBuildName("my#service"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			// the command line library adjusts the word spacing based on the terminal width
-			softly.assertThat(result.errorOutput).containsIgnoringWhitespaces("--build-name")
+			// the command line library adjusts the word spacing based on the terminal width.
+			// The option must be named, as it also appears in the usage line for any other
+			// argument error
+			softly.assertThat(result.errorOutput)
+					.containsIgnoringWhitespaces("The value you provided for --build-name contains '#'")
 					.containsIgnoringWhitespaces("must not appear");
 		});
 	}
