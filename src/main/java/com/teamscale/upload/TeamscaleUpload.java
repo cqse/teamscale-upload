@@ -62,7 +62,10 @@ public class TeamscaleUpload {
 	private static File resolveSbomFile(String filePathOrPattern) throws FilePatternResolutionException {
 		String pattern = ReportPatternUtils.normalizeFilePattern(filePathOrPattern);
 		List<File> resolvedFiles = new FilePatternResolver().resolveToMultipleFiles("SBOM", pattern).stream()
-				.filter(f -> f.isFile() && f.exists()).toList();
+				.filter(File::isFile)
+				// two matches are all we need: one to upload, a second to report that the
+				// pattern is ambiguous. Stopping there saves a stat call per further match.
+				.limit(2).toList();
 
 		if (resolvedFiles.isEmpty()) {
 			LogUtils.fail("The SBOM path '" + pattern + "' could not be resolved to any files."
@@ -72,9 +75,9 @@ public class TeamscaleUpload {
 
 		if (resolvedFiles.size() > 1) {
 			String matchedFiles = resolvedFiles.stream().map(File::getPath).collect(Collectors.joining("\n"));
-			LogUtils.fail("The pattern '" + pattern + "' matches " + resolvedFiles.size() + " files, but Teamscale"
+			LogUtils.fail("The pattern '" + pattern + "' matches more than one file, but Teamscale"
 					+ " stores exactly one SBOM per --build-name and --build-version. Uploading all of them"
-					+ " would make them overwrite each other." + "\nThe matched files are:\n" + matchedFiles
+					+ " would make them overwrite each other." + "\nAmong the matched files are:\n" + matchedFiles
 					+ "\nPlease narrow the pattern down to a single file, or use a different --build-name"
 					+ " or --build-version for each of them.");
 		}

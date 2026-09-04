@@ -603,7 +603,8 @@ public abstract class IntegrationTestBase {
 				.withPattern("src/test/resources/**/bom*.json"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			softly.assertThat(result.errorOutput).contains("matches 2 files").contains("overwrite each other");
+			softly.assertThat(result.errorOutput).contains("matches more than one file")
+					.contains("overwrite each other");
 		});
 	}
 
