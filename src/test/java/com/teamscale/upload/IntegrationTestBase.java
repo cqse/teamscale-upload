@@ -567,7 +567,8 @@ public abstract class IntegrationTestBase {
 				new SbomUploadArguments().withUrl("http://localhost:9999").withoutPattern());
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			softly.assertThat(result.errorOutput).containsIgnoringWhitespaces("did not provide an SBOM file");
+			softly.assertThat(result.errorOutput).containsIgnoringWhitespaces("too few arguments");
+			softly.assertThat(result.errorOutput).containsIgnoringWhitespaces("SBOM");
 		});
 	}
 
@@ -599,10 +600,10 @@ public abstract class IntegrationTestBase {
 	@Test
 	public void sbomUploadRejectsPatternMatchingSeveralFiles() {
 		ProcessUtils.ProcessResult result = runUploader(new SbomUploadArguments().withUrl("http://localhost:9999")
-				.withPattern("src/test/resources/sbom/*.json"));
+				.withPattern("src/test/resources/**/bom*.json"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			softly.assertThat(result.errorOutput).contains("overwrite each other");
+			softly.assertThat(result.errorOutput).contains("matches 2 files").contains("overwrite each other");
 		});
 	}
 

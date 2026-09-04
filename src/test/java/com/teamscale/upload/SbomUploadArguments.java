@@ -19,7 +19,7 @@ class SbomUploadArguments extends CommonUploadArguments<SbomUploadArguments> {
 	private String buildName = "teamscale-upload-it";
 	private String buildVersion = "1.0.0";
 	private String commit = "master:HEAD";
-	private String pattern = DEFAULT_SBOM_PATH;
+	private String filePathOrPattern = DEFAULT_SBOM_PATH;
 	private boolean autoDetectCommit = false;
 	private boolean help = false;
 
@@ -62,14 +62,14 @@ class SbomUploadArguments extends CommonUploadArguments<SbomUploadArguments> {
 	}
 
 	/** Sets the path or pattern of the SBOM file to upload. */
-	SbomUploadArguments withPattern(String pattern) {
-		this.pattern = pattern;
+	SbomUploadArguments withPattern(String filePathOrPattern) {
+		this.filePathOrPattern = filePathOrPattern;
 		return this;
 	}
 
 	/** Omits the SBOM file argument. */
 	SbomUploadArguments withoutPattern() {
-		this.pattern = null;
+		this.filePathOrPattern = null;
 		return this;
 	}
 
@@ -106,8 +106,8 @@ class SbomUploadArguments extends CommonUploadArguments<SbomUploadArguments> {
 			command.add("--commit");
 			command.add(commit);
 		}
-		if (pattern != null) {
-			command.add(pattern);
+		if (filePathOrPattern != null) {
+			command.add(filePathOrPattern);
 		}
 		return command.toArray(new String[0]);
 	}

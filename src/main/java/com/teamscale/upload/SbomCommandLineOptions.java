@@ -1,13 +1,5 @@
 package com.teamscale.upload;
 
-import java.io.File;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import com.teamscale.upload.resolve.FilePatternResolutionException;
-import com.teamscale.upload.resolve.FilePatternResolver;
-import com.teamscale.upload.utils.LogUtils;
-
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
@@ -41,14 +33,15 @@ public class SbomCommandLineOptions extends CommonCommandLineOptions {
 	public final String buildVersion;
 	/**
 	 * The path or pattern of the SBOM file to upload, as given on the command line.
+	 * Teamscale stores one SBOM per build name and version, so there is exactly one.
 	 */
-	public final List<String> files;
+	public final String filePathOrPattern;
 
 	private SbomCommandLineOptions(Namespace namespace) {
 		super(namespace);
 		this.buildName = namespace.getString("build_name");
 		this.buildVersion = namespace.getString("build_version");
-		this.files = getListSafe(namespace, "files");
+		this.filePathOrPattern = namespace.getString("file");
 	}
 
 	/**
@@ -72,10 +65,11 @@ public class SbomCommandLineOptions extends CommonCommandLineOptions {
 				+ " a commit in Teamscale. Can be either a Git SHA1, a SVN revision number or a"
 				+ " Team Foundation changeset ID. If omitted, teamscale-upload tries to detect"
 				+ " the commit automatically.");
-		parser.addArgument("files").metavar("SBOM").nargs("*")
-				.help("Path or pattern of the SBOM file to upload. Exactly one file must be uploaded"
-						+ " per --build-name and --build-version. Supported formats are CycloneDX"
-						+ " (JSON or XML) and SPDX 2.x (JSON). The format is detected automatically.");
+		parser.addArgument("file").metavar("SBOM")
+				.help("Path or pattern of the SBOM file to upload. Teamscale stores one SBOM per"
+						+ " --build-name and --build-version, so this must resolve to a single file."
+						+ " Supported formats are CycloneDX (JSON or XML) and SPDX 2.x (JSON)."
+						+ " The format is detected automatically.");
 		parser.epilog("For general usage help and alternative upload methods, please check our online"
 				+ " documentation at:" + "\nhttp://cqse.eu/tsu-docs" + "\n\nEXAMPLE"
 				+ "\n\nteamscale-upload " + COMMAND_NAME + " --server https://teamscale.example.com"
@@ -96,20 +90,6 @@ public class SbomCommandLineOptions extends CommonCommandLineOptions {
 
 		validateIdentifier(parser, buildName, "--build-name");
 		validateIdentifier(parser, buildVersion, "--build-version");
-
-		if (files.isEmpty()) {
-			throw new ArgumentParserException("You did not provide an SBOM file to upload."
-					+ " Please specify the path of the SBOM file as a command line argument, e.g:"
-					+ "\nteamscale-upload " + COMMAND_NAME + " ... bom.json", parser);
-		}
-
-		if (files.size() > 1) {
-			throw new ArgumentParserException("You provided " + files.size() + " SBOM files to upload, but Teamscale"
-					+ " stores exactly one SBOM per --build-name and --build-version. Uploading several"
-					+ " files would make them overwrite each other."
-					+ "\nPlease upload a single file, or use a different --build-name or --build-version"
-					+ " for each of them.", parser);
-		}
 	}
 
 	private static void validateIdentifier(ArgumentParser parser, String value, String optionName)
@@ -120,33 +100,6 @@ public class SbomCommandLineOptions extends CommonCommandLineOptions {
 					+ " build name from the version, so it must not appear in either of them."
 					+ " Please choose a value without '" + RESERVED_CHARACTER + "'.", parser);
 		}
-	}
-
-	/**
-	 * Resolves the SBOM file to upload. Terminates the program with an error
-	 * message if the given path or pattern does not resolve to exactly one file.
-	 */
-	public File resolveSbomFile() throws FilePatternResolutionException {
-		String pattern = files.get(0).replaceAll("\\\\", "/");
-		List<File> resolvedFiles = new FilePatternResolver().resolveToMultipleFiles("SBOM", pattern).stream()
-				.filter(f -> f.isFile() && f.exists()).toList();
-
-		if (resolvedFiles.isEmpty()) {
-			LogUtils.fail("The pattern '" + pattern + "' could not be resolved to any files."
-					+ " Please check the path for correctness and ensure that the SBOM file exists"
-					+ " and is a file, not a directory.");
-		}
-
-		if (resolvedFiles.size() > 1) {
-			String matchedFiles = resolvedFiles.stream().map(File::getPath).collect(Collectors.joining("\n"));
-			LogUtils.fail("The pattern '" + pattern + "' matches " + resolvedFiles.size() + " files, but Teamscale"
-					+ " stores exactly one SBOM per --build-name and --build-version. Uploading all of them"
-					+ " would make them overwrite each other." + "\nThe matched files are:\n" + matchedFiles
-					+ "\nPlease narrow the pattern down to a single file, or use a different --build-name"
-					+ " or --build-version for each of them.");
-		}
-
-		return resolvedFiles.get(0);
 	}
 
 	@Override

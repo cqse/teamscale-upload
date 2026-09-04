@@ -7,10 +7,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.teamscale.upload.client.ReportUploadClient;
 import com.teamscale.upload.client.SbomUploadClient;
 import com.teamscale.upload.resolve.FilePatternResolutionException;
+import com.teamscale.upload.resolve.FilePatternResolver;
 import com.teamscale.upload.resolve.ReportPatternUtils;
 import com.teamscale.upload.utils.LogUtils;
 import com.teamscale.upload.xcode.ConversionException;
@@ -22,7 +24,7 @@ import com.teamscale.upload.xcode.XcodeReportConverter;
 public class TeamscaleUpload {
 
 	/**
-	 * This method serves as entry point to the teamscale-upload application.
+	 * This method serves as the entry point to the teamscale-upload application.
 	 */
 	public static void main(String[] args) throws FilePatternResolutionException, IOException {
 		if (args.length > 0 && SbomCommandLineOptions.COMMAND_NAME.equals(args[0])) {
@@ -45,8 +47,39 @@ public class TeamscaleUpload {
 		SbomCommandLineOptions commandLine = SbomCommandLineOptions.parseArguments(args);
 		configureLogging(commandLine);
 
-		File sbomFile = commandLine.resolveSbomFile();
+		File sbomFile = resolveSbomFile(commandLine.filePathOrPattern);
 		SbomUploadClient.performUpload(commandLine, sbomFile);
+	}
+
+	/**
+	 * Resolves the path or pattern given for an SBOM upload to the single file to
+	 * upload.
+	 * <p>
+	 * Teamscale stores one SBOM per build name and version, so the program is
+	 * terminated with an error message if it resolves to anything other than
+	 * exactly one file.
+	 */
+	private static File resolveSbomFile(String filePathOrPattern) throws FilePatternResolutionException {
+		String pattern = ReportPatternUtils.normalizeFilePattern(filePathOrPattern);
+		List<File> resolvedFiles = new FilePatternResolver().resolveToMultipleFiles("SBOM", pattern).stream()
+				.filter(f -> f.isFile() && f.exists()).toList();
+
+		if (resolvedFiles.isEmpty()) {
+			LogUtils.fail("The SBOM path '" + pattern + "' could not be resolved to any files."
+					+ " Please check the path for correctness and ensure that the SBOM file exists"
+					+ " and is a file, not a directory.");
+		}
+
+		if (resolvedFiles.size() > 1) {
+			String matchedFiles = resolvedFiles.stream().map(File::getPath).collect(Collectors.joining("\n"));
+			LogUtils.fail("The pattern '" + pattern + "' matches " + resolvedFiles.size() + " files, but Teamscale"
+					+ " stores exactly one SBOM per --build-name and --build-version. Uploading all of them"
+					+ " would make them overwrite each other." + "\nThe matched files are:\n" + matchedFiles
+					+ "\nPlease narrow the pattern down to a single file, or use a different --build-name"
+					+ " or --build-version for each of them.");
+		}
+
+		return resolvedFiles.get(0);
 	}
 
 	private static void configureLogging(CommonCommandLineOptions commandLine) {
