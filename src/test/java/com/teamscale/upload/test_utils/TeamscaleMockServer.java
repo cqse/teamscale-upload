@@ -220,7 +220,7 @@ public class TeamscaleMockServer implements AutoCloseable {
 
 		// the real endpoint returns 204 with an empty body
 		response.status(SC_NO_CONTENT);
-		return "Report uploaded";
+		return "";
 	}
 
 	private String noOpHandler(Request request, Response response) {
