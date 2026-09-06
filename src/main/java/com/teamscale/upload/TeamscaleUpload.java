@@ -36,6 +36,10 @@ public class TeamscaleUpload {
 		configureLogging(commandLine);
 
 		Map<String, Set<File>> filesByFormat = resolveAndConvertFiles(commandLine);
+		if (filesByFormat.isEmpty()) {
+			LogUtils.warn("There are no files to upload. Skipping upload.");
+			return;
+		}
 		ReportUploadClient.performUpload(commandLine, filesByFormat);
 	}
 

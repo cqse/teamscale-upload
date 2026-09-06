@@ -452,6 +452,29 @@ public abstract class IntegrationTestBase {
 		assertThatOSCertificatesWereImported(result);
 	}
 
+	/**
+	 * An input file without any patterns leaves nothing to upload. That is not an
+	 * error, as a build that produced no reports should not fail the pipeline, so
+	 * we say so and stop without contacting Teamscale at all.
+	 */
+	@Test
+	public void uploadWithoutAnyReportsIsSkipped(@TempDir Path directory) throws IOException {
+		Path emptyInputFile = Files.createFile(directory.resolve("empty_input_file"));
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
+			ProcessUtils.ProcessResult result = runUploader(
+					new ReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT)
+							.withInput(emptyInputFile.toString()).withoutPattern());
+			assertSoftlyThat(softly -> {
+				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
+						.isZero();
+				softly.assertThat(result.errorOutput).contains("There are no files to upload");
+				softly.assertThat(server.sessions).isEmpty();
+				// no client is built, so the operating system's certificates stay unread
+				softly.assertThat(result.output).doesNotContain("certificates from the operating system");
+			});
+		}
+	}
+
 	@Test
 	public void retrySucceedsAfterIntermittentFailure() {
 		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 0L, 1)) {

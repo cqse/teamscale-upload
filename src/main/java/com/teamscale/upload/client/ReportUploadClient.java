@@ -36,10 +36,6 @@ public class ReportUploadClient {
 	public static void performUpload(ReportCommandLineOptions commandLine, Map<String, Set<File>> filesByFormat)
 			throws IOException {
 		TeamscaleRequestExecutor.performUpload(commandLine, client -> {
-			if (filesByFormat.isEmpty()) {
-				LogUtils.warn("There are no files to upload. Skipping upload.");
-				return;
-			}
 			String sessionId = openSession(client, commandLine, filesByFormat.keySet());
 			for (String format : filesByFormat.keySet()) {
 				Set<File> filesForFormat = filesByFormat.get(format);

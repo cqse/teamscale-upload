@@ -39,6 +39,15 @@ class ReportUploadArguments extends CommonUploadArguments<ReportUploadArguments>
 	}
 
 	/**
+	 * Omits the report file argument, so that the reports to upload come from
+	 * {@link #withInput(String)} alone.
+	 */
+	ReportUploadArguments withoutPattern() {
+		this.pattern = null;
+		return this;
+	}
+
+	/**
 	 * Sets the report-file path pattern. This sets the {@link ReportCommandLineOptions#files}
 	 * option (i.e., "pattern" == "files").
 	 */
@@ -134,7 +143,9 @@ class ReportUploadArguments extends CommonUploadArguments<ReportUploadArguments>
 			command.add(input);
 		}
 		// "files" is a positional argument. ("pattern" == "files")
-		command.add(pattern);
+		if (pattern != null) {
+			command.add(pattern);
+		}
 		if (additionalMessageLine != null) {
 			command.add("--append-to-message");
 			command.add(additionalMessageLine);
