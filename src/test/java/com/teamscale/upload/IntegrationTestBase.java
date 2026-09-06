@@ -589,6 +589,19 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
+	public void vulnerabilityReportUploadRejectsReservedCharacterInCommit() {
+		ProcessUtils.ProcessResult result = runUploader(
+				new VulnerabilityReportUploadArguments().withUrl("http://localhost:9999").withCommit("abc#def"));
+		assertSoftlyThat(softly -> {
+			softly.assertThat(result.exitCode).isNotZero();
+			softly.assertThat(result.errorOutput)
+					.containsIgnoringWhitespaces("The value you provided for --commit contains '#'");
+			// nothing is sent, so the failure cannot be Teamscale's
+			softly.assertThat(result.errorOutput).doesNotContain("Teamscale rejected the upload request");
+		});
+	}
+
+	@Test
 	public void vulnerabilityReportUploadWithoutFileIsRejected() {
 		ProcessUtils.ProcessResult result = runUploader(
 				new VulnerabilityReportUploadArguments().withUrl("http://localhost:9999").withoutPattern());
