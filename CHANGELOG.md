@@ -5,7 +5,7 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
-- [feature] added `sbom` command for uploading Software Bill of Materials to Teamscale. Supported formats: CycloneDX (JSON or XML) and SPDX 2.x (JSON)
+- [feature] added `vulnerability-report` command for uploading vulnerability reports, e.g. a Software Bill of Materials, to Teamscale. Requires Teamscale 2026.7.0 or later
 
 # 2.10.2
 - [fix] the Docker image now contains a `git` binary, so revision auto-detection works for a mounted repository

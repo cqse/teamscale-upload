@@ -10,7 +10,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.teamscale.upload.client.ReportUploadClient;
-import com.teamscale.upload.client.SbomUploadClient;
+import com.teamscale.upload.client.VulnerabilityReportUploadClient;
 import com.teamscale.upload.resolve.FilePatternResolutionException;
 import com.teamscale.upload.resolve.FilePatternResolver;
 import com.teamscale.upload.resolve.ReportPatternUtils;
@@ -27,8 +27,8 @@ public class TeamscaleUpload {
 	 * This method serves as the entry point to the teamscale-upload application.
 	 */
 	public static void main(String[] args) throws FilePatternResolutionException, IOException {
-		if (args.length > 0 && SbomCommandLineOptions.COMMAND_NAME.equals(args[0])) {
-			uploadSbom(Arrays.copyOfRange(args, 1, args.length));
+		if (args.length > 0 && VulnerabilityReportCommandLineOptions.COMMAND_NAME.equals(args[0])) {
+			uploadVulnerabilityReport(Arrays.copyOfRange(args, 1, args.length));
 			return;
 		}
 
@@ -40,44 +40,45 @@ public class TeamscaleUpload {
 	}
 
 	/**
-	 * Uploads a Software Bill of Materials. The given arguments must not include
-	 * the {@link SbomCommandLineOptions#COMMAND_NAME} command itself.
+	 * Uploads a vulnerability report. The given arguments must not include the
+	 * {@link VulnerabilityReportCommandLineOptions#COMMAND_NAME} command itself.
 	 */
-	private static void uploadSbom(String[] args) throws FilePatternResolutionException, IOException {
-		SbomCommandLineOptions commandLine = SbomCommandLineOptions.parseArguments(args);
+	private static void uploadVulnerabilityReport(String[] args) throws FilePatternResolutionException, IOException {
+		VulnerabilityReportCommandLineOptions commandLine = VulnerabilityReportCommandLineOptions.parseArguments(args);
 		configureLogging(commandLine);
 
-		File sbomFile = resolveSbomFile(commandLine.filePathOrPattern);
-		SbomUploadClient.performUpload(commandLine, sbomFile);
+		File reportFile = resolveVulnerabilityReportFile(commandLine.filePathOrPattern);
+		VulnerabilityReportUploadClient.performUpload(commandLine, reportFile);
 	}
 
 	/**
-	 * Resolves the path or pattern given for an SBOM upload to the single file to
-	 * upload.
+	 * Resolves the path or pattern given for a vulnerability report upload to the
+	 * single file to upload.
 	 * <p>
-	 * Teamscale stores one SBOM per build name and version, so the program is
+	 * Teamscale stores one report per build name and version, so the program is
 	 * terminated with an error message if it resolves to anything other than
 	 * exactly one file.
 	 */
-	private static File resolveSbomFile(String filePathOrPattern) throws FilePatternResolutionException {
+	private static File resolveVulnerabilityReportFile(String filePathOrPattern) throws FilePatternResolutionException {
 		String pattern = ReportPatternUtils.normalizeFilePattern(filePathOrPattern);
-		List<File> resolvedFiles = new FilePatternResolver().resolveToMultipleFiles("SBOM", pattern).stream()
+		List<File> resolvedFiles = new FilePatternResolver().resolveToMultipleFiles("REPORT", pattern).stream()
 				.filter(File::isFile)
 				// two matches are all we need: one to upload, a second to report that the
 				// pattern is ambiguous. Stopping there saves a stat call per further match.
 				.limit(2).toList();
 
 		if (resolvedFiles.isEmpty()) {
-			LogUtils.fail("The SBOM path '" + pattern + "' could not be resolved to any files."
-					+ " Please check the path for correctness and ensure that the SBOM file exists"
+			LogUtils.fail("The vulnerability report path '" + pattern + "' could not be resolved to any files."
+					+ " Please check the path for correctness and ensure that the report exists"
 					+ " and is a file, not a directory.");
 		}
 
 		if (resolvedFiles.size() > 1) {
 			String matchedFiles = resolvedFiles.stream().map(File::getPath).collect(Collectors.joining("\n"));
 			LogUtils.fail("The pattern '" + pattern + "' matches more than one file, but Teamscale"
-					+ " stores exactly one SBOM per --build-name and --build-version. Uploading all of them"
-					+ " would make them overwrite each other." + "\nAmong the matched files are:\n" + matchedFiles
+					+ " stores exactly one vulnerability report per --build-name and --build-version."
+					+ " Uploading all of them would make them overwrite each other."
+					+ "\nAmong the matched files are:\n" + matchedFiles
 					+ "\nPlease narrow the pattern down to a single file, or use a different --build-name"
 					+ " or --build-version for each of them.");
 		}

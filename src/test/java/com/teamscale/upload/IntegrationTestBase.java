@@ -491,49 +491,49 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
-	public void sbomUploadSendsAllParameters() throws IOException {
+	public void vulnerabilityReportUploadSendsAllParameters() throws IOException {
 		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
 			ProcessUtils.ProcessResult result = runUploader(
-					new SbomUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT)
+					new VulnerabilityReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT)
 							.withBuildName("my-service").withBuildVersion("1.4.2").withCommit("abcdef1234"));
 
-			Path expectedSbom = Paths.get(SbomUploadArguments.DEFAULT_SBOM_PATH);
-			byte[] expectedContent = Files.readAllBytes(expectedSbom);
+			Path expectedReport = Paths.get(VulnerabilityReportUploadArguments.DEFAULT_REPORT_PATH);
+			byte[] expectedContent = Files.readAllBytes(expectedReport);
 
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
-			assertThat(server.sbomUploads).hasSize(1);
+			assertThat(server.vulnerabilityReportUploads).hasSize(1);
 
-			TeamscaleMockServer.SbomUpload upload = server.sbomUploads.get(0);
+			TeamscaleMockServer.VulnerabilityReportUpload upload = server.vulnerabilityReportUploads.get(0);
 			assertSoftlyThat(softly -> {
 				softly.assertThat(upload.buildName).isEqualTo("my-service");
 				softly.assertThat(upload.version).isEqualTo("1.4.2");
 				softly.assertThat(upload.revision).isEqualTo("abcdef1234");
-				softly.assertThat(upload.fileName).isEqualTo(expectedSbom.getFileName().toString());
+				softly.assertThat(upload.fileName).isEqualTo(expectedReport.getFileName().toString());
 				softly.assertThat(upload.content).isEqualTo(expectedContent);
 			});
 		}
 	}
 
 	@Test
-	public void sbomUploadAutodetectsCommit() {
+	public void vulnerabilityReportUploadAutodetectsCommit() {
 		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
-			ProcessUtils.ProcessResult result = runUploader(new SbomUploadArguments()
+			ProcessUtils.ProcessResult result = runUploader(new VulnerabilityReportUploadArguments()
 					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withAutoDetectCommit());
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
-			assertThat(server.sbomUploads).hasSize(1);
+			assertThat(server.vulnerabilityReportUploads).hasSize(1);
 			// The revision is auto-detected from $GITHUB_SHA and friends in CI, or
 			// otherwise from the teamscale-upload Git checkout the tests run in. We only
 			// assert the length of the git SHA1 because the two sources disagree on the
 			// exact value: on pull requests, $GITHUB_SHA is the merge commit, not the
 			// checked-out HEAD.
-			assertThat(server.sbomUploads.get(0).revision).hasSize(40);
+			assertThat(server.vulnerabilityReportUploads.get(0).revision).hasSize(40);
 		}
 	}
 
 	@Test
-	public void sbomUploadWithoutBuildNameIsRejected() {
+	public void vulnerabilityReportUploadWithoutBuildNameIsRejected() {
 		ProcessUtils.ProcessResult result = runUploader(
-				new SbomUploadArguments().withUrl("http://localhost:9999").withoutBuildName());
+				new VulnerabilityReportUploadArguments().withUrl("http://localhost:9999").withoutBuildName());
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).containsIgnoringWhitespaces("argument --build-name is required");
@@ -541,9 +541,9 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
-	public void sbomUploadWithoutBuildVersionIsRejected() {
+	public void vulnerabilityReportUploadWithoutBuildVersionIsRejected() {
 		ProcessUtils.ProcessResult result = runUploader(
-				new SbomUploadArguments().withUrl("http://localhost:9999").withoutBuildVersion());
+				new VulnerabilityReportUploadArguments().withUrl("http://localhost:9999").withoutBuildVersion());
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).containsIgnoringWhitespaces("argument --build-version is required");
@@ -551,9 +551,9 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
-	public void sbomUploadRejectsReservedCharacterInBuildName() {
+	public void vulnerabilityReportUploadRejectsReservedCharacterInBuildName() {
 		ProcessUtils.ProcessResult result = runUploader(
-				new SbomUploadArguments().withUrl("http://localhost:9999").withBuildName("my#service"));
+				new VulnerabilityReportUploadArguments().withUrl("http://localhost:9999").withBuildName("my#service"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
 			// the command line library adjusts the word spacing based on the terminal width.
@@ -566,20 +566,20 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
-	public void sbomUploadWithoutFileIsRejected() {
+	public void vulnerabilityReportUploadWithoutFileIsRejected() {
 		ProcessUtils.ProcessResult result = runUploader(
-				new SbomUploadArguments().withUrl("http://localhost:9999").withoutPattern());
+				new VulnerabilityReportUploadArguments().withUrl("http://localhost:9999").withoutPattern());
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).containsIgnoringWhitespaces("too few arguments");
-			softly.assertThat(result.errorOutput).containsIgnoringWhitespaces("SBOM");
+			softly.assertThat(result.errorOutput).containsIgnoringWhitespaces("REPORT");
 		});
 	}
 
 	@Test
-	public void sbomUploadWithNonExistentFileIsRejected() {
-		ProcessUtils.ProcessResult result = runUploader(new SbomUploadArguments().withUrl("http://localhost:9999")
-				.withPattern("src/test/resources/sbom/does-not-exist.json"));
+	public void vulnerabilityReportUploadWithNonExistentFileIsRejected() {
+		ProcessUtils.ProcessResult result = runUploader(new VulnerabilityReportUploadArguments().withUrl("http://localhost:9999")
+				.withPattern("src/test/resources/vulnerability_report/does-not-exist.json"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).contains("could not be resolved to any files");
@@ -587,29 +587,29 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
-	public void sbomUploadWithDirectoryInsteadOfFileIsRejected() {
+	public void vulnerabilityReportUploadWithDirectoryInsteadOfFileIsRejected() {
 		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
 			ProcessUtils.ProcessResult result = runUploader(
-					new SbomUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT)
-							.withPattern("src/test/resources/sbom"));
+					new VulnerabilityReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT)
+							.withPattern("src/test/resources/vulnerability_report"));
 			assertSoftlyThat(softly -> {
 				softly.assertThat(result.exitCode).isNotZero();
 				softly.assertThat(result.errorOutput).contains("could not be resolved to any files");
 				softly.assertThat(result.errorOutput).doesNotContain("Could not find the specified report file");
-				softly.assertThat(server.sbomUploads).isEmpty();
+				softly.assertThat(server.vulnerabilityReportUploads).isEmpty();
 			});
 		}
 	}
 
 	@Test
-	public void sbomUploadRejectsPatternMatchingSeveralFiles(@TempDir Path sbomDirectory) throws IOException {
-		Path sbom = Paths.get(SbomUploadArguments.DEFAULT_SBOM_PATH);
-		Files.copy(sbom, sbomDirectory.resolve("bom.json"));
-		Files.copy(sbom, sbomDirectory.resolve("another-bom.json"));
+	public void vulnerabilityReportUploadRejectsPatternMatchingSeveralFiles(@TempDir Path reportDirectory) throws IOException {
+		Path report = Paths.get(VulnerabilityReportUploadArguments.DEFAULT_REPORT_PATH);
+		Files.copy(report, reportDirectory.resolve("bom.json"));
+		Files.copy(report, reportDirectory.resolve("another-bom.json"));
 
-		String pattern = sbomDirectory.toString().replace('\\', '/') + "/**/*.json";
+		String pattern = reportDirectory.toString().replace('\\', '/') + "/**/*.json";
 		ProcessUtils.ProcessResult result = runUploader(
-				new SbomUploadArguments().withUrl("http://localhost:9999").withPattern(pattern));
+				new VulnerabilityReportUploadArguments().withUrl("http://localhost:9999").withPattern(pattern));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).contains("matches more than one file")
@@ -619,25 +619,41 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
-	public void sbomUploadRetriesAfterIntermittentFailure() {
-		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 0L, 1)) {
-			ProcessUtils.ProcessResult result = runUploader(new SbomUploadArguments()
+	public void vulnerabilityReportUploadRetriesAfterIntermittentFailure() {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 0L, 2)) {
+			ProcessUtils.ProcessResult result = runUploader(new VulnerabilityReportUploadArguments()
 					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(3));
 			assertSoftlyThat(softly -> {
 				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
 						.isZero();
-				softly.assertThat(result.getOutputAndErrorOutput()).contains("Failed attempt 1 / 3");
-				softly.assertThat(server.sbomUploads).hasSize(1);
+				softly.assertThat(result.getOutputAndErrorOutput()).contains("Failed attempt 1 / 3")
+						.contains("Failed attempt 2 / 3");
+				softly.assertThat(server.vulnerabilityReportUploads).hasSize(1);
 			});
 		}
 	}
 
 	@Test
-	public void rejectedSbomUploadShowsItsExplanation() {
+	public void vulnerabilityReportUploadReportsFailuresAfterAllAttempts() {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 0L, 3)) {
+			ProcessUtils.ProcessResult result = runUploader(new VulnerabilityReportUploadArguments()
+					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(3));
+			assertSoftlyThat(softly -> {
+				softly.assertThat(result.exitCode).isNotZero();
+				softly.assertThat(result.getOutputAndErrorOutput()).contains("Failed attempt 1 / 3")
+						.contains("Failed attempt 2 / 3").doesNotContain("Failed attempt 3 / 3");
+				softly.assertThat(result.errorOutput).contains("Upload failed after 3 attempt(s)");
+				softly.assertThat(server.vulnerabilityReportUploads).isEmpty();
+			});
+		}
+	}
+
+	@Test
+	public void rejectedVulnerabilityReportUploadShowsItsExplanation() {
 		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
 			server.respondWith(400, "The 'build-name' must not contain '#'.");
 			ProcessUtils.ProcessResult result = runUploader(
-					new SbomUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT));
+					new VulnerabilityReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT));
 			assertSoftlyThat(softly -> {
 				softly.assertThat(result.exitCode).isNotZero();
 				softly.assertThat(result.errorOutput).contains("Teamscale rejected the upload request as invalid.");
@@ -647,26 +663,26 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
-	public void sbomUploadToUnknownProjectShowsDetailedHints() {
+	public void vulnerabilityReportUploadToUnknownProjectShowsDetailedHints() {
 		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
 			server.respondWith(404, "Not found");
 			ProcessUtils.ProcessResult result = runUploader(
-					new SbomUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT));
+					new VulnerabilityReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT));
 			assertSoftlyThat(softly -> {
 				softly.assertThat(result.exitCode).isNotZero();
 				softly.assertThat(result.errorOutput).contains("does not seem to exist in Teamscale");
-				// a 404 may also mean the endpoint is missing, which only the sbom command says
-				softly.assertThat(result.errorOutput).contains("may be too old to support SBOM uploads");
+				// a 404 may also mean the endpoint is missing, which only the vulnerability report command says
+				softly.assertThat(result.errorOutput).contains("may be too old to support vulnerability report uploads");
 			});
 		}
 	}
 
 	/**
-	 * The hint that Teamscale may not support SBOM uploads yet would be misleading
+	 * The hint that Teamscale may not support vulnerability report uploads yet would be misleading
 	 * for the report upload, whose endpoint has existed for a long time.
 	 */
 	@Test
-	public void reportUploadToUnknownProjectDoesNotHintAtSbomSupport() {
+	public void reportUploadToUnknownProjectDoesNotHintAtVulnerabilityReportSupport() {
 		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
 			server.respondWith(404, "Not found");
 			ProcessUtils.ProcessResult result = runUploader(
@@ -674,14 +690,14 @@ public abstract class IntegrationTestBase {
 			assertSoftlyThat(softly -> {
 				softly.assertThat(result.exitCode).isNotZero();
 				softly.assertThat(result.errorOutput).contains("does not seem to exist in Teamscale");
-				softly.assertThat(result.errorOutput).doesNotContain("SBOM");
+				softly.assertThat(result.errorOutput).doesNotContain("vulnerability report");
 			});
 		}
 	}
 
 	@Test
-	public void sbomHelpIsAvailable() {
-		ProcessUtils.ProcessResult result = runUploader(new SbomUploadArguments().withHelp());
+	public void vulnerabilityReportHelpIsAvailable() {
+		ProcessUtils.ProcessResult result = runUploader(new VulnerabilityReportUploadArguments().withHelp());
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
 					.isZero();
@@ -691,12 +707,12 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
-	public void sbomCommandIsMentionedInMainHelp() {
+	public void vulnerabilityReportCommandIsMentionedInMainHelp() {
 		ProcessUtils.ProcessResult result = runUploader(new ReportUploadArguments().withHelp());
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
 					.isZero();
-			softly.assertThat(result.getOutputAndErrorOutput()).containsIgnoringWhitespaces("sbom");
+			softly.assertThat(result.getOutputAndErrorOutput()).containsIgnoringWhitespaces("vulnerability-report");
 		});
 	}
 

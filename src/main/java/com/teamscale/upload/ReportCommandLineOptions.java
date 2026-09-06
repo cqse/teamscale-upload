@@ -179,9 +179,9 @@ public class ReportCommandLineOptions extends CommonCommandLineOptions {
 				+ "\n\nExample:" + "\n\n[jacoco]" + "\npattern1/**.xml" + "\npattern2/**.xml" + "\n[findbugs]"
 				+ "\npattern1/**.findbugs.xml" + "\npattern2/**.findbugs.xml" + "\n\nCOMMANDS"
 				+ "\n\nBesides uploading external analysis reports, this tool provides the following"
-				+ " additional commands:" + "\n\n" + SbomCommandLineOptions.COMMAND_NAME
-				+ ": upload a Software Bill of Materials (SBOM) to Teamscale."
-				+ "\nRun 'teamscale-upload " + SbomCommandLineOptions.COMMAND_NAME + " --help' for its options.");
+				+ " additional commands:" + "\n\n" + VulnerabilityReportCommandLineOptions.COMMAND_NAME
+				+ ": upload a vulnerability report, e.g. a Software Bill of Materials, to Teamscale."
+				+ "\nRun 'teamscale-upload " + VulnerabilityReportCommandLineOptions.COMMAND_NAME + " --help' for its options.");
 
 		return parseAndValidate(parser, args, ReportCommandLineOptions::new);
 	}
