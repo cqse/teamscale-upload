@@ -186,7 +186,9 @@ public class ReportCommandLineOptions extends CommonCommandLineOptions {
 				+ "\n\nExample:" + "\n\n[jacoco]" + "\npattern1/**.xml" + "\npattern2/**.xml" + "\n[findbugs]"
 				+ "\npattern1/**.findbugs.xml" + "\npattern2/**.findbugs.xml" + "\n\nCOMMANDS"
 				+ "\n\nBesides uploading external analysis reports, this tool provides the following"
-				+ " additional commands:" + "\n\n" + VulnerabilityReportCommandLineOptions.COMMAND_NAME
+				+ " additional commands. A command must be the very first argument: anything that"
+				+ " precedes it is read as an option of the report upload, which then fails to make"
+				+ " sense of the command." + "\n\n" + VulnerabilityReportCommandLineOptions.COMMAND_NAME
 				+ ": upload a vulnerability report, e.g. a Software Bill of Materials, to Teamscale."
 				+ "\nRun 'teamscale-upload " + VulnerabilityReportCommandLineOptions.COMMAND_NAME + " --help' for its options.");
 

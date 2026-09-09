@@ -770,6 +770,10 @@ public abstract class IntegrationTestBase {
 			softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
 					.isZero();
 			softly.assertThat(result.getOutputAndErrorOutput()).containsIgnoringWhitespaces("vulnerability-report");
+			// the command is recognised by position, so saying so saves the user from a
+			// confusing error when they put an option in front of it
+			softly.assertThat(result.getOutputAndErrorOutput())
+					.containsIgnoringWhitespaces("A command must be the very first argument");
 		});
 	}
 
