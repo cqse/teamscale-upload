@@ -4,14 +4,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Arguments for an execution of the teamscale-upload executable's default
- * command, which uploads external analysis reports.
+ * Arguments for an execution of the teamscale-upload executable's
+ * {@link ReportCommandLineOptions#COMMAND_NAME} command, which uploads external
+ * analysis reports.
  */
 class ReportUploadArguments extends CommonUploadArguments<ReportUploadArguments> {
 
 	private String partition = "NativeImageIT";
 	private String format = "simple";
-	private String pattern = "src/test/resources/coverage_files\\*.simple";
+	private List<String> patterns = List.of("src/test/resources/coverage_files\\*.simple");
 	private String input = null;
 	private boolean autoDetectCommit = false;
 	private String timestamp = "master:HEAD";
@@ -43,7 +44,7 @@ class ReportUploadArguments extends CommonUploadArguments<ReportUploadArguments>
 	 * {@link #withInput(String)} alone.
 	 */
 	ReportUploadArguments withoutPattern() {
-		this.pattern = null;
+		this.patterns = List.of();
 		return this;
 	}
 
@@ -52,7 +53,16 @@ class ReportUploadArguments extends CommonUploadArguments<ReportUploadArguments>
 	 * option (i.e., "pattern" == "files").
 	 */
 	ReportUploadArguments withPattern(String pattern) {
-		this.pattern = pattern;
+		this.patterns = List.of(pattern);
+		return this;
+	}
+
+	/**
+	 * Sets several report-file path patterns, which the command receives as several
+	 * positional arguments.
+	 */
+	ReportUploadArguments withPatterns(String... patterns) {
+		this.patterns = List.of(patterns);
 		return this;
 	}
 
@@ -128,10 +138,10 @@ class ReportUploadArguments extends CommonUploadArguments<ReportUploadArguments>
 	@Override
 	public String[] toCommand(String executable) {
 		if (help) {
-			return new String[] { executable, "--help" };
+			return new String[] { executable, ReportCommandLineOptions.COMMAND_NAME, "--help" };
 		}
 
-		List<String> command = new ArrayList<>(List.of(executable));
+		List<String> command = new ArrayList<>(List.of(executable, ReportCommandLineOptions.COMMAND_NAME));
 		addCommonOptions(command);
 
 		command.add("--format");
@@ -143,9 +153,7 @@ class ReportUploadArguments extends CommonUploadArguments<ReportUploadArguments>
 			command.add(input);
 		}
 		// "files" is a positional argument. ("pattern" == "files")
-		if (pattern != null) {
-			command.add(pattern);
-		}
+		command.addAll(patterns);
 		if (additionalMessageLine != null) {
 			command.add("--append-to-message");
 			command.add(additionalMessageLine);

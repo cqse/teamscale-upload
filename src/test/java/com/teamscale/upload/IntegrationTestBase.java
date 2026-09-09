@@ -763,32 +763,79 @@ public abstract class IntegrationTestBase {
 		});
 	}
 
+	/**
+	 * The report command keeps taking any number of report files as positional
+	 * arguments, which is what stops the tool from telling the commands apart by
+	 * position alone.
+	 */
 	@Test
-	public void vulnerabilityReportCommandIsMentionedInMainHelp() {
+	public void reportCommandAcceptsSeveralReportFiles() {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
+			ProcessUtils.ProcessResult result = runUploader(
+					new ReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withPatterns(
+							"src/test/resources/coverage_files/coverage.simple",
+							"src/test/resources/coverage_files/coverage2.simple"));
+			assertSoftlyThat(softly -> {
+				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
+						.isZero();
+				softly.assertThat(server.uploadedReportsByName).containsOnlyKeys("coverage.simple",
+						"coverage2.simple");
+			});
+		}
+	}
+
+	@Test
+	public void mainHelpListsAllCommands() {
+		ProcessUtils.ProcessResult result = runUploader(new NoCommandArguments("--help"));
+		assertSoftlyThat(softly -> {
+			softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
+					.isZero();
+			softly.assertThat(result.getOutputAndErrorOutput())
+					.containsIgnoringWhitespaces(ReportCommandLineOptions.COMMAND_NAME)
+					.containsIgnoringWhitespaces(VulnerabilityReportCommandLineOptions.COMMAND_NAME);
+		});
+	}
+
+	@Test
+	public void reportHelpIsAvailable() {
 		ProcessUtils.ProcessResult result = runUploader(new ReportUploadArguments().withHelp());
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
 					.isZero();
-			softly.assertThat(result.getOutputAndErrorOutput()).containsIgnoringWhitespaces("vulnerability-report");
-			// the command is recognised by position, so saying so saves the user from a
-			// confusing error when they put an option in front of it
-			softly.assertThat(result.getOutputAndErrorOutput())
-					.containsIgnoringWhitespaces("A command must be the very first argument");
+			softly.assertThat(result.getOutputAndErrorOutput()).containsIgnoringWhitespaces("--partition")
+					.containsIgnoringWhitespaces("INPUTFILE");
 		});
 	}
 
 	/**
-	 * Without its own --version, argparse4j answers "Did you mean:
-	 * --build-version", which sends the user looking for a typo they did not make.
+	 * Uploading reports used to need no command at all, so an invocation from a
+	 * pipeline that was not migrated yet must say what changed rather than just
+	 * name the first option as unrecognized.
 	 */
 	@Test
-	public void vulnerabilityReportCommandPrintsTheToolVersion() {
-		ProcessUtils.ProcessResult result = runUploader(new VulnerabilityReportUploadArguments().withVersion());
+	public void reportUploadWithoutTheCommandExplainsTheChange() {
+		ProcessUtils.ProcessResult result = runUploader(
+				new NoCommandArguments("--server", "http://localhost:9999", "--project", "teamscale-upload", "--user",
+						"build", "--accesskey", "not-a-ci-build", "--format", "simple", "--partition", "test",
+						"src/test/resources/coverage_files/coverage.simple"));
+		assertSoftlyThat(softly -> {
+			softly.assertThat(result.exitCode).isNotZero();
+			softly.assertThat(result.getOutputAndErrorOutput()).contains("You did not specify a command")
+					.contains("teamscale-upload " + ReportCommandLineOptions.COMMAND_NAME + " --server");
+		});
+	}
+
+	/**
+	 * --version asks about the tool rather than about an upload, so it is an option
+	 * of the tool itself and needs no command.
+	 */
+	@Test
+	public void toolVersionIsAvailableWithoutACommand() {
+		ProcessUtils.ProcessResult result = runUploader(new NoCommandArguments("--version"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
 					.isZero();
-			softly.assertThat(result.getOutputAndErrorOutput()).contains("Teamscale Upload")
-					.doesNotContain("Did you mean");
+			softly.assertThat(result.getOutputAndErrorOutput()).contains("Teamscale Upload");
 		});
 	}
 

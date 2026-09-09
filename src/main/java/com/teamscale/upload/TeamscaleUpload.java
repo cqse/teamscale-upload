@@ -2,7 +2,6 @@ package com.teamscale.upload;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -27,14 +26,21 @@ public class TeamscaleUpload {
 	 * This method serves as the entry point to the teamscale-upload application.
 	 */
 	public static void main(String[] args) throws FilePatternResolutionException, IOException {
-		if (args.length > 0 && VulnerabilityReportCommandLineOptions.COMMAND_NAME.equals(args[0])) {
-			uploadVulnerabilityReport(Arrays.copyOfRange(args, 1, args.length));
-			return;
-		}
-
-		ReportCommandLineOptions commandLine = ReportCommandLineOptions.parseArguments(args);
+		CommonCommandLineOptions commandLine = CommandLineParser.parse(args);
 		configureLogging(commandLine);
 
+		if (commandLine instanceof VulnerabilityReportCommandLineOptions vulnerabilityReportOptions) {
+			uploadVulnerabilityReport(vulnerabilityReportOptions);
+		} else {
+			uploadReports((ReportCommandLineOptions) commandLine);
+		}
+	}
+
+	/**
+	 * Uploads the external analysis reports the user specified.
+	 */
+	private static void uploadReports(ReportCommandLineOptions commandLine)
+			throws FilePatternResolutionException, IOException {
 		Map<String, Set<File>> filesByFormat = resolveAndConvertFiles(commandLine);
 		if (filesByFormat.isEmpty()) {
 			LogUtils.warn("There are no files to upload. Skipping upload.");
@@ -44,13 +50,10 @@ public class TeamscaleUpload {
 	}
 
 	/**
-	 * Uploads a vulnerability report. The given arguments must not include the
-	 * {@link VulnerabilityReportCommandLineOptions#COMMAND_NAME} command itself.
+	 * Uploads the vulnerability report the user specified.
 	 */
-	private static void uploadVulnerabilityReport(String[] args) throws FilePatternResolutionException, IOException {
-		VulnerabilityReportCommandLineOptions commandLine = VulnerabilityReportCommandLineOptions.parseArguments(args);
-		configureLogging(commandLine);
-
+	private static void uploadVulnerabilityReport(VulnerabilityReportCommandLineOptions commandLine)
+			throws FilePatternResolutionException, IOException {
 		File reportFile = resolveVulnerabilityReportFile(commandLine.filePathOrPattern);
 		VulnerabilityReportUploadClient.performUpload(commandLine, reportFile);
 	}

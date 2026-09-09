@@ -2,12 +2,10 @@ package com.teamscale.upload;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Function;
 
 import com.teamscale.upload.utils.LogUtils;
 import com.teamscale.upload.utils.SecretUtils;
 
-import net.sourceforge.argparse4j.helper.HelpScreenException;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
@@ -132,30 +130,6 @@ public abstract class CommonCommandLineOptions {
 		parser.addArgument("--timeout").metavar("TIMEOUT_IN_SECONDS").required(false)
 				.help("Sets the timeout in seconds for TCP connect, read and write for HTTP requests. "
 						+ "Defaults to 60 seconds.");
-	}
-
-	/**
-	 * Parses the given arguments with the given parser, builds the options object
-	 * via the given factory and validates it.
-	 * <p>
-	 * Terminates the program if the arguments are invalid or if the user requested
-	 * the help screen.
-	 */
-	protected static <T extends CommonCommandLineOptions> T parseAndValidate(ArgumentParser parser, String[] args,
-			Function<Namespace, T> factory) {
-		try {
-			Namespace namespace = parser.parseArgs(args);
-			T options = factory.apply(namespace);
-			options.validate(parser);
-			return options;
-		} catch (HelpScreenException e) {
-			System.exit(0); // requesting the help screen should return exit code 0
-			return null;
-		} catch (ArgumentParserException e) {
-			parser.handleError(e);
-			System.exit(1);
-			return null;
-		}
 	}
 
 	/**

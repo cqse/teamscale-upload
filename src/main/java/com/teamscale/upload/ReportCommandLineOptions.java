@@ -10,17 +10,24 @@ import java.util.List;
 
 import com.teamscale.upload.utils.MessageUtils;
 
-import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
+import net.sourceforge.argparse4j.inf.Subparsers;
 
 /**
- * Parses and validates the command line arguments of the default command, which
- * uploads external analysis reports.
+ * Parses and validates the command line arguments of the {@value #COMMAND_NAME}
+ * command, which uploads external analysis reports.
  */
 public class ReportCommandLineOptions extends CommonCommandLineOptions {
+
+	/**
+	 * The name under which this command is invoked, i.e.
+	 * <code>teamscale-upload report ...</code>.
+	 */
+	public static final String COMMAND_NAME = "report";
 
 	/**
 	 * The Teamscale partition.
@@ -82,7 +89,7 @@ public class ReportCommandLineOptions extends CommonCommandLineOptions {
 	 */
 	public final List<String> additionalMessageLines;
 
-	private ReportCommandLineOptions(Namespace namespace) {
+	ReportCommandLineOptions(Namespace namespace) {
 		super(namespace);
 		this.partition = namespace.getString("partition");
 		this.commit = namespace.getString("commit");
@@ -110,14 +117,13 @@ public class ReportCommandLineOptions extends CommonCommandLineOptions {
 	}
 
 	/**
-	 * Parses the given command line arguments and validates them.
+	 * Registers the {@value #COMMAND_NAME} command and its options on the given
+	 * subparsers and returns the parser of the command.
 	 */
-	public static ReportCommandLineOptions parseArguments(String[] args) {
-		ArgumentParser parser = ArgumentParsers.newFor("teamscale-upload").build().defaultHelp(true)
-				.description("Upload coverage, findings, ... to Teamscale.")
-				.version("Teamscale Upload " + ToolVersion.VERSION);
-		parser.addArgument("--version").action(Arguments.version())
-				.help("Prints the version number of this teamscale-upload tool and exits.");
+	static Subparser addCommand(Subparsers subparsers) {
+		Subparser parser = subparsers.addParser(COMMAND_NAME).defaultHelp(true)
+				.help("uploads external analysis reports, e.g. coverage or findings")
+				.description("Uploads coverage, findings, ... to Teamscale.");
 
 		addCommonArguments(parser);
 
@@ -170,8 +176,7 @@ public class ReportCommandLineOptions extends CommonCommandLineOptions {
 		parser.addArgument("files").metavar("FILES").nargs("*")
 				.help("Path(s) or pattern(s) of the report files to upload. Alternatively, you may"
 						+ " provide input files via -i or --input");
-		parser.epilog("For general usage help and alternative upload methods, please check our online"
-				+ " documentation at:" + "\nhttp://cqse.eu/tsu-docs" + "\n\nTARGET COMMIT"
+		parser.epilog("TARGET COMMIT"
 				+ "\n\nBy default, teamscale-upload tries to automatically detect the code commit"
 				+ " to which to upload from environment variables or a Git or SVN checkout in the"
 				+ " current working directory. If guessing fails, the upload will fail. This feature"
@@ -184,15 +189,9 @@ public class ReportCommandLineOptions extends CommonCommandLineOptions {
 				+ " report format. The report file patterns have the same format as used on the command"
 				+ " line. The entries in the file are separated by line breaks. Blank lines are ignored."
 				+ "\n\nExample:" + "\n\n[jacoco]" + "\npattern1/**.xml" + "\npattern2/**.xml" + "\n[findbugs]"
-				+ "\npattern1/**.findbugs.xml" + "\npattern2/**.findbugs.xml" + "\n\nCOMMANDS"
-				+ "\n\nBesides uploading external analysis reports, this tool provides the following"
-				+ " additional commands. A command must be the very first argument: anything that"
-				+ " precedes it is read as an option of the report upload, which then fails to make"
-				+ " sense of the command." + "\n\n" + VulnerabilityReportCommandLineOptions.COMMAND_NAME
-				+ ": upload a vulnerability report, e.g. a Software Bill of Materials, to Teamscale."
-				+ "\nRun 'teamscale-upload " + VulnerabilityReportCommandLineOptions.COMMAND_NAME + " --help' for its options.");
+				+ "\npattern1/**.findbugs.xml" + "\npattern2/**.findbugs.xml");
 
-		return parseAndValidate(parser, args, ReportCommandLineOptions::new);
+		return parser;
 	}
 
 	/**
