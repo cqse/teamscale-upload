@@ -777,6 +777,21 @@ public abstract class IntegrationTestBase {
 		});
 	}
 
+	/**
+	 * Without its own --version, argparse4j answers "Did you mean:
+	 * --build-version", which sends the user looking for a typo they did not make.
+	 */
+	@Test
+	public void vulnerabilityReportCommandPrintsTheToolVersion() {
+		ProcessUtils.ProcessResult result = runUploader(new VulnerabilityReportUploadArguments().withVersion());
+		assertSoftlyThat(softly -> {
+			softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
+					.isZero();
+			softly.assertThat(result.getOutputAndErrorOutput()).contains("Teamscale Upload")
+					.doesNotContain("Did you mean");
+		});
+	}
+
 	private void assertThatOSCertificatesWereImported(ProcessUtils.ProcessResult result) {
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.errorOutput)
