@@ -29,15 +29,6 @@ public abstract class CommonCommandLineOptions {
 	 */
 	public final String project;
 	/**
-	 * The version control commit to which to upload, or null if the option was not
-	 * given. It is up to the command to decide what to do then, e.g. auto-detect
-	 * the commit.
-	 * <p>
-	 * The option itself is registered by the individual commands, as they describe
-	 * it differently.
-	 */
-	public final String commit;
-	/**
 	 * The Teamscale username.
 	 */
 	public final String username;
@@ -79,7 +70,6 @@ public abstract class CommonCommandLineOptions {
 
 	protected CommonCommandLineOptions(Namespace namespace) {
 		this.project = namespace.getString("project");
-		this.commit = namespace.getString("commit");
 		this.username = namespace.getString("user");
 		this.accessKey = SecretUtils.determineAccessKeyToUse(namespace.getString("accesskey"));
 		this.url = HttpUrl.parse(namespace.getString("server"));
@@ -107,18 +97,6 @@ public abstract class CommonCommandLineOptions {
 				.help("Enables printing stack traces in all cases where errors occur. Used for debugging.");
 		parser.addArgument("--debug").action(Arguments.storeTrue()).required(false)
 				.help("Enables printing debug log output. This automatically enables --stacktrace.");
-	}
-
-	/**
-	 * Registers the --commit option with the given command-specific description,
-	 * which populates {@link #commit}. Commands that upload for a version control
-	 * commit call this in addition to {@link #addCommonArguments(ArgumentParser)}.
-	 * <p>
-	 * Only the description differs between commands, so the flags and whether the
-	 * option is required are defined here.
-	 */
-	protected static void addCommitArgument(ArgumentParser parser, String helpText) {
-		parser.addArgument("-c", "--commit").metavar("REVISION").required(false).help(helpText);
 	}
 
 	/**
@@ -196,18 +174,6 @@ public abstract class CommonCommandLineOptions {
 	 * any invalid configuration is detected.
 	 */
 	protected abstract void validate(ArgumentParser parser) throws ArgumentParserException;
-
-	/**
-	 * The version control revision this upload targets. Used to produce helpful
-	 * error messages when Teamscale does not know the revision.
-	 * <p>
-	 * This is the commit the user asked for, so it is null if they left the option
-	 * out and let the command determine the revision instead. A command whose
-	 * revision comes from somewhere else can override this.
-	 */
-	public String getRevision() {
-		return commit;
-	}
 
 	/**
 	 * An additional hint that is appended to the error message when Teamscale

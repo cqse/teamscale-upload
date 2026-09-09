@@ -475,6 +475,27 @@ public abstract class IntegrationTestBase {
 		}
 	}
 
+	/**
+	 * The message names the revision that was sent, which with auto-detection is
+	 * not the one the user passed. Taking it from the options instead used to
+	 * produce "The revision 'null' is not known" for exactly that case.
+	 */
+	@Test
+	public void unknownRevisionNamesTheRevisionThatWasSent() {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
+			server.respondWith(404, "Revision is not known to any of the available VCS repositories");
+			ProcessUtils.ProcessResult result = runUploader(new ReportUploadArguments()
+					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withAutoDetectCommit());
+			assertSoftlyThat(softly -> {
+				softly.assertThat(result.exitCode).isNotZero();
+				softly.assertThat(result.errorOutput).doesNotContain("The revision 'null'");
+				// the detected git SHA1, which the user never passed
+				softly.assertThat(result.errorOutput)
+						.containsPattern("The revision '[0-9a-f]{40}' is not known to Teamscale");
+			});
+		}
+	}
+
 	@Test
 	public void retrySucceedsAfterIntermittentFailure() {
 		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 0L, 1)) {

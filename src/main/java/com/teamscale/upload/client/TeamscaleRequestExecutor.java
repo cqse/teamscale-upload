@@ -207,7 +207,10 @@ public class TeamscaleRequestExecutor {
 
 	private static void handleError404(SafeResponse response, CommonCommandLineOptions commandLine) {
 		if (responseBodyIndicatesInvalidRevision(response)) {
-			LogUtils.fail("The revision '" + commandLine.getRevision() + "' is not known to Teamscale or the version"
+			// the revision we sent, which is not necessarily the one the user passed: it
+			// may have been detected from the environment or from the checkout
+			String revision = response.unsafeResponse.request().url().queryParameter("revision");
+			LogUtils.fail("The revision '" + revision + "' is not known to Teamscale or the version"
 					+ " control system(s) you configured in the Teamscale project '" + commandLine.project + "'."
 					+ " Please ensure that you used a valid version control revision:"
 					+ " (e.g. a Git SHA1, SVN revision number or TFS changeset ID) and"
