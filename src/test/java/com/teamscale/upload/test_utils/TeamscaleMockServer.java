@@ -191,10 +191,15 @@ public class TeamscaleMockServer implements AutoCloseable {
 	private String receiveReportHandler(Request request, Response response) throws ServletException, IOException {
 		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement(""));
 
-		Part report = request.raw().getPart("report");
-
-		try (InputStream is = report.getInputStream()) {
-			uploadedReportsByName.put(report.getSubmittedFileName(), is.readAllBytes());
+		// one request carries one part per uploaded report, so reading a single part
+		// would silently drop all reports but the first
+		for (Part report : request.raw().getParts()) {
+			if (!"report".equals(report.getName())) {
+				continue;
+			}
+			try (InputStream is = report.getInputStream()) {
+				uploadedReportsByName.put(report.getSubmittedFileName(), is.readAllBytes());
+			}
 		}
 
 		return "Report uploaded";
