@@ -623,6 +623,40 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
+	public void vulnerabilityReportUploadRejectsEmptyBuildName() {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
+			ProcessUtils.ProcessResult result = runUploader(new VulnerabilityReportUploadArguments()
+					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withBuildName(""));
+			assertSoftlyThat(softly -> {
+				softly.assertThat(result.exitCode).isNotZero();
+				softly.assertThat(result.errorOutput)
+						.containsIgnoringWhitespaces("The value you provided for --build-name is blank");
+				// Teamscale would answer this with a 400, so the point of the check is that we
+				// never get there
+				softly.assertThat(server.vulnerabilityReportUploads).isEmpty();
+			});
+		}
+	}
+
+	/**
+	 * Teamscale rejects a blank identifier, not merely an empty one, so a value of
+	 * spaces must not travel to the server either.
+	 */
+	@Test
+	public void vulnerabilityReportUploadRejectsWhitespaceOnlyBuildVersion() {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
+			ProcessUtils.ProcessResult result = runUploader(new VulnerabilityReportUploadArguments()
+					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withBuildVersion("   "));
+			assertSoftlyThat(softly -> {
+				softly.assertThat(result.exitCode).isNotZero();
+				softly.assertThat(result.errorOutput)
+						.containsIgnoringWhitespaces("The value you provided for --build-version is blank");
+				softly.assertThat(server.vulnerabilityReportUploads).isEmpty();
+			});
+		}
+	}
+
+	@Test
 	public void vulnerabilityReportUploadWithoutFileIsRejected() {
 		ProcessUtils.ProcessResult result = runUploader(
 				new VulnerabilityReportUploadArguments().withUrl("http://localhost:9999").withoutPattern());
