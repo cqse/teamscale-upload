@@ -35,7 +35,6 @@ public class ReportUploadClient {
 	/** Performs the upload of the files. */
 	public static void performUpload(ReportCommandLineOptions commandLine, Map<String, Set<File>> filesByFormat)
 			throws IOException {
-		// resolved once, so that a retried upload does not detect the commit again
 		String detectedCommit = detectCommitIfNeeded(commandLine);
 		TeamscaleRequestExecutor.performUpload(commandLine, client -> {
 			String sessionId = openSession(client, commandLine, filesByFormat.keySet(), detectedCommit);
