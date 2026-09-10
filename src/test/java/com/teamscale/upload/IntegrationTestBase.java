@@ -510,6 +510,28 @@ public abstract class IntegrationTestBase {
 		}
 	}
 
+	/**
+	 * The commit is detected before the first attempt, not per attempt: detection
+	 * shells out to Git or SVN and announces what it found, so repeating it would
+	 * both cost a subprocess per attempt and make the log read as if the upload
+	 * targeted a freshly derived commit each time.
+	 */
+	@Test
+	public void retriedUploadDetectsTheCommitOnlyOnce() {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 0L, 1)) {
+			ProcessUtils.ProcessResult result = runUploader(new ReportUploadArguments()
+					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withAutoDetectCommit().withMaxAttempts(3));
+			assertSoftlyThat(softly -> {
+				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
+						.isZero();
+				softly.assertThat(result.getOutputAndErrorOutput()).contains("Failed attempt 1 / 3");
+				softly.assertThat(countCommitDetections(result.getOutputAndErrorOutput()))
+						.describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isOne();
+				softly.assertThat(server.sessions).hasSize(1);
+			});
+		}
+	}
+
 	@Test
 	public void retryExhaustedWithUnreachableUrl() {
 		ProcessUtils.ProcessResult result = runUploader(
@@ -871,6 +893,16 @@ public abstract class IntegrationTestBase {
 					.isZero();
 			softly.assertThat(result.getOutputAndErrorOutput()).contains("Teamscale Upload");
 		});
+	}
+
+	/**
+	 * Returns how often the commit auto-detection announced the commit it found.
+	 * Which message it uses depends on where the commit came from, and that differs
+	 * between a CI build and a local checkout.
+	 */
+	private long countCommitDetections(String output) {
+		return Pattern.compile("Using (?:Git commit|SVN revision|commit/revision/changeset) ").matcher(output).results()
+				.count();
 	}
 
 	private void assertThatOSCertificatesWereImported(ProcessUtils.ProcessResult result) {

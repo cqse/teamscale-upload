@@ -35,8 +35,10 @@ public class ReportUploadClient {
 	/** Performs the upload of the files. */
 	public static void performUpload(ReportCommandLineOptions commandLine, Map<String, Set<File>> filesByFormat)
 			throws IOException {
+		// resolved once, so that a retried upload does not detect the commit again
+		String detectedCommit = detectCommitIfNeeded(commandLine);
 		TeamscaleRequestExecutor.performUpload(commandLine, client -> {
-			String sessionId = openSession(client, commandLine, filesByFormat.keySet());
+			String sessionId = openSession(client, commandLine, filesByFormat.keySet(), detectedCommit);
 			for (String format : filesByFormat.keySet()) {
 				Set<File> filesForFormat = filesByFormat.get(format);
 				sendRequestForFormat(client, commandLine, format, filesForFormat, sessionId);
@@ -45,14 +47,33 @@ public class ReportUploadClient {
 		});
 	}
 
+	/**
+	 * Detects the commit to upload to, or returns null if the user named the target
+	 * commit themselves via --commit or --branch-and-timestamp.
+	 * <p>
+	 * Terminates the program if no commit is given and none can be detected.
+	 */
+	private static String detectCommitIfNeeded(ReportCommandLineOptions commandLine) {
+		if (commandLine.commit != null || commandLine.timestamp != null) {
+			return null;
+		}
+
+		String detectedCommit = AutodetectCommitUtils.detectCommit();
+		if (detectedCommit == null) {
+			LogUtils.fail(
+					"Failed to automatically detect the commit. Please specify it manually via --commit or --branch-and-timestamp");
+		}
+		return detectedCommit;
+	}
+
 	private static String openSession(OkHttpClient client, ReportCommandLineOptions commandLine,
-			Collection<String> formats) throws IOException {
+			Collection<String> formats, String detectedCommit) throws IOException {
 		HttpUrl.Builder builder = commandLine.url.newBuilder().addPathSegments("api")
 				.addPathSegments(MINIMUM_REQUIRED_API_VERSION).addPathSegments("projects")
 				.addPathSegment(commandLine.project).addPathSegments("external-analysis/session")
 				.addQueryParameter("partition", commandLine.partition);
 
-		String revision = handleRevisionAndBranchTimestamp(commandLine, builder);
+		String revision = handleRevisionAndBranchTimestamp(commandLine, builder, detectedCommit);
 
 		String message = commandLine.message;
 		if (message == null) {
@@ -87,10 +108,13 @@ public class ReportUploadClient {
 	 * We track revision or branch:timestamp for the session as it should be the
 	 * same for all uploads.
 	 *
+	 * @param detectedCommit
+	 *            the commit {@link #detectCommitIfNeeded} found, which is used if
+	 *            the user gave neither --commit nor --branch-and-timestamp.
 	 * @return the revision or branch:timestamp coordinate used.
 	 */
 	private static String handleRevisionAndBranchTimestamp(ReportCommandLineOptions commandLine,
-			HttpUrl.Builder builder) {
+			HttpUrl.Builder builder, String detectedCommit) {
 		if (commandLine.commit != null) {
 			builder.addQueryParameter("revision", commandLine.commit);
 			if (commandLine.repository != null) {
@@ -102,14 +126,8 @@ public class ReportUploadClient {
 			builder.addQueryParameter("t", commandLine.timestamp);
 			return commandLine.timestamp;
 		} else {
-			// auto-detect if neither option is given
-			String commit = AutodetectCommitUtils.detectCommit();
-			if (commit == null) {
-				LogUtils.fail(
-						"Failed to automatically detect the commit. Please specify it manually via --commit or --branch-and-timestamp");
-			}
-			builder.addQueryParameter("revision", commit);
-			return commit;
+			builder.addQueryParameter("revision", detectedCommit);
+			return detectedCommit;
 		}
 	}
 
