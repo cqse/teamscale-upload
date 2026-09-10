@@ -3,6 +3,7 @@ package com.teamscale.upload;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -720,8 +721,8 @@ public abstract class IntegrationTestBase {
 	@Test
 	public void vulnerabilityReportUploadRejectsPatternMatchingSeveralFiles(@TempDir Path reportDirectory) throws IOException {
 		Path report = Paths.get(VulnerabilityReportUploadArguments.DEFAULT_REPORT_PATH);
-		Files.copy(report, reportDirectory.resolve("bom.json"));
-		Files.copy(report, reportDirectory.resolve("another-bom.json"));
+		Files.copy(report, reportDirectory.resolve("foo.json"));
+		Files.copy(report, reportDirectory.resolve("bar.json"));
 
 		String pattern = reportDirectory.toString().replace('\\', '/') + "/**/*.json";
 		ProcessUtils.ProcessResult result = runUploader(
@@ -730,7 +731,10 @@ public abstract class IntegrationTestBase {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).contains("matches more than one file")
 					.contains("overwrite each other");
-			softly.assertThat(result.errorOutput).contains("bom.json").contains("another-bom.json");
+			// the listed paths come from File::getPath, so they carry the separator of the
+			// platform the test runs on
+			softly.assertThat(result.errorOutput).contains(File.separator + "foo.json")
+					.contains(File.separator + "bar.json");
 		});
 	}
 
