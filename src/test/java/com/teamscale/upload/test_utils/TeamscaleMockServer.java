@@ -231,51 +231,31 @@ public class TeamscaleMockServer implements AutoCloseable {
 
 	/**
 	 * A vulnerability report uploaded to this Teamscale instance.
+	 *
+	 * @param buildName
+	 *            the value of the "build-name" query parameter.
+	 * @param version
+	 *            the value of the "version" query parameter.
+	 * @param revision
+	 *            the value of the "revision" query parameter.
+	 * @param fileName
+	 *            the file name submitted for the "file" part.
+	 * @param content
+	 *            the raw content of the uploaded vulnerability report. Compare it
+	 *            as an array: the generated equals() compares it by identity.
 	 */
-	public static class VulnerabilityReportUpload {
-
-		/** The value of the "build-name" query parameter. */
-		public final String buildName;
-
-		/** The value of the "version" query parameter. */
-		public final String version;
-
-		/** The value of the "revision" query parameter. */
-		public final String revision;
-
-		/** The file name submitted for the "file" part. */
-		public final String fileName;
-
-		/** The raw content of the uploaded vulnerability report. */
-		public final byte[] content;
-
-		public VulnerabilityReportUpload(String buildName, String version, String revision, String fileName, byte[] content) {
-			this.buildName = buildName;
-			this.version = version;
-			this.revision = revision;
-			this.fileName = fileName;
-			this.content = content;
-		}
+	public record VulnerabilityReportUpload(String buildName, String version, String revision, String fileName,
+			byte[] content) {
 	}
 
 	/**
 	 * An opened upload session.
+	 *
+	 * @param message
+	 *            the message used for that session.
+	 * @param revisionOrTimestamp
+	 *            the revision or timestamp used during the upload.
 	 */
-	public static class Session {
-
-		/**
-		 * The message used for that session.
-		 */
-		public final String message;
-
-		/**
-		 * The revision or timestamp used during the upload.
-		 */
-		public final String revisionOrTimestamp;
-
-		public Session(String message, String revisionOrTimestamp) {
-			this.message = message;
-			this.revisionOrTimestamp = revisionOrTimestamp;
-		}
+	public record Session(String message, String revisionOrTimestamp) {
 	}
 }

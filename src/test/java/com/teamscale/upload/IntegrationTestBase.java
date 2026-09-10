@@ -345,7 +345,7 @@ public abstract class IntegrationTestBase {
 					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withAutoDetectCommit());
 			assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput()).isZero();
 			assertThat(server.sessions).hasSize(1);
-			assertThat(server.sessions.get(0).revisionOrTimestamp).hasSize(40); // size of a git SHA1
+			assertThat(server.sessions.get(0).revisionOrTimestamp()).hasSize(40); // size of a git SHA1
 			assertThatOSCertificatesWereImported(result);
 		}
 	}
@@ -575,11 +575,11 @@ public abstract class IntegrationTestBase {
 
 			TeamscaleMockServer.VulnerabilityReportUpload upload = server.vulnerabilityReportUploads.get(0);
 			assertSoftlyThat(softly -> {
-				softly.assertThat(upload.buildName).isEqualTo("my-service");
-				softly.assertThat(upload.version).isEqualTo("1.4.2");
-				softly.assertThat(upload.revision).isEqualTo("abcdef1234");
-				softly.assertThat(upload.fileName).isEqualTo(expectedReport.getFileName().toString());
-				softly.assertThat(upload.content).isEqualTo(expectedContent);
+				softly.assertThat(upload.buildName()).isEqualTo("my-service");
+				softly.assertThat(upload.version()).isEqualTo("1.4.2");
+				softly.assertThat(upload.revision()).isEqualTo("abcdef1234");
+				softly.assertThat(upload.fileName()).isEqualTo(expectedReport.getFileName().toString());
+				softly.assertThat(upload.content()).isEqualTo(expectedContent);
 			});
 		}
 	}
@@ -596,7 +596,7 @@ public abstract class IntegrationTestBase {
 			// assert the length of the git SHA1 because the two sources disagree on the
 			// exact value: on pull requests, $GITHUB_SHA is the merge commit, not the
 			// checked-out HEAD.
-			assertThat(server.vulnerabilityReportUploads.get(0).revision).hasSize(40);
+			assertThat(server.vulnerabilityReportUploads.get(0).revision()).hasSize(40);
 		}
 	}
 
@@ -925,7 +925,7 @@ public abstract class IntegrationTestBase {
 	}
 
 	private String extractNormalizedMessage(TeamscaleMockServer.Session session) {
-		return session.message.replaceAll("uploaded from .*", "uploaded from HOSTNAME").replaceAll("uploaded at .*",
+		return session.message().replaceAll("uploaded from .*", "uploaded from HOSTNAME").replaceAll("uploaded at .*",
 				"uploaded at DATE");
 	}
 }
