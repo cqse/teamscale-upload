@@ -483,8 +483,8 @@ public abstract class IntegrationTestBase {
 	 */
 	@Test
 	public void unknownAutodetectedRevisionIsMentionedInErrorMessage() {
-		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
-			server.respondWith(404, "Revision is not known to any of the available VCS repositories");
+		try (TeamscaleMockServer ignored = TeamscaleMockServer.respondingWith(MOCK_TEAMSCALE_PORT, 404,
+				"Revision is not known to any of the available VCS repositories")) {
 			ProcessUtils.ProcessResult result = runUploader(new ReportUploadArguments()
 					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withAutoDetectCommit());
 			assertSoftlyThat(softly -> {
@@ -770,8 +770,8 @@ public abstract class IntegrationTestBase {
 
 	@Test
 	public void rejectedVulnerabilityReportUploadShowsItsExplanation() {
-		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
-			server.respondWith(400, "The 'build-name' must not contain '#'.");
+		try (TeamscaleMockServer ignored = TeamscaleMockServer.respondingWith(MOCK_TEAMSCALE_PORT, 400,
+				"The 'build-name' must not contain '#'.")) {
 			ProcessUtils.ProcessResult result = runUploader(
 					new VulnerabilityReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT));
 			assertSoftlyThat(softly -> {
@@ -784,8 +784,7 @@ public abstract class IntegrationTestBase {
 
 	@Test
 	public void vulnerabilityReportUploadToUnknownProjectShowsDetailedHints() {
-		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
-			server.respondWith(404, "Not found");
+		try (TeamscaleMockServer ignored = TeamscaleMockServer.respondingWith(MOCK_TEAMSCALE_PORT, 404, "Not found")) {
 			ProcessUtils.ProcessResult result = runUploader(
 					new VulnerabilityReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT));
 			assertSoftlyThat(softly -> {
@@ -803,8 +802,7 @@ public abstract class IntegrationTestBase {
 	 */
 	@Test
 	public void reportUploadToUnknownProjectDoesNotHintAtVulnerabilityReportSupport() {
-		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
-			server.respondWith(404, "Not found");
+		try (TeamscaleMockServer ignored = TeamscaleMockServer.respondingWith(MOCK_TEAMSCALE_PORT, 404, "Not found")) {
 			ProcessUtils.ProcessResult result = runUploader(
 					new ReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT));
 			assertSoftlyThat(softly -> {

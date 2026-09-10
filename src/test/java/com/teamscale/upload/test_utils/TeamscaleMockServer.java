@@ -94,18 +94,6 @@ public class TeamscaleMockServer implements AutoCloseable {
 
 	private final AtomicInteger vulnerabilityReportRequestCounter = new AtomicInteger(0);
 
-	/**
-	 * The status code with which every request is answered, or null to answer them
-	 * normally. See {@link #respondWith(int, String)}.
-	 */
-	private Integer forcedStatusCode = null;
-
-	/**
-	 * The response body with which every request is answered, or null to answer them
-	 * normally. See {@link #respondWith(int, String)}.
-	 */
-	private String forcedResponseBody = "";
-
 	public TeamscaleMockServer(int port) {
 		this(port, false);
 	}
@@ -120,6 +108,22 @@ public class TeamscaleMockServer implements AutoCloseable {
 
 	public TeamscaleMockServer(int port, boolean useSelfSignedCertificate, long openSessionRequestTimeInSeconds,
 			int countOfInitialFailedRequestsPerEndpoint) {
+		this(port, useSelfSignedCertificate, openSessionRequestTimeInSeconds, countOfInitialFailedRequestsPerEndpoint,
+				null, null);
+	}
+
+	/**
+	 * Creates a server that answers every request with the given status code and
+	 * body instead of processing it. Use this to simulate the error responses
+	 * Teamscale sends, e.g. a 400 for an upload it rejects or a 404 for a project
+	 * that does not exist.
+	 */
+	public static TeamscaleMockServer respondingWith(int port, int statusCode, String body) {
+		return new TeamscaleMockServer(port, false, 0L, 0, statusCode, body);
+	}
+
+	private TeamscaleMockServer(int port, boolean useSelfSignedCertificate, long openSessionRequestTimeInSeconds,
+			int countOfInitialFailedRequestsPerEndpoint, Integer forcedStatusCode, String forcedResponseBody) {
 		if (KEYSTORE == null || TRUSTSTORE == null) {
 			Assertions.fail(
 					"Could not initialize TeamscaleMockServer: Could not find keystore.jks or truststore.jks test resources");
@@ -148,18 +152,6 @@ public class TeamscaleMockServer implements AutoCloseable {
 			response.body("Exception: " + exception.getMessage());
 		});
 		spark.awaitInitialization();
-	}
-
-	/**
-	 * Makes this server answer every request with the given status code and body,
-	 * instead of processing it. Use this to simulate the error responses Teamscale
-	 * sends, e.g. a 400 for an upload it rejects or a 404 for a project that does
-	 * not exist.
-	 */
-	public TeamscaleMockServer respondWith(int statusCode, String body) {
-		this.forcedStatusCode = statusCode;
-		this.forcedResponseBody = body;
-		return this;
 	}
 
 	private void simulateRequestTime() {
