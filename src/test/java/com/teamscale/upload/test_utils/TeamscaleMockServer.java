@@ -212,8 +212,9 @@ public class TeamscaleMockServer implements AutoCloseable {
 		try (InputStream is = report.getInputStream()) {
 			content = is.readAllBytes();
 		}
-		vulnerabilityReportUploads.add(new VulnerabilityReportUpload(request.queryParams("build-name"), request.queryParams("version"),
-				request.queryParams("revision"), report.getSubmittedFileName(), content));
+		vulnerabilityReportUploads
+				.add(new VulnerabilityReportUpload(request.queryParams("build-name"), request.queryParams("version"),
+						request.queryParams("revision"), report.getSubmittedFileName(), content));
 
 		// the real endpoint returns 204 with an empty body
 		response.status(SC_NO_CONTENT);

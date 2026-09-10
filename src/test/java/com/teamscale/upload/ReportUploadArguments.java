@@ -49,8 +49,8 @@ class ReportUploadArguments extends CommonUploadArguments<ReportUploadArguments>
 	}
 
 	/**
-	 * Sets the report-file path pattern. This sets the {@link ReportCommandLineOptions#files}
-	 * option (i.e., "pattern" == "files").
+	 * Sets the report-file path pattern. This sets the
+	 * {@link ReportCommandLineOptions#files} option (i.e., "pattern" == "files").
 	 */
 	ReportUploadArguments withPattern(String pattern) {
 		this.patterns = List.of(pattern);
@@ -83,7 +83,8 @@ class ReportUploadArguments extends CommonUploadArguments<ReportUploadArguments>
 	}
 
 	/**
-	 * Sets the target-repository name (name of repo connector in a Teamscale project).
+	 * Sets the target-repository name (name of repo connector in a Teamscale
+	 * project).
 	 */
 	ReportUploadArguments withRepository(String repository) {
 		this.repository = repository;

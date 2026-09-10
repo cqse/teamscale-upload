@@ -76,8 +76,8 @@ public class CommandLineParser {
 	}
 
 	/**
-	 * Terminates the program with a hint if the arguments look like an invocation of
-	 * a teamscale-upload before 3.0.0, which uploaded external analysis reports
+	 * Terminates the program with a hint if the arguments look like an invocation
+	 * of a teamscale-upload before 3.0.0, which uploaded external analysis reports
 	 * without naming a command. Without this, argparse4j merely reports the first
 	 * option as unrecognized, which does not tell the user what changed.
 	 */

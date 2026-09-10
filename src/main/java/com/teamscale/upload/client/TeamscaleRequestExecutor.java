@@ -35,8 +35,8 @@ public class TeamscaleRequestExecutor {
 	}
 
 	/**
-	 * Performs an upload to Teamscale using a {@link OkHttpClient}. The upload is retried if it fails
-	 * due to a transient network error.
+	 * Performs an upload to Teamscale using a {@link OkHttpClient}. The upload is
+	 * retried if it fails due to a transient network error.
 	 */
 	public static void performUpload(CommonCommandLineOptions commandLine, Upload upload) throws IOException {
 		OkHttpClient client = OkHttpUtils.createClient(commandLine.validateSsl, commandLine.proxy,
@@ -57,9 +57,9 @@ public class TeamscaleRequestExecutor {
 	 * Performs the given upload, retrying it up to {@code maxAttempts} times if it
 	 * fails with an {@link IOException}.
 	 * <p>
-	 * An {@link SSLHandshakeException} is not retried but rethrown, as retrying will
-	 * not make a broken certificate setup work. If all attempts fail, the program is
-	 * terminated with an error message.
+	 * An {@link SSLHandshakeException} is not retried but rethrown, as retrying
+	 * will not make a broken certificate setup work. If all attempts fail, the
+	 * program is terminated with an error message.
 	 */
 	private static void performWithRetry(OkHttpClient client, Upload upload, int maxAttempts) throws IOException {
 		for (int attemptNumber = 1; attemptNumber <= maxAttempts; attemptNumber++) {

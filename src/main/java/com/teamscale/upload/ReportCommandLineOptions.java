@@ -38,8 +38,9 @@ public class ReportCommandLineOptions extends CommonCommandLineOptions {
 	 */
 	public final String format;
 	/**
-	 * The commit to which to upload, or null if the option was not given. This is one of
-	 * three ways to provide a commit, next to {@link #timestamp} and auto-detection.
+	 * The commit to which to upload, or null if the option was not given. This is
+	 * one of three ways to provide a commit, next to {@link #timestamp} and
+	 * auto-detection.
 	 */
 	public final String commit;
 	/**
@@ -176,8 +177,7 @@ public class ReportCommandLineOptions extends CommonCommandLineOptions {
 		parser.addArgument("files").metavar("FILES").nargs("*")
 				.help("Path(s) or pattern(s) of the report files to upload. Alternatively, you may"
 						+ " provide input files via -i or --input");
-		parser.epilog("TARGET COMMIT"
-				+ "\n\nBy default, teamscale-upload tries to automatically detect the code commit"
+		parser.epilog("TARGET COMMIT" + "\n\nBy default, teamscale-upload tries to automatically detect the code commit"
 				+ " to which to upload from environment variables or a Git or SVN checkout in the"
 				+ " current working directory. If guessing fails, the upload will fail. This feature"
 				+ " supports many common CI tools like Jenkins, GitLab, GitHub Actions, Travis CI etc."

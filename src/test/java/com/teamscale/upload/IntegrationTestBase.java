@@ -43,8 +43,7 @@ public abstract class IntegrationTestBase {
 	@Test
 	@Disabled("TS-41072 Test should not run against production server")
 	public void wrongAccessKey() {
-		ProcessUtils.ProcessResult result = runUploader(
-				new ReportUploadArguments().withAccessKey("wrong-accesskey_"));
+		ProcessUtils.ProcessResult result = runUploader(new ReportUploadArguments().withAccessKey("wrong-accesskey_"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).contains("You provided incorrect credentials");
@@ -79,8 +78,7 @@ public abstract class IntegrationTestBase {
 
 	@Test
 	public void unreachableUrl() {
-		ProcessUtils.ProcessResult result = runUploader(
-				new ReportUploadArguments().withUrl("http://localhost:9999"));
+		ProcessUtils.ProcessResult result = runUploader(new ReportUploadArguments().withUrl("http://localhost:9999"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).contains("The host http://localhost:9999/ refused a connection");
@@ -189,8 +187,7 @@ public abstract class IntegrationTestBase {
 	@Test
 	@Disabled("TS-41072 Test should not run against production server")
 	public void patternMatchesNothing() {
-		ProcessUtils.ProcessResult result = runUploader(
-				new ReportUploadArguments().withPattern("**/matches.nothing"));
+		ProcessUtils.ProcessResult result = runUploader(new ReportUploadArguments().withPattern("**/matches.nothing"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).contains("The pattern")
@@ -267,8 +264,7 @@ public abstract class IntegrationTestBase {
 	@Test
 	@Disabled("TS-41072 Test should not run against production server")
 	public void mustRejectTimestampPassedInSeconds() {
-		ProcessUtils.ProcessResult result = runUploader(
-				new ReportUploadArguments().withTimestamp("master:1606764633"));
+		ProcessUtils.ProcessResult result = runUploader(new ReportUploadArguments().withTimestamp("master:1606764633"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
 					.isNotZero();
@@ -315,8 +311,8 @@ public abstract class IntegrationTestBase {
 		}
 
 		try (TeamscaleMockServer ignored = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
-			ProcessUtils.ProcessResult result = runUploader(new ReportUploadArguments()
-					.withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT).withStackTrace());
+			ProcessUtils.ProcessResult result = runUploader(
+					new ReportUploadArguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT).withStackTrace());
 			assertSoftlyThat(softly -> {
 				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
 						.isNotZero();
@@ -478,8 +474,8 @@ public abstract class IntegrationTestBase {
 
 	/**
 	 * Tests that if an upload is made to Teamscale with no user-explicit revision
-	 * provided, the auto-detected revision instead of <code>null</code> is mentioned
-	 * in the error message if it is not known to Teamscale.
+	 * provided, the auto-detected revision instead of <code>null</code> is
+	 * mentioned in the error message if it is not known to Teamscale.
 	 */
 	@Test
 	public void unknownAutodetectedRevisionIsMentionedInErrorMessage() {
@@ -500,8 +496,8 @@ public abstract class IntegrationTestBase {
 	@Test
 	public void retrySucceedsAfterIntermittentFailure() {
 		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 0L, 1)) {
-			ProcessUtils.ProcessResult result = runUploader(new ReportUploadArguments()
-					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(3));
+			ProcessUtils.ProcessResult result = runUploader(
+					new ReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(3));
 			assertSoftlyThat(softly -> {
 				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
 						.isZero();
@@ -550,8 +546,8 @@ public abstract class IntegrationTestBase {
 	@Test
 	public void nonRetriableErrorDoesNotRetry() {
 		try (TeamscaleMockServer ignored = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, true)) {
-			ProcessUtils.ProcessResult result = runUploader(new ReportUploadArguments()
-					.withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(3));
+			ProcessUtils.ProcessResult result = runUploader(
+					new ReportUploadArguments().withUrl("https://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(3));
 			assertSoftlyThat(softly -> {
 				softly.assertThat(result.exitCode).isNotZero();
 				softly.assertThat(result.errorOutput).doesNotContain("Failed attempt");
@@ -626,7 +622,8 @@ public abstract class IntegrationTestBase {
 				new VulnerabilityReportUploadArguments().withUrl("http://localhost:9999").withBuildName("my#service"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
-			// the command line library adjusts the word spacing based on the terminal width.
+			// the command line library adjusts the word spacing based on the terminal
+			// width.
 			// The option must be named, as it also appears in the usage line for any other
 			// argument error
 			softly.assertThat(result.errorOutput)
@@ -695,8 +692,9 @@ public abstract class IntegrationTestBase {
 
 	@Test
 	public void vulnerabilityReportUploadWithNonExistentFileIsRejected() {
-		ProcessUtils.ProcessResult result = runUploader(new VulnerabilityReportUploadArguments().withUrl("http://localhost:9999")
-				.withPattern("src/test/resources/vulnerability_report/does-not-exist.json"));
+		ProcessUtils.ProcessResult result = runUploader(
+				new VulnerabilityReportUploadArguments().withUrl("http://localhost:9999")
+						.withPattern("src/test/resources/vulnerability_report/does-not-exist.json"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.errorOutput).contains("could not be resolved to any files");
@@ -719,7 +717,8 @@ public abstract class IntegrationTestBase {
 	}
 
 	@Test
-	public void vulnerabilityReportUploadRejectsPatternMatchingSeveralFiles(@TempDir Path reportDirectory) throws IOException {
+	public void vulnerabilityReportUploadRejectsPatternMatchingSeveralFiles(@TempDir Path reportDirectory)
+			throws IOException {
 		Path report = Paths.get(VulnerabilityReportUploadArguments.DEFAULT_REPORT_PATH);
 		Files.copy(report, reportDirectory.resolve("foo.json"));
 		Files.copy(report, reportDirectory.resolve("bar.json"));
@@ -790,15 +789,18 @@ public abstract class IntegrationTestBase {
 			assertSoftlyThat(softly -> {
 				softly.assertThat(result.exitCode).isNotZero();
 				softly.assertThat(result.errorOutput).contains("does not seem to exist in Teamscale");
-				// a 404 may also mean the endpoint is missing, which only the vulnerability report command says
-				softly.assertThat(result.errorOutput).contains("may be too old to support vulnerability report uploads");
+				// a 404 may also mean the endpoint is missing, which only the vulnerability
+				// report command says
+				softly.assertThat(result.errorOutput)
+						.contains("may be too old to support vulnerability report uploads");
 			});
 		}
 	}
 
 	/**
-	 * The hint that Teamscale may not support vulnerability report uploads yet would be misleading
-	 * for the report upload, whose endpoint has existed for a long time.
+	 * The hint that Teamscale may not support vulnerability report uploads yet
+	 * would be misleading for the report upload, whose endpoint has existed for a
+	 * long time.
 	 */
 	@Test
 	public void reportUploadToUnknownProjectDoesNotHintAtVulnerabilityReportSupport() {
@@ -839,8 +841,7 @@ public abstract class IntegrationTestBase {
 			assertSoftlyThat(softly -> {
 				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
 						.isZero();
-				softly.assertThat(server.uploadedReportsByName).containsOnlyKeys("coverage.simple",
-						"coverage2.simple");
+				softly.assertThat(server.uploadedReportsByName).containsOnlyKeys("coverage.simple", "coverage2.simple");
 			});
 		}
 	}
@@ -875,10 +876,9 @@ public abstract class IntegrationTestBase {
 	 */
 	@Test
 	public void reportUploadWithoutTheCommandExplainsTheChange() {
-		ProcessUtils.ProcessResult result = runUploader(
-				new NoCommandArguments("--server", "http://localhost:9999", "--project", "teamscale-upload", "--user",
-						"build", "--accesskey", "not-a-ci-build", "--format", "simple", "--partition", "test",
-						"src/test/resources/coverage_files/coverage.simple"));
+		ProcessUtils.ProcessResult result = runUploader(new NoCommandArguments("--server", "http://localhost:9999",
+				"--project", "teamscale-upload", "--user", "build", "--accesskey", "not-a-ci-build", "--format",
+				"simple", "--partition", "test", "src/test/resources/coverage_files/coverage.simple"));
 		assertSoftlyThat(softly -> {
 			softly.assertThat(result.exitCode).isNotZero();
 			softly.assertThat(result.getOutputAndErrorOutput()).contains("You did not specify a command")
