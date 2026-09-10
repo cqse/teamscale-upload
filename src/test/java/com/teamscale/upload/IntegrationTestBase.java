@@ -476,12 +476,12 @@ public abstract class IntegrationTestBase {
 	}
 
 	/**
-	 * The message names the revision that was sent, which with auto-detection is
-	 * not the one the user passed. Taking it from the options instead used to
-	 * produce "The revision 'null' is not known" for exactly that case.
+	 * Tests that if an upload is made to Teamscale with no user-explicit revision
+	 * provided, the auto-detected revision instead of <code>null</code> is mentioned
+	 * in the error message if it is not known to Teamscale.
 	 */
 	@Test
-	public void unknownRevisionNamesTheRevisionThatWasSent() {
+	public void unknownAutodetectedRevisionIsMentionedInErrorMessage() {
 		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
 			server.respondWith(404, "Revision is not known to any of the available VCS repositories");
 			ProcessUtils.ProcessResult result = runUploader(new ReportUploadArguments()
