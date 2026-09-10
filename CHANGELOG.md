@@ -5,6 +5,8 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
+- [breaking] uploading external analysis reports now requires the new `report` command, e.g. `teamscale-upload report --server ... coverage.xml` instead of `teamscale-upload --server ... coverage.xml`
+- [feature] added `vulnerability-report` command for uploading vulnerability reports, e.g. a Software Bill of Materials, to Teamscale. Requires Teamscale 2026.7.0 or later
 
 # 2.10.2
 - [fix] the Docker image now contains a `git` binary, so revision auto-detection works for a mounted repository
