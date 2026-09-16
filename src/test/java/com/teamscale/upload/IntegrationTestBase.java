@@ -828,8 +828,7 @@ public abstract class IntegrationTestBase {
 
 	/**
 	 * The report command keeps taking any number of report files as positional
-	 * arguments, which is what stops the tool from telling the commands apart by
-	 * position alone.
+	 * arguments.
 	 */
 	@Test
 	public void reportCommandAcceptsSeveralReportFiles() {
@@ -869,21 +868,35 @@ public abstract class IntegrationTestBase {
 		});
 	}
 
-	/**
-	 * Uploading reports used to need no command at all, so an invocation from a
-	 * pipeline that was not migrated yet must say what changed rather than just
-	 * name the first option as unrecognized.
-	 */
 	@Test
-	public void reportUploadWithoutTheCommandExplainsTheChange() {
-		ProcessUtils.ProcessResult result = runUploader(new NoCommandArguments("--server", "http://localhost:9999",
-				"--project", "teamscale-upload", "--user", "build", "--accesskey", "not-a-ci-build", "--format",
-				"simple", "--partition", "test", "src/test/resources/coverage_files/coverage.simple"));
-		assertSoftlyThat(softly -> {
-			softly.assertThat(result.exitCode).isNotZero();
-			softly.assertThat(result.getOutputAndErrorOutput()).contains("You did not specify a command")
-					.contains("teamscale-upload " + ReportCommandLineOptions.COMMAND_NAME + " --server");
-		});
+	public void reportUploadWithoutACommandStillWorks() {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
+			ProcessUtils.ProcessResult result = runUploader(new NoCommandArguments("--server",
+					"http://localhost:" + MOCK_TEAMSCALE_PORT, "--project", "teamscale-upload", "--user", "build",
+					"--accesskey", "not-a-ci-build", "--format", "simple", "--partition", "test",
+					"--branch-and-timestamp", "master:HEAD", "src/test/resources/coverage_files/coverage.simple"));
+			assertSoftlyThat(softly -> {
+				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
+						.isZero();
+				softly.assertThat(server.uploadedReportsByName).containsOnlyKeys("coverage.simple");
+			});
+		}
+	}
+
+	@Test
+	public void reportUploadWithoutACommandAcceptsTheReportFileFirst() {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT)) {
+			ProcessUtils.ProcessResult result = runUploader(
+					new NoCommandArguments("src/test/resources/coverage_files/coverage.simple", "--server",
+							"http://localhost:" + MOCK_TEAMSCALE_PORT, "--project", "teamscale-upload", "--user",
+							"build", "--accesskey", "not-a-ci-build", "--format", "simple", "--partition", "test",
+							"--branch-and-timestamp", "master:HEAD"));
+			assertSoftlyThat(softly -> {
+				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
+						.isZero();
+				softly.assertThat(server.uploadedReportsByName).containsOnlyKeys("coverage.simple");
+			});
+		}
 	}
 
 	/**

@@ -1,9 +1,8 @@
 package com.teamscale.upload;
 
 import java.io.PrintWriter;
+import java.util.Set;
 import java.util.function.Function;
-
-import com.teamscale.upload.utils.LogUtils;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.helper.HelpScreenException;
@@ -26,6 +25,12 @@ public class CommandLineParser {
 	private static final String COMMAND = "command";
 
 	/**
+	 * The commands this tool offers.
+	 */
+	private static final Set<String> COMMAND_NAMES = Set.of(ReportCommandLineOptions.COMMAND_NAME,
+			VulnerabilityReportCommandLineOptions.COMMAND_NAME);
+
+	/**
 	 * Parses the given command line arguments and returns the options of the
 	 * command the user invoked.
 	 * <p>
@@ -33,8 +38,6 @@ public class CommandLineParser {
 	 * the help screen or the version.
 	 */
 	public static CommonCommandLineOptions parse(String[] args) {
-		failOnInvocationWithoutCommand(args);
-
 		ArgumentParser parser = ArgumentParsers.newFor("teamscale-upload").build()
 				.description("Upload external analysis results to Teamscale.")
 				.version("Teamscale Upload " + ToolVersion.VERSION);
@@ -42,14 +45,15 @@ public class CommandLineParser {
 				.help("Prints the version number of this teamscale-upload tool and exits.");
 		parser.epilog("For general usage help and alternative upload methods, please check our online"
 				+ " documentation at:" + "\nhttp://cqse.eu/tsu-docs"
-				+ "\n\nRun 'teamscale-upload COMMAND --help' to see the options of a single command.");
+				+ "\n\nRun 'teamscale-upload COMMAND --help' to see the options of a single command."
+				+ "\n\nIf you do not name a command, teamscale-upload uploads external analysis reports.");
 
 		Subparsers subparsers = parser.addSubparsers().dest(COMMAND).title("commands").metavar("COMMAND");
 		Subparser reportParser = ReportCommandLineOptions.addCommand(subparsers);
 		Subparser vulnerabilityReportParser = VulnerabilityReportCommandLineOptions.addCommand(subparsers);
 
 		try {
-			Namespace namespace = parser.parseArgs(args);
+			Namespace namespace = parser.parseArgs(withDefaultCommand(args));
 			if (VulnerabilityReportCommandLineOptions.COMMAND_NAME.equals(namespace.getString(COMMAND))) {
 				return validate(namespace, vulnerabilityReportParser, VulnerabilityReportCommandLineOptions::new);
 			}
@@ -76,20 +80,21 @@ public class CommandLineParser {
 	}
 
 	/**
-	 * Terminates the program with a hint if the arguments look like an invocation
-	 * of a teamscale-upload before 3.0.0, which uploaded external analysis reports
-	 * without naming a command. Without this, argparse4j merely reports the first
-	 * option as unrecognized, which does not tell the user what changed.
+	 * Inserts the {@link ReportCommandLineOptions#COMMAND_NAME} command if the user
+	 * did not name one, which is how teamscale-upload was invoked before the
+	 * commands existed. Every such command line keeps working.
+	 * <p>
+	 * The only ambiguous input is a first report file named like a command. Those
+	 * users must name the command themselves, which the help screen says.
 	 */
-	private static void failOnInvocationWithoutCommand(String[] args) {
-		if (args.length == 0 || !args[0].startsWith("-") || isGlobalOption(args[0])) {
-			return;
+	private static String[] withDefaultCommand(String[] args) {
+		if (args.length == 0 || COMMAND_NAMES.contains(args[0]) || isGlobalOption(args[0])) {
+			return args;
 		}
-		LogUtils.fail("You did not specify a command, so teamscale-upload does not know what to upload."
-				+ " Uploading external analysis reports is now the '" + ReportCommandLineOptions.COMMAND_NAME
-				+ "' command, so instead of" + "\n\nteamscale-upload " + String.join(" ", args) + "\n\nplease run"
-				+ "\n\nteamscale-upload " + ReportCommandLineOptions.COMMAND_NAME + " " + String.join(" ", args)
-				+ "\n\nRun 'teamscale-upload --help' to see all available commands.");
+		String[] withCommand = new String[args.length + 1];
+		withCommand[0] = ReportCommandLineOptions.COMMAND_NAME;
+		System.arraycopy(args, 0, withCommand, 1, args.length);
+		return withCommand;
 	}
 
 	/**
