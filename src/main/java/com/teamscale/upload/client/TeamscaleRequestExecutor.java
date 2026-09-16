@@ -232,6 +232,6 @@ public class TeamscaleRequestExecutor {
 	}
 
 	private static boolean responseBodyIndicatesInvalidRevision(SafeResponse response) {
-		return response.body.contains("Revision") && response.body.contains("available VCS repositories");
+		return response.body.contains("Revision") && response.body.contains("not found in either Teamscale or");
 	}
 }

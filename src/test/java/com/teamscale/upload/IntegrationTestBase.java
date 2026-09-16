@@ -474,13 +474,14 @@ public abstract class IntegrationTestBase {
 
 	/**
 	 * Tests that if an upload is made to Teamscale with no user-explicit revision
-	 * provided, the auto-detected revision instead of <code>null</code> is
-	 * mentioned in the error message if it is not known to Teamscale.
+	 * and repository provided, the auto-detected unknown revision instead of
+	 * <code>null</code> is mentioned in the error message.
 	 */
 	@Test
 	public void unknownAutodetectedRevisionIsMentionedInErrorMessage() {
 		try (TeamscaleMockServer ignored = TeamscaleMockServer.respondingWith(MOCK_TEAMSCALE_PORT, 404,
-				"Revision is not known to any of the available VCS repositories")) {
+				"HTTP Status Code: 404 Not Found\nMessage: Revision abcdef1234 not found in either Teamscale"
+						+ " or any of the available VCS repositories.")) {
 			ProcessUtils.ProcessResult result = runUploader(new ReportUploadArguments()
 					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withAutoDetectCommit());
 			assertSoftlyThat(softly -> {
@@ -489,6 +490,27 @@ public abstract class IntegrationTestBase {
 				// the detected git SHA1, which the user never passed
 				softly.assertThat(result.errorOutput)
 						.containsPattern("The revision '[0-9a-f]{40}' is not known to Teamscale");
+			});
+		}
+	}
+
+	/**
+	 * Tests that if an upload is made to Teamscale with some unknown revision and
+	 * repository provided, the revision and connector resolved from the repository
+	 * are mentioned in the error message.
+	 */
+	@Test
+	public void unknownRevisionIsRecognisedWhenARepositoryIsGiven() {
+		try (TeamscaleMockServer ignored = TeamscaleMockServer.respondingWith(MOCK_TEAMSCALE_PORT, 404,
+				"HTTP Status Code: 404 Not Found\nMessage: Revision abcdef1234 not found in either Teamscale"
+						+ " or VCS connector ID 'my-connector'")) {
+			ProcessUtils.ProcessResult result = runUploader(
+					new ReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT)
+							.withCommit("abcdef1234").withRepository("my-connector"));
+			assertSoftlyThat(softly -> {
+				softly.assertThat(result.exitCode).isNotZero();
+				softly.assertThat(result.errorOutput).contains("The revision 'abcdef1234' is not known to Teamscale");
+				softly.assertThat(result.errorOutput).doesNotContain("does not seem to exist in Teamscale");
 			});
 		}
 	}
