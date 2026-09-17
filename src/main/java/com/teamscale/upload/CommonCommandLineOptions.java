@@ -84,10 +84,8 @@ public abstract class CommonCommandLineOptions {
 	 * Registers the options shared by all commands on the given parser.
 	 */
 	public static void addCommonArguments(ArgumentParser parser) {
-		addConnectionRelatedArguments(parser);
+		addTeamscaleArguments(parser);
 
-		parser.addArgument("-p", "--project").metavar("PROJECT").required(true)
-				.help("The project ID (NOT the project name!) to which to upload the data.");
 		parser.addArgument("--max-attempts").metavar("MAX_ATTEMPTS").type(Integer.class).setDefault(3).required(false)
 				.help("The maximum number of attempts for uploads that fail due to transient network errors"
 						+ " (e.g. connection resets, server errors). Defaults to 3.");
@@ -98,13 +96,15 @@ public abstract class CommonCommandLineOptions {
 	}
 
 	/**
-	 * Registers the options that configure the connection to Teamscale: where to
-	 * reach it, how to authenticate against it and how to establish the
-	 * {@link OkHttpClient} used for the requests.
+	 * Registers the options that say which Teamscale server to talk to: where to
+	 * reach it, which project to address, how to authenticate against it and how to
+	 * establish the {@link OkHttpClient} used for the requests.
 	 */
-	private static void addConnectionRelatedArguments(ArgumentParser parser) {
+	private static void addTeamscaleArguments(ArgumentParser parser) {
 		parser.addArgument("-s", "--server").metavar("URL").required(true)
 				.help("The url under which the Teamscale server can be reached.");
+		parser.addArgument("-p", "--project").metavar("PROJECT").required(true)
+				.help("The project ID (NOT the project name!) to which to upload the data.");
 		parser.addArgument("-u", "--user").metavar("USER").required(true)
 				.help("The username used to perform the upload. Must have the"
 						+ " 'Perform External Uploads' permission for the given Teamscale project.");

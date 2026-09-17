@@ -146,10 +146,10 @@ abstract class CommonUploadArguments<T extends CommonUploadArguments<T>> impleme
 	protected void addCommonOptions(List<String> command) {
 		command.add("--server");
 		command.add(url);
-		command.add("--user");
-		command.add(user);
 		command.add("--project");
 		command.add(project);
+		command.add("--user");
+		command.add(user);
 		if (accessKey != null) {
 			command.add("--accesskey");
 			command.add(accessKey);
@@ -165,12 +165,6 @@ abstract class CommonUploadArguments<T extends CommonUploadArguments<T>> impleme
 			command.add("--trusted-keystore");
 			command.add(TeamscaleMockServer.TRUSTSTORE.getAbsolutePath() + ";password");
 		}
-		if (stackTrace) {
-			command.add("--stacktrace");
-		}
-		if (debug) {
-			command.add("--debug");
-		}
 		if (timeoutInSeconds != null) {
 			command.add("--timeout");
 			command.add(timeoutInSeconds);
@@ -178,6 +172,12 @@ abstract class CommonUploadArguments<T extends CommonUploadArguments<T>> impleme
 		if (maxAttempts != null) {
 			command.add("--max-attempts");
 			command.add(String.valueOf(maxAttempts));
+		}
+		if (stackTrace) {
+			command.add("--stacktrace");
+		}
+		if (debug) {
+			command.add("--debug");
 		}
 	}
 
