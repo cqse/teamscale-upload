@@ -5,6 +5,8 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
+
+# 2.11.0
 - [feature] added `vulnerability-report` command for uploading vulnerability reports, e.g. a Software Bill of Materials, to Teamscale. Requires Teamscale 2026.7.0 or later
 
 # 2.10.2
