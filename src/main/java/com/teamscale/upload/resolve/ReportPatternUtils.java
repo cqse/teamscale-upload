@@ -13,7 +13,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import com.teamscale.upload.utils.LogUtils;
 
@@ -75,7 +74,7 @@ public class ReportPatternUtils {
 		Map<String, Set<String>> formatToFilePatterns = new HashMap<>();
 
 		List<String> nonEmptyLines = Files.readAllLines(inputFile).stream().filter(line -> !line.trim().isEmpty())
-				.collect(Collectors.toList());
+				.toList();
 
 		if (!nonEmptyLines.isEmpty()) {
 			String line = nonEmptyLines.get(0);
@@ -157,7 +156,7 @@ public class ReportPatternUtils {
 	 * handle both. So, we normalize all paths to use only forward slashes as they
 	 * are expected to work for all operating systems.
 	 */
-	private static String normalizeFilePattern(String pattern) {
+	public static String normalizeFilePattern(String pattern) {
 		return pattern.replaceAll("\\\\", "/");
 	}
 }

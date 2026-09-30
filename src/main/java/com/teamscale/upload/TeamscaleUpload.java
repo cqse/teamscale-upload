@@ -6,9 +6,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import com.teamscale.upload.client.TeamscaleClient;
+import com.teamscale.upload.client.ReportUploadClient;
+import com.teamscale.upload.client.VulnerabilityReportUploadClient;
 import com.teamscale.upload.resolve.FilePatternResolutionException;
+import com.teamscale.upload.resolve.FilePatternResolver;
 import com.teamscale.upload.resolve.ReportPatternUtils;
 import com.teamscale.upload.utils.LogUtils;
 import com.teamscale.upload.xcode.ConversionException;
@@ -20,28 +23,90 @@ import com.teamscale.upload.xcode.XcodeReportConverter;
 public class TeamscaleUpload {
 
 	/**
-	 * This method serves as entry point to the teamscale-upload application.
+	 * This method serves as the entry point to the teamscale-upload application.
 	 */
 	public static void main(String[] args) throws FilePatternResolutionException, IOException {
-		CommandLine commandLine = CommandLine.parseArguments(args);
+		CommonCommandLineOptions commandLine = CommandLineParser.parse(args);
+		configureLogging(commandLine);
 
+		if (commandLine instanceof VulnerabilityReportCommandLineOptions vulnerabilityReportOptions) {
+			uploadVulnerabilityReport(vulnerabilityReportOptions);
+		} else {
+			uploadReports((ReportCommandLineOptions) commandLine);
+		}
+	}
+
+	/**
+	 * Uploads the external analysis reports the user specified.
+	 */
+	private static void uploadReports(ReportCommandLineOptions commandLine)
+			throws FilePatternResolutionException, IOException {
+		Map<String, Set<File>> filesByFormat = resolveAndConvertFiles(commandLine);
+		if (filesByFormat.isEmpty()) {
+			LogUtils.warn("There are no files to upload. Skipping upload.");
+			return;
+		}
+		ReportUploadClient.performUpload(commandLine, filesByFormat);
+	}
+
+	/**
+	 * Uploads the vulnerability report the user specified.
+	 */
+	private static void uploadVulnerabilityReport(VulnerabilityReportCommandLineOptions commandLine)
+			throws FilePatternResolutionException, IOException {
+		File reportFile = resolveVulnerabilityReportFile(commandLine.filePathOrPattern);
+		VulnerabilityReportUploadClient.performUpload(commandLine, reportFile);
+	}
+
+	/**
+	 * Resolves the path or pattern given for a vulnerability report upload to the
+	 * single file to upload.
+	 * <p>
+	 * Teamscale stores one report per build name and version, so the program is
+	 * terminated with an error message if it resolves to anything other than
+	 * exactly one file.
+	 */
+	private static File resolveVulnerabilityReportFile(String filePathOrPattern) throws FilePatternResolutionException {
+		String pattern = ReportPatternUtils.normalizeFilePattern(filePathOrPattern);
+		List<File> resolvedFiles = new FilePatternResolver().resolveToMultipleFiles("REPORT", pattern).stream()
+				.filter(File::isFile)
+				// two matches are all we need: one to upload, a second to report that the
+				// pattern is ambiguous. Stopping there saves a stat call per further match.
+				.limit(2).toList();
+
+		if (resolvedFiles.isEmpty()) {
+			LogUtils.fail("The vulnerability report path '" + pattern + "' could not be resolved to any files."
+					+ " Please check the path for correctness and ensure that the report exists"
+					+ " and is a file, not a directory.");
+		}
+
+		if (resolvedFiles.size() > 1) {
+			String matchedFiles = resolvedFiles.stream().map(File::getPath).collect(Collectors.joining("\n"));
+			LogUtils.fail("The pattern '" + pattern + "' matches more than one file, but Teamscale"
+					+ " stores exactly one vulnerability report per --build-name and --build-version."
+					+ " Uploading all of them would make them overwrite each other."
+					+ "\nAmong the matched files are:\n" + matchedFiles
+					+ "\nPlease narrow the pattern down to a single file, or use a different --build-name"
+					+ " or --build-version for each of them.");
+		}
+
+		return resolvedFiles.get(0);
+	}
+
+	private static void configureLogging(CommonCommandLineOptions commandLine) {
 		if (commandLine.debugLogEnabled) {
 			LogUtils.enableDebugLogging();
 		}
 		if (commandLine.printStackTrace) {
 			LogUtils.enableStackTracePrintingForKnownErrors();
 		}
-
-		Map<String, Set<File>> filesByFormat = resolveAndConvertFiles(commandLine);
-		TeamscaleClient.performUpload(commandLine, filesByFormat);
 	}
-
 
 	/**
 	 * Resolves the files that should be uploaded to Teamscale and converts them to
 	 * the expected formated if needed (e.g., XCode reports).
 	 */
-	private static Map<String, Set<File>> resolveAndConvertFiles(CommandLine commandLine)
+	private static Map<String, Set<File>> resolveAndConvertFiles(ReportCommandLineOptions commandLine)
 			throws FilePatternResolutionException, IOException {
 		Map<String, Set<File>> filesByFormat = ReportPatternUtils.resolveInputFilePatterns(commandLine.inputFile,
 				commandLine.files, commandLine.format);

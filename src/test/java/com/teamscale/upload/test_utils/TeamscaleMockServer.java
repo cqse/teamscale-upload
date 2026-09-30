@@ -20,9 +20,11 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+import static javax.servlet.http.HttpServletResponse.SC_NO_CONTENT;
 
 /**
- * Mocks a Teamscale server: stores all report upload sessions.
+ * Mocks a Teamscale server: stores all report upload sessions and all uploaded
+ * vulnerability reports.
  */
 public class TeamscaleMockServer implements AutoCloseable {
 
@@ -65,6 +67,11 @@ public class TeamscaleMockServer implements AutoCloseable {
 	 */
 	public final Map<String, byte[]> uploadedReportsByName = new HashMap<>();
 
+	/**
+	 * All vulnerability reports uploaded to this Teamscale instance.
+	 */
+	public final List<VulnerabilityReportUpload> vulnerabilityReportUploads = new ArrayList<>();
+
 	private final Service spark;
 
 	/**
@@ -74,12 +81,18 @@ public class TeamscaleMockServer implements AutoCloseable {
 	private final long openSessionRequestTimeInSeconds;
 
 	/**
-	 * Number of initial session requests that should fail with HTTP 500 to simulate
+	 * Number of initial requests that should fail with HTTP 500 to simulate
 	 * intermittent server errors.
+	 * <p>
+	 * Counted per endpoint rather than over all requests: the session endpoint and
+	 * the vulnerability report endpoint each answer this many requests with an
+	 * error before they start processing them.
 	 */
-	private final int failFirstNSessionRequests;
+	private final int countOfInitialFailedRequestsPerEndpoint;
 
 	private final AtomicInteger sessionRequestCounter = new AtomicInteger(0);
+
+	private final AtomicInteger vulnerabilityReportRequestCounter = new AtomicInteger(0);
 
 	public TeamscaleMockServer(int port) {
 		this(port, false);
@@ -94,23 +107,46 @@ public class TeamscaleMockServer implements AutoCloseable {
 	}
 
 	public TeamscaleMockServer(int port, boolean useSelfSignedCertificate, long openSessionRequestTimeInSeconds,
-			int failFirstNSessionRequests) {
+			int countOfInitialFailedRequestsPerEndpoint) {
+		this(port, useSelfSignedCertificate, openSessionRequestTimeInSeconds, countOfInitialFailedRequestsPerEndpoint,
+				null, null);
+	}
+
+	/**
+	 * Creates a server that answers every request with the given status code and
+	 * body instead of processing it. Use this to simulate the error responses
+	 * Teamscale sends, e.g. a 400 for an upload it rejects or a 404 for a project
+	 * that does not exist.
+	 */
+	public static TeamscaleMockServer respondingWith(int port, int statusCode, String body) {
+		return new TeamscaleMockServer(port, false, 0L, 0, statusCode, body);
+	}
+
+	private TeamscaleMockServer(int port, boolean useSelfSignedCertificate, long openSessionRequestTimeInSeconds,
+			int countOfInitialFailedRequestsPerEndpoint, Integer forcedStatusCode, String forcedResponseBody) {
 		if (KEYSTORE == null || TRUSTSTORE == null) {
 			Assertions.fail(
 					"Could not initialize TeamscaleMockServer: Could not find keystore.jks or truststore.jks test resources");
 		}
 		this.spark = Service.ignite();
 		this.openSessionRequestTimeInSeconds = openSessionRequestTimeInSeconds;
-		this.failFirstNSessionRequests = failFirstNSessionRequests;
+		this.countOfInitialFailedRequestsPerEndpoint = countOfInitialFailedRequestsPerEndpoint;
 
 		if (useSelfSignedCertificate) {
 			spark.secure(KEYSTORE.getAbsolutePath(), "password", null, null);
 		}
 		spark.port(port);
+		spark.before((request, response) -> {
+			if (forcedStatusCode != null) {
+				spark.halt(forcedStatusCode, forcedResponseBody);
+			}
+		});
 		spark.post("/api/v8.2/projects/:projectName/external-analysis/session", this::openSession);
 		spark.post("/api/v8.2/projects/:projectName/external-analysis/session/:session", this::noOpHandler);
 		spark.post("/api/v8.2/projects/:projectName/external-analysis/session/:session/report",
 				this::receiveReportHandler);
+		spark.post("/api/v2026.7.0/projects/:projectName/vulnerability-report",
+				this::receiveVulnerabilityReportHandler);
 		spark.exception(Exception.class, (Exception exception, Request request, Response response) -> {
 			response.status(SC_INTERNAL_SERVER_ERROR);
 			response.body("Exception: " + exception.getMessage());
@@ -131,7 +167,7 @@ public class TeamscaleMockServer implements AutoCloseable {
 	private String openSession(Request request, Response response) {
 		simulateRequestTime();
 		int requestNumber = sessionRequestCounter.incrementAndGet();
-		if (requestNumber <= failFirstNSessionRequests) {
+		if (requestNumber <= countOfInitialFailedRequestsPerEndpoint) {
 			response.status(SC_INTERNAL_SERVER_ERROR);
 			return "Simulated intermittent server error";
 		}
@@ -147,13 +183,42 @@ public class TeamscaleMockServer implements AutoCloseable {
 	private String receiveReportHandler(Request request, Response response) throws ServletException, IOException {
 		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement(""));
 
-		Part report = request.raw().getPart("report");
-
-		try (InputStream is = report.getInputStream()) {
-			uploadedReportsByName.put(report.getSubmittedFileName(), is.readAllBytes());
+		// one request carries one part per uploaded report, so reading a single part
+		// would silently drop all reports but the first
+		for (Part report : request.raw().getParts()) {
+			if (!"report".equals(report.getName())) {
+				continue;
+			}
+			try (InputStream is = report.getInputStream()) {
+				uploadedReportsByName.put(report.getSubmittedFileName(), is.readAllBytes());
+			}
 		}
 
 		return "Report uploaded";
+	}
+
+	private String receiveVulnerabilityReportHandler(Request request, Response response)
+			throws ServletException, IOException {
+		int requestNumber = vulnerabilityReportRequestCounter.incrementAndGet();
+		if (requestNumber <= countOfInitialFailedRequestsPerEndpoint) {
+			response.status(SC_INTERNAL_SERVER_ERROR);
+			return "Simulated intermittent server error";
+		}
+
+		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement(""));
+		Part report = request.raw().getPart("file");
+
+		byte[] content;
+		try (InputStream is = report.getInputStream()) {
+			content = is.readAllBytes();
+		}
+		vulnerabilityReportUploads
+				.add(new VulnerabilityReportUpload(request.queryParams("build-name"), request.queryParams("version"),
+						request.queryParams("revision"), report.getSubmittedFileName(), content));
+
+		// the real endpoint returns 204 with an empty body
+		response.status(SC_NO_CONTENT);
+		return "";
 	}
 
 	private String noOpHandler(Request request, Response response) {
@@ -166,23 +231,32 @@ public class TeamscaleMockServer implements AutoCloseable {
 	}
 
 	/**
-	 * An opened upload session.
+	 * A vulnerability report uploaded to this Teamscale instance.
+	 *
+	 * @param buildName
+	 *            the value of the "build-name" query parameter.
+	 * @param version
+	 *            the value of the "version" query parameter.
+	 * @param revision
+	 *            the value of the "revision" query parameter.
+	 * @param fileName
+	 *            the file name submitted for the "file" part.
+	 * @param content
+	 *            the raw content of the uploaded vulnerability report. Compare it
+	 *            as an array: the generated equals() compares it by identity.
 	 */
-	public static class Session {
+	public record VulnerabilityReportUpload(String buildName, String version, String revision, String fileName,
+			byte[] content) {
+	}
 
-		/**
-		 * The message used for that session.
-		 */
-		public final String message;
-
-		/**
-		 * The revision or timestamp used during the upload.
-		 */
-		public final String revisionOrTimestamp;
-
-		public Session(String message, String revisionOrTimestamp) {
-			this.message = message;
-			this.revisionOrTimestamp = revisionOrTimestamp;
-		}
+	/**
+	 * An opened upload session.
+	 *
+	 * @param message
+	 *            the message used for that session.
+	 * @param revisionOrTimestamp
+	 *            the revision or timestamp used during the upload.
+	 */
+	public record Session(String message, String revisionOrTimestamp) {
 	}
 }
