@@ -52,7 +52,7 @@ Then simply create a release in GitHub (`Draft a new release` on https://github.
 
 GitHub Actions will automatically create and attach the binaries.
 
-### Upload the Binaries to www.teamscale.com ###
+### Upload the Binaries to https://downloads.teamscale.com/tools/teamscale-upload/ ###
 1. Go to [Run new pipeline](https://gitlab.com/cqse/teamscale/teamscale/-/pipelines/new).
 2. Check that the `master` branch is selected
 3. Set `ts-upload-cli` for variable `CUSTOM_PIPELINE`.
@@ -60,6 +60,7 @@ GitHub Actions will automatically create and attach the binaries.
 5. Start the `ts-upload-cli:dist` job on the new pipeline.
 
 This step copies the latest version of the `teamscale-upload` binaries to our website.
+Check https://downloads.teamscale.com/tools/teamscale-upload/ and https://docs.teamscale.com/howto/uploading-external-data/#upload-via-command-line
 
 ### Create a new Release in Teamscale Upload Action ###
 Finally, also create a new release of the [GitHub Action](https://github.com/cqse/teamscale-upload-action) with the same version number.
