@@ -33,10 +33,7 @@ brew install teamscale-upload
 ```
 
 ## Tool Usage
-### Distribution for Windows
-[Documentation](distribution_readme/README_WINDOWS.md)
-### Distributions for Unix-based Systems
-[Documentation](distribution_readme/README_UNIX.md)
+[Documentation](distribution_readme/README.md)
 
 ## Tool Development
 

@@ -218,16 +218,7 @@ project.afterEvaluate {
 				into(application.applicationName) // applicationName is a Provider
 			}
 
-			// Select the README lazily based on the targetPlatform, not the build OS.
-			// This makes the build more reliable and portable.
-			from(project.provider {
-				if (targetPlatform.key.contains('windows')) {
-					return "distribution_readme/README_WINDOWS.md"
-				} else {
-					return "distribution_readme/README_UNIX.md"
-				}
-			}) {
-				rename { "README.md" }
+			from("distribution_readme/README.md") {
 				into(application.applicationName)
 			}
 			from(project.provider {
