@@ -5,6 +5,8 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
+- [fix] the README of the Windows distribution referred to a non-existent `teamscale-upload.exe` instead of `teamscale-upload.bat`
+- [fix] the help screen and error messages were partially translated to the language of the operating system; they are now always English
 
 # 2.11.0
 - [feature] added `vulnerability-report` command for uploading vulnerability reports, e.g. a Software Bill of Materials, to Teamscale. Requires Teamscale 2026.7.0 or later

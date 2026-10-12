@@ -1,6 +1,7 @@
 package com.teamscale.upload;
 
 import java.io.PrintWriter;
+import java.util.Locale;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -38,16 +39,7 @@ public class CommandLineParser {
 	 * the help screen or the version.
 	 */
 	public static CommonCommandLineOptions parse(String[] args) {
-		ArgumentParser parser = ArgumentParsers.newFor("teamscale-upload").build()
-				.description("Upload external analysis results to Teamscale.")
-				.version("Teamscale Upload " + ToolVersion.VERSION);
-		parser.addArgument("--version").action(Arguments.version())
-				.help("Prints the version number of this teamscale-upload tool and exits.");
-		parser.epilog("For general usage help and alternative upload methods, please check our online"
-				+ " documentation at:" + "\nhttp://cqse.eu/tsu-docs"
-				+ "\n\nRun 'teamscale-upload COMMAND --help' to see the options of a single command."
-				+ "\n\nIf you do not name a command, teamscale-upload uploads external analysis reports.");
-
+		ArgumentParser parser = createParser();
 		Subparsers subparsers = parser.addSubparsers().dest(COMMAND).title("commands").metavar("COMMAND");
 		Subparser reportParser = ReportCommandLineOptions.addCommand(subparsers);
 		Subparser vulnerabilityReportParser = VulnerabilityReportCommandLineOptions.addCommand(subparsers);
@@ -66,6 +58,25 @@ public class CommandLineParser {
 			System.exit(1);
 			return null;
 		}
+	}
+
+	/**
+	 * Creates the parser for the options of the tool itself, without its commands.
+	 * <p>
+	 * argparse4j localizes its own labels (e.g. "positional arguments") to the
+	 * default locale, while all our texts are English, so we pin it to English.
+	 */
+	static ArgumentParser createParser() {
+		ArgumentParser parser = ArgumentParsers.newFor("teamscale-upload").locale(Locale.ENGLISH).build()
+				.description("Upload external analysis results to Teamscale.")
+				.version("Teamscale Upload " + ToolVersion.VERSION);
+		parser.addArgument("--version").action(Arguments.version())
+				.help("Prints the version number of this teamscale-upload tool and exits.");
+		parser.epilog("For general usage help and alternative upload methods, please check our online"
+				+ " documentation at:" + "\nhttp://cqse.eu/tsu-docs"
+				+ "\n\nRun 'teamscale-upload COMMAND --help' to see the options of a single command."
+				+ "\n\nIf you do not name a command, teamscale-upload uploads external analysis reports.");
+		return parser;
 	}
 
 	/**
