@@ -5,6 +5,8 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
+
+# 2.11.1
 - [fix] the README of the Windows distribution referred to a non-existent `teamscale-upload.exe` instead of `teamscale-upload.bat`
 - [fix] the help screen and error messages were partially translated to the language of the operating system; they are now always English
 
