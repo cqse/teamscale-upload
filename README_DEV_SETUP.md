@@ -37,6 +37,18 @@ The zipped ready-to-distribute files are found in the `build/distributions` dire
 ./gradlew clean customRuntimeZip-linux-x86_64 customRuntimeZip-windows-x86_64 customRuntimeZip-macos-x86_64 customRuntimeZip-macos-aarch64
 ```
 
+## Updating Dependencies or the Bundled Java Runtime
+
+Gradle checks the SHA-256 of every downloaded dependency, plugin and jmods archive against `gradle/verification-metadata.xml`.
+After changing a dependency, a plugin or `RUNTIME_JDK_VERSION` in `build.gradle`, update that file and review its diff:
+
+```bash
+./gradlew --write-verification-metadata sha256 --refresh-dependencies help
+```
+
+The command trusts whatever it downloads.
+For the jmods archives, compare the new hashes with the checksums Adoptium publishes, for example at https://adoptium.net/temurin/releases/.
+
 ## Running the Integration Tests
 
 `JLinkIntegrationTest` runs the JLink image of the current platform, so build it first.

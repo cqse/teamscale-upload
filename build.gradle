@@ -14,6 +14,20 @@ repositories {
 		url = "https://packages.jetbrains.team/maven/p/ij/intellij-dependencies/"
 	}
 	mavenCentral()
+	// The jmods of the bundled Java runtime, as published by Adoptium on GitHub
+	exclusiveContent {
+		forRepository {
+			ivy {
+				name = 'Adoptium'
+				url = 'https://github.com/adoptium/'
+				patternLayout {
+					artifact('[module]/releases/download/[revision]/[artifact].[ext]')
+				}
+				metadataSources { artifact() }
+			}
+		}
+		filter { includeGroup('adoptium') }
+	}
 }
 
 group = "com.teamscale"
@@ -147,25 +161,7 @@ tasks.named('jar') {
 	archiveVersion.set(gitVersionProvider)
 }
 
-/** Downloads the file at {@code url} to {@code destination}. */
-abstract class DownloadFile extends DefaultTask {
-
-	@Input
-	abstract Property<String> getUrl()
-
-	@OutputFile
-	abstract RegularFileProperty getDestination()
-
-	@TaskAction
-	void download() {
-		URI.create(url.get()).toURL().withInputStream { input ->
-			destination.get().asFile.withOutputStream { it << input }
-		}
-	}
-}
-
 def RUNTIME_JDK_VERSION = '25.0.4.1+1'
-def ADOPTIUM_BINARY_REPOSITORY = 'https://api.adoptium.net/v3/binary'
 // Target platform name -> [Adoptium OS, Adoptium architecture, archive extension]
 def RUNTIME_TARGET_PLATFORMS = [
 		'linux-x86_64'  : ['linux', 'x64', 'tar.gz'],
@@ -178,19 +174,28 @@ def RUNTIME_TARGET_PLATFORMS = [
 def jdkHomeDir = { String platformName -> layout.buildDirectory.dir("jdks/${platformName}") }
 def jmodsDir = { String platformName -> jdkHomeDir(platformName).map { it.dir('jmods') } }
 
-// Since Java 24, Adoptium JDKs no longer ship jmods (JEP 493), so jlink needs them as a separate download
+// Since Java 24, Adoptium JDKs no longer ship jmods (JEP 493), so jlink needs them as a separate download.
+// They are dependencies, so that Gradle caches them and dependency verification checks their checksums.
+def runtimeJdkFeatureVersion = RUNTIME_JDK_VERSION.tokenize('.+')[0]
 def unpackJmodsTasks = RUNTIME_TARGET_PLATFORMS.collect { platformName, adoptiumPlatform ->
-	def (operatingSystem, architecture, extension) = adoptiumPlatform
-	def downloadTask = tasks.register("downloadJmods-${platformName}", DownloadFile) {
-		url = "$ADOPTIUM_BINARY_REPOSITORY/version/jdk-${RUNTIME_JDK_VERSION}/${operatingSystem}/${architecture}/jmods/hotspot/normal/eclipse"
-		destination = jdkHomeDir(platformName).map { it.file("jmods.${extension}") }
+	def (operatingSystem, architecture, archiveExtension) = adoptiumPlatform
+	def jmodsArchive = configurations.register("jmods-${platformName}") {
+		canBeConsumed = false
+		transitive = false
+	}
+	dependencies.add(jmodsArchive.name, "adoptium:temurin${runtimeJdkFeatureVersion}-binaries:jdk-${RUNTIME_JDK_VERSION}") {
+		artifact {
+			name = "OpenJDK${runtimeJdkFeatureVersion}U-jmods_${architecture}_${operatingSystem}_hotspot_${RUNTIME_JDK_VERSION.replace('+', '_')}"
+			type = archiveExtension
+			extension = archiveExtension
+		}
 	}
 	tasks.register("unpackJmods-${platformName}", Sync) {
-		from(downloadTask.flatMap { it.destination }.map { archive ->
-			if (extension == 'zip') {
-				return zipTree(archive)
+		from(jmodsArchive.map { configuration ->
+			if (archiveExtension == 'zip') {
+				return zipTree(configuration.singleFile)
 			}
-			return tarTree(resources.gzip(archive))
+			return tarTree(resources.gzip(configuration.singleFile))
 		})
 		include('*/*.jmod')
 		// The archive has a single top-level directory, which jlink must not see
