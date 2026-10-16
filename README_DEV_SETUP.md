@@ -6,37 +6,42 @@ The purpose of this tool is to
 
 [Tool Design Principles](README_TOOL_DESIGN_PRINCIPLES.md)
 
-At the moment, this tool has two build systems (maven and gradle).
-Gradle is used to build the new JLink-executable distribution.
-Maven is used to build the old Graalvm-executable distribution.
-New dependencies must be inserted into both systems (`pom.xml` and `build.gradle`).
+The tool is built with Gradle.
+The distribution is a JLink image: the application jars plus a stripped-down Java runtime, so users don't need to install Java.
 
-# JLink build
-## Developing
+# Developing
 
 Open this folder in IntelliJ.
 Ensure the Gradle project is recognized by the IDE.
 You can then test and develop on the JVM.
 
-**However, not everything that works in the JVM will also work after compiling to a native executable (e.g: reflection).
-Thus, please always test your changes after compiling to a native executable!**
+**However, not everything that works in the JVM also works in the JLink image, because the image contains only the Java modules listed in `build.gradle`.
+Thus, please always test your changes with the JLink image!**
 
-### Setup (Linux)
+## Setup
 
-No additional configuration is required after importing the project into IntelliJ.
-Gradle (`./gradlew`) can also be used directly from the command line.
+Gradle (`./gradlew`) runs on any Java 17 or newer.
+The build compiles with a Java 25 (Temurin) toolchain, which Gradle downloads automatically if it is not installed.
+No other configuration is required, neither in IntelliJ nor on the command line.
 
-#### Building a JLink Native Executable (Linux)
+## Building the JLink Image
 
-To create a native executable with JLink locally, run the corresponding `customRuntimeZip-*` Gradle task, or `customRuntimeZip` to
-build the executables for all platforms.
+Run `customRuntimeZip-<platform>` to build the image for one platform.
+The build downloads the Java modules (jmods) of each target platform from Adoptium.
+Non-Windows images can't be built on Windows, because the zip would lose the executable file permissions.
 
-The executable is created in the `build/runtime` directory. The zipped ready-to-distribute files are found in the
-`build/distributions` directory.
+The images are created in the `build/runtime` directory.
+The zipped ready-to-distribute files are found in the `build/distributions` directory.
 
 ```bash
-./gradlew clean customRuntimeZip
+./gradlew clean customRuntimeZip-linux-x86_64 customRuntimeZip-windows-x86_64 customRuntimeZip-macos-x86_64 customRuntimeZip-macos-aarch64
 ```
+
+## Running the Integration Tests
+
+`JLinkIntegrationTest` runs the JLink image of the current platform, so build it first.
+The tests run only if the environment variable `TEAMSCALE_ACCESS_KEY` is set.
+For details, see the Javadoc of `JLinkIntegrationTest`.
 
 # Creating a Release
 
@@ -64,4 +69,4 @@ Check https://downloads.teamscale.com/tools/teamscale-upload/ and https://docs.t
 
 ### Create a new Release in Teamscale Upload Action ###
 Finally, also create a new release of the [GitHub Action](https://github.com/cqse/teamscale-upload-action) with the same version number.
-You need to adjust the version number in the [script](https://github.com/cqse/teamscale-upload-action/blob/master/src/run-teamscale-upload.sh). There are two spots where you need to adjust the number!
+You need to adjust the version number (`VERSION`) in [action.yml](https://github.com/cqse/teamscale-upload-action/blob/master/action.yml).
