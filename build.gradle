@@ -1,6 +1,9 @@
 import org.apache.tools.ant.taskdefs.condition.Os
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+
 plugins {
 	id 'org.beryx.runtime'
 	id 'java'
@@ -171,12 +174,16 @@ def RUNTIME_TARGET_PLATFORMS = [
 		'macos-aarch64' : ['mac', 'aarch64', 'tar.gz'],
 ]
 
+// The runtime plugin passes <jdkHome>/jmods to jlink as the module path
+def jdkHomeDir = { String platformName -> layout.buildDirectory.dir("jdks/${platformName}") }
+def jmodsDir = { String platformName -> jdkHomeDir(platformName).map { it.dir('jmods') } }
+
 // Since Java 24, Adoptium JDKs no longer ship jmods (JEP 493), so jlink needs them as a separate download
 def unpackJmodsTasks = RUNTIME_TARGET_PLATFORMS.collect { platformName, adoptiumPlatform ->
 	def (operatingSystem, architecture, extension) = adoptiumPlatform
 	def downloadTask = tasks.register("downloadJmods-${platformName}", DownloadFile) {
 		url = "$ADOPTIUM_BINARY_REPOSITORY/version/jdk-${RUNTIME_JDK_VERSION}/${operatingSystem}/${architecture}/jmods/hotspot/normal/eclipse"
-		destination = layout.buildDirectory.file("jdks/${platformName}/jmods.${extension}")
+		destination = jdkHomeDir(platformName).map { it.file("jmods.${extension}") }
 	}
 	tasks.register("unpackJmods-${platformName}", Sync) {
 		from(downloadTask.flatMap { it.destination }.map { archive ->
@@ -189,16 +196,17 @@ def unpackJmodsTasks = RUNTIME_TARGET_PLATFORMS.collect { platformName, adoptium
 		// The archive has a single top-level directory, which jlink must not see
 		eachFile { it.path = it.name }
 		includeEmptyDirs = false
-		into(layout.buildDirectory.dir("jdks/${platformName}/jmods"))
+		into(jmodsDir(platformName))
 	}
 }
 
 // The jre task runs jlink
 tasks.named('jre') {
-	dependsOn(unpackJmodsTasks)
+	// An input, not just a dependency, so that new jmods (for example from a RUNTIME_JDK_VERSION update) relink the runtime
+	inputs.files(unpackJmodsTasks).withPropertyName('targetPlatformJmods').withPathSensitivity(PathSensitivity.RELATIVE)
 	// Without jmods, the runtime plugin silently links the build host's own runtime instead of the target platform's
 	def javaBaseJmods = RUNTIME_TARGET_PLATFORMS.keySet().collect { platformName ->
-		layout.buildDirectory.file("jdks/${platformName}/jmods/java.base.jmod")
+		jmodsDir(platformName).map { it.file('java.base.jmod') }
 	}
 	doFirst {
 		javaBaseJmods.each { javaBaseJmod ->
@@ -223,14 +231,65 @@ runtime {
 			'jdk.unsupported', // For GSON
 	]
 
-	// The runtime plugin passes <jdkHome>/jmods to jlink as the module path
 	RUNTIME_TARGET_PLATFORMS.keySet().each { platformName ->
 		targetPlatform(platformName) {
-			jdkHome = layout.buildDirectory.dir("jdks/${platformName}").map { it.asFile.absolutePath }
+			jdkHome = jdkHomeDir(platformName).map { it.asFile.absolutePath }
 		}
 	}
 	imageDir.set(layout.buildDirectory.dir("runtime/install"))
 	imageZip.set(layout.buildDirectory.file("runtime/zip/${application.applicationName}.zip"))
+}
+
+/**
+ * Returns the target platform name (a key of RUNTIME_TARGET_PLATFORMS) that the given native executable is built for,
+ * or {@code null} if the format or the architecture is none of them.
+ */
+static String detectExecutablePlatform(File executable) {
+	byte[] header = new byte[4096]
+	executable.withInputStream { it.read(header) }
+	ByteBuffer littleEndian = ByteBuffer.wrap(header).order(ByteOrder.LITTLE_ENDIAN)
+	if (littleEndian.getInt(0) == 0x464C457F) {
+		// ELF: e_machine 0x3E is x86-64
+		if (Short.toUnsignedInt(littleEndian.getShort(18)) == 0x3E) {
+			return 'linux-x86_64'
+		}
+	} else if (Integer.toUnsignedLong(littleEndian.getInt(0)) == 0xFEEDFACFL) {
+		// 64-bit Mach-O: cputype 0x01000007 is x86-64, 0x0100000C is arm64
+		int cpuType = littleEndian.getInt(4)
+		if (cpuType == 0x01000007) {
+			return 'macos-x86_64'
+		}
+		if (cpuType == 0x0100000C) {
+			return 'macos-aarch64'
+		}
+	} else if (Short.toUnsignedInt(littleEndian.getShort(0)) == 0x5A4D) {
+		// PE ("MZ"): the COFF header's machine field 0x8664 is x86-64
+		int peHeaderOffset = littleEndian.getInt(0x3C)
+		if (Short.toUnsignedInt(littleEndian.getShort(peHeaderOffset + 4)) == 0x8664) {
+			return 'windows-x86_64'
+		}
+	}
+	return null
+}
+
+// Guards against shipping a runtime for the wrong platform, which no test would notice, because CI runs only the Linux image
+tasks.named('runtime') {
+	def runtimeImageDir = runtime.imageDir
+	def imageNamePrefix = project.name
+	def platformNames = RUNTIME_TARGET_PLATFORMS.keySet()
+	doLast {
+		platformNames.each { platformName ->
+			File binDir = runtimeImageDir.dir("${imageNamePrefix}-${platformName}/bin").get().asFile
+			File javaExecutable = [new File(binDir, 'java'), new File(binDir, 'java.exe')].find { it.file }
+			if (javaExecutable == null) {
+				throw new GradleException("No java executable found in ${binDir}")
+			}
+			String actualPlatform = detectExecutablePlatform(javaExecutable)
+			if (actualPlatform != platformName) {
+				throw new GradleException("${javaExecutable} is built for ${Objects.requireNonNullElse(actualPlatform, 'an unknown platform')}, expected ${platformName}")
+			}
+		}
+	}
 }
 
 // Use afterEvaluate to defer this logic until the configuration phase is complete.
