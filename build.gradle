@@ -1,6 +1,9 @@
 import org.apache.tools.ant.taskdefs.condition.Os
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+
 plugins {
 	id 'org.beryx.runtime'
 	id 'java'
@@ -8,9 +11,23 @@ plugins {
 
 repositories {
 	maven {
-		url "https://packages.jetbrains.team/maven/p/ij/intellij-dependencies/"
+		url = "https://packages.jetbrains.team/maven/p/ij/intellij-dependencies/"
 	}
 	mavenCentral()
+	// The jmods of the bundled Java runtime, as published by Adoptium on GitHub
+	exclusiveContent {
+		forRepository {
+			ivy {
+				name = 'Adoptium'
+				url = 'https://github.com/adoptium/'
+				patternLayout {
+					artifact('[module]/releases/download/[revision]/[artifact].[ext]')
+				}
+				metadataSources { artifact() }
+			}
+		}
+		filter { includeGroup('adoptium') }
+	}
 }
 
 group = "com.teamscale"
@@ -25,40 +42,42 @@ application {
 			// Ensure that no stack traces are lost.
 			// See <https://stackoverflow.com/questions/2411487/nullpointerexception-in-java-with-no-stacktrace>
 			'-XX:-OmitStackTraceInFastThrow',
+			// JNA (used by jvm-native-trusted-roots to read the OS certificate store) loads native code.
+			// Without this, Java 24+ prints a warning on every run and a future release will block the call.
+			'--enable-native-access=ALL-UNNAMED',
 	]
 }
 
 java {
 	toolchain {
 		// Ensure that we build with the same version that we want to jlink to the distribution.
-		// Before making this explicit, I got this error in the build: "Error: Error reading module: /home/runner/work/teamscale-upload/teamscale-upload/build/jdks/linux-x86_64/jdk-17.0.5+8/jmods/java.security.sasl.jmod"
-		// I think the build was using Java 11 then.
-		languageVersion = JavaLanguageVersion.of(17)
-		// I would like to also use the same vendor as in jlink, but gradle can't find/download a toolchain for this vendor
-		//vendor = JvmVendorSpec.ADOPTIUM
+		// The runtime plugin runs jlink from this toolchain, and jlink rejects jmods of a different Java version.
+		languageVersion = JavaLanguageVersion.of(25)
+		// Same vendor as the jmods that are linked into the distribution
+		vendor = JvmVendorSpec.ADOPTIUM
 	}
 }
 
 dependencies {
-	implementation group: 'org.apache.commons', name: 'commons-exec', version: '1.3'
-	implementation group: 'commons-io', name: 'commons-io', version: '2.11.0'
-	implementation group: 'org.apache.commons', name: 'commons-compress', version: '1.21'
-	implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
-	implementation group: 'com.google.code.gson', name: 'gson', version: '2.8.9'
-	implementation group: 'com.google.guava', name: 'guava', version: '32.1.2-jre'
-	implementation group: 'com.squareup.okhttp3', name: 'okhttp', version: '5.1.0'
-	implementation group: 'net.sourceforge.argparse4j', name: 'argparse4j', version: '0.9.0'
-	implementation group: 'org.jetbrains.nativecerts', name: 'jvm-native-trusted-roots', version: '1.0.19'
+	implementation 'org.apache.commons:commons-exec:1.3'
+	implementation 'commons-io:commons-io:2.11.0'
+	implementation 'org.apache.commons:commons-compress:1.21'
+	implementation 'org.apache.commons:commons-lang3:3.12.0'
+	implementation 'com.google.code.gson:gson:2.8.9'
+	implementation 'com.google.guava:guava:32.1.2-jre'
+	implementation 'com.squareup.okhttp3:okhttp:5.1.0'
+	implementation 'net.sourceforge.argparse4j:argparse4j:0.9.0'
+	implementation 'org.jetbrains.nativecerts:jvm-native-trusted-roots:1.0.19'
 
-	testImplementation group: 'com.sparkjava', name: 'spark-core', version: '2.9.4'
+	testImplementation 'com.sparkjava:spark-core:2.9.4'
 
 	testImplementation platform("org.junit:junit-bom:5.10.2")
 	testImplementation 'org.junit.jupiter:junit-jupiter-api'
 	testImplementation 'org.junit.jupiter:junit-jupiter-params'
 	testRuntimeOnly  'org.junit.jupiter:junit-jupiter-engine'
 
-	testImplementation group: 'org.assertj', name: 'assertj-core', version: '3.21.0'
-	testRuntimeOnly group: 'javax.servlet', name: 'javax.servlet-api', version: '4.0.1'
+	testImplementation 'org.assertj:assertj-core:3.21.0'
+	testRuntimeOnly 'javax.servlet:javax.servlet-api:4.0.1'
 
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
@@ -69,7 +88,7 @@ def gitVersionProvider = providers.exec {
 	// Run 'git describe --tags'. This handles both exact tags and dev commits.
 	commandLine 'git', 'describe', '--tags'
 	// Ignore the exit value so the build doesn't fail if there are no tags.
-	ignoreExitValue true
+	ignoreExitValue = true
 	// We'll process the output (including errors) in the .map() block below.
 }.standardOutput.asText.map { output ->
 	def fullVersion = output.trim()
@@ -142,10 +161,70 @@ tasks.named('jar') {
 	archiveVersion.set(gitVersionProvider)
 }
 
-def RUNTIME_JDK_VERSION = '17.0.19+10'
+def RUNTIME_JDK_VERSION = '25.0.4.1+1'
+// Target platform name -> [Adoptium OS, Adoptium architecture, archive extension]
+def RUNTIME_TARGET_PLATFORMS = [
+		'linux-x86_64'  : ['linux', 'x64', 'tar.gz'],
+		'windows-x86_64': ['windows', 'x64', 'zip'],
+		'macos-x86_64'  : ['mac', 'x64', 'tar.gz'],
+		'macos-aarch64' : ['mac', 'aarch64', 'tar.gz'],
+]
+
+// The runtime plugin passes <jdkHome>/jmods to jlink as the module path
+def jdkHomeDir = { String platformName -> layout.buildDirectory.dir("jdks/${platformName}") }
+def jmodsDir = { String platformName -> jdkHomeDir(platformName).map { it.dir('jmods') } }
+
+// Since Java 24, Adoptium JDKs no longer ship jmods (JEP 493), so jlink needs them as a separate download.
+// They are dependencies, so that Gradle caches them and dependency verification checks their checksums.
+def runtimeJdkFeatureVersion = RUNTIME_JDK_VERSION.tokenize('.+')[0]
+def unpackJmodsTasks = RUNTIME_TARGET_PLATFORMS.collect { platformName, adoptiumPlatform ->
+	def (operatingSystem, architecture, archiveExtension) = adoptiumPlatform
+	def jmodsArchive = configurations.register("jmods-${platformName}") {
+		canBeConsumed = false
+		transitive = false
+	}
+	dependencies.add(jmodsArchive.name, "adoptium:temurin${runtimeJdkFeatureVersion}-binaries:jdk-${RUNTIME_JDK_VERSION}") {
+		artifact {
+			name = "OpenJDK${runtimeJdkFeatureVersion}U-jmods_${architecture}_${operatingSystem}_hotspot_${RUNTIME_JDK_VERSION.replace('+', '_')}"
+			type = archiveExtension
+			extension = archiveExtension
+		}
+	}
+	tasks.register("unpackJmods-${platformName}", Sync) {
+		from(jmodsArchive.map { configuration ->
+			if (archiveExtension == 'zip') {
+				return zipTree(configuration.singleFile)
+			}
+			return tarTree(resources.gzip(configuration.singleFile))
+		})
+		include('*/*.jmod')
+		// The archive has a single top-level directory, which jlink must not see
+		eachFile { it.path = it.name }
+		includeEmptyDirs = false
+		into(jmodsDir(platformName))
+	}
+}
+
+// The jre task runs jlink
+tasks.named('jre') {
+	// An input, not just a dependency, so that new jmods (for example from a RUNTIME_JDK_VERSION update) relink the runtime
+	inputs.files(unpackJmodsTasks).withPropertyName('targetPlatformJmods').withPathSensitivity(PathSensitivity.RELATIVE)
+	// Without jmods, the runtime plugin silently links the build host's own runtime instead of the target platform's
+	def javaBaseJmods = RUNTIME_TARGET_PLATFORMS.keySet().collect { platformName ->
+		jmodsDir(platformName).map { it.file('java.base.jmod') }
+	}
+	doFirst {
+		javaBaseJmods.each { javaBaseJmod ->
+			if (!javaBaseJmod.get().asFile.file) {
+				throw new GradleException("Missing ${javaBaseJmod.get().asFile}, jlink would link the build host's runtime instead")
+			}
+		}
+	}
+}
+
 runtime {
 	options = [
-			'--compress', '2', // ZIP compression
+			'--compress', 'zip-6',
 			'--no-header-files', '--no-man-pages',
 			'--dedup-legal-notices', 'error-if-not-same-content',
 			'--strip-debug',
@@ -154,35 +233,68 @@ runtime {
 	modules = [
 			'java.logging', // For package java.util.logging (used by Google Guava)
 			'java.naming', // For package javax.naming (used by Apache HttpClient)
-			'jdk.crypto.ec', // For Elliptic Curve algorithms over TLS
 			'jdk.unsupported', // For GSON
 	]
 
-	def ADOPTIUM_BINARY_REPOSITORY = 'https://api.adoptium.net/v3/binary'
-
-	// We need to download the JDK, not the JRE, as the latter doesn't ship the jmod files needed by jlink
-	targetPlatform('linux-x86_64') {
-		jdkHome = jdkDownload("$ADOPTIUM_BINARY_REPOSITORY/version/jdk-${RUNTIME_JDK_VERSION}/linux/x64/jdk/hotspot/normal/eclipse") {
-			archiveExtension = 'tar.gz'
-		}
-	}
-	targetPlatform('windows-x86_64') {
-		jdkHome = jdkDownload("$ADOPTIUM_BINARY_REPOSITORY/version/jdk-${RUNTIME_JDK_VERSION}/windows/x64/jdk/hotspot/normal/eclipse") {
-			archiveExtension = 'zip'
-		}
-	}
-	targetPlatform('macos-x86_64') {
-		jdkHome = jdkDownload("$ADOPTIUM_BINARY_REPOSITORY/version/jdk-${RUNTIME_JDK_VERSION}/mac/x64/jdk/hotspot/normal/eclipse") {
-			archiveExtension = 'tar.gz'
-		}
-	}
-	targetPlatform('macos-aarch64') {
-		jdkHome = jdkDownload("$ADOPTIUM_BINARY_REPOSITORY/version/jdk-${RUNTIME_JDK_VERSION}/mac/aarch64/jdk/hotspot/normal/eclipse") {
-			archiveExtension = 'tar.gz'
+	RUNTIME_TARGET_PLATFORMS.keySet().each { platformName ->
+		targetPlatform(platformName) {
+			jdkHome = jdkHomeDir(platformName).map { it.asFile.absolutePath }
 		}
 	}
 	imageDir.set(layout.buildDirectory.dir("runtime/install"))
 	imageZip.set(layout.buildDirectory.file("runtime/zip/${application.applicationName}.zip"))
+}
+
+/**
+ * Returns the target platform name (a key of RUNTIME_TARGET_PLATFORMS) that the given native executable is built for,
+ * or {@code null} if the format or the architecture is none of them.
+ */
+static String detectExecutablePlatform(File executable) {
+	byte[] header = new byte[4096]
+	executable.withInputStream { it.read(header) }
+	ByteBuffer littleEndian = ByteBuffer.wrap(header).order(ByteOrder.LITTLE_ENDIAN)
+	if (littleEndian.getInt(0) == 0x464C457F) {
+		// ELF: e_machine 0x3E is x86-64
+		if (Short.toUnsignedInt(littleEndian.getShort(18)) == 0x3E) {
+			return 'linux-x86_64'
+		}
+	} else if (Integer.toUnsignedLong(littleEndian.getInt(0)) == 0xFEEDFACFL) {
+		// 64-bit Mach-O: cputype 0x01000007 is x86-64, 0x0100000C is arm64
+		int cpuType = littleEndian.getInt(4)
+		if (cpuType == 0x01000007) {
+			return 'macos-x86_64'
+		}
+		if (cpuType == 0x0100000C) {
+			return 'macos-aarch64'
+		}
+	} else if (Short.toUnsignedInt(littleEndian.getShort(0)) == 0x5A4D) {
+		// PE ("MZ"): the COFF header's machine field 0x8664 is x86-64
+		int peHeaderOffset = littleEndian.getInt(0x3C)
+		if (Short.toUnsignedInt(littleEndian.getShort(peHeaderOffset + 4)) == 0x8664) {
+			return 'windows-x86_64'
+		}
+	}
+	return null
+}
+
+// Guards against shipping a runtime for the wrong platform, which no test would notice, because CI runs only the Linux image
+tasks.named('runtime') {
+	def runtimeImageDir = runtime.imageDir
+	def imageNamePrefix = project.name
+	def platformNames = RUNTIME_TARGET_PLATFORMS.keySet()
+	doLast {
+		platformNames.each { platformName ->
+			File binDir = runtimeImageDir.dir("${imageNamePrefix}-${platformName}/bin").get().asFile
+			File javaExecutable = [new File(binDir, 'java'), new File(binDir, 'java.exe')].find { it.file }
+			if (javaExecutable == null) {
+				throw new GradleException("No java executable found in ${binDir}")
+			}
+			String actualPlatform = detectExecutablePlatform(javaExecutable)
+			if (actualPlatform != platformName) {
+				throw new GradleException("${javaExecutable} is built for ${Objects.requireNonNullElse(actualPlatform, 'an unknown platform')}, expected ${platformName}")
+			}
+		}
+	}
 }
 
 // Use afterEvaluate to defer this logic until the configuration phase is complete.
@@ -211,6 +323,8 @@ project.afterEvaluate {
 			destinationDirectory.set(layout.buildDirectory.dir('distributions'))
 			// Use a provider for the applicationName to ensure it's also lazy.
 			archiveFileName.set("${application.applicationName}-${targetPlatform.key}.zip")
+			// Gradle normalizes archive permissions to 644 by default, which would drop the executable bit of the launcher and the bundled JVM
+			useFileSystemPermissions()
 
 			// --- LAZY FILE SELECTION ---
 			// The content of the zip is configured lazily.
