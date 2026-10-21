@@ -1,12 +1,17 @@
 pluginManagement {
 	repositories {
 		maven {
-			url "https://europe-west1-maven.pkg.dev/cqse-build/cqse-maven-public"
+			url = "https://europe-west1-maven.pkg.dev/cqse-build/cqse-maven-public"
 		}
 		gradlePluginPortal()
 	}
 
 	plugins {
-		id("org.beryx.runtime") version "1.13.0"
+		id("org.beryx.runtime") version "2.0.1"
 	}
+}
+
+plugins {
+	// Lets Gradle download the Java toolchain declared in build.gradle when no matching JDK is installed
+	id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
