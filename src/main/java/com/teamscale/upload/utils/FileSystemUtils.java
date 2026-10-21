@@ -33,10 +33,10 @@ import java.util.List;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.io.IOUtils;
-
-import com.google.common.annotations.VisibleForTesting;
+import org.jetbrains.annotations.VisibleForTesting;
 
 /**
  * File system utilities.
@@ -242,7 +242,7 @@ public class FileSystemUtils {
 
 		try (TarArchiveInputStream tarArchiveInputStream = new TarArchiveInputStream(inputStream)) {
 			TarArchiveEntry entry;
-			while ((entry = tarArchiveInputStream.getNextTarEntry()) != null) {
+			while ((entry = tarArchiveInputStream.getNextEntry()) != null) {
 				if (entry.isDirectory()) {
 					continue;
 				}

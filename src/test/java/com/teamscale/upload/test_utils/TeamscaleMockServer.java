@@ -1,26 +1,33 @@
 package com.teamscale.upload.test_utils;
 
+import mockwebserver3.Dispatcher;
+import mockwebserver3.MockResponse;
+import mockwebserver3.MockWebServer;
+import mockwebserver3.RecordedRequest;
+import okhttp3.MediaType;
+import okhttp3.MultipartReader;
+import okio.Buffer;
 import org.assertj.core.api.Assertions;
-import spark.Request;
-import spark.Response;
-import spark.Service;
 
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.ServletException;
-import javax.servlet.http.Part;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
-import static javax.servlet.http.HttpServletResponse.SC_NO_CONTENT;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Mocks a Teamscale server: stores all report upload sessions and all uploaded
@@ -72,10 +79,28 @@ public class TeamscaleMockServer implements AutoCloseable {
 	 */
 	public final List<VulnerabilityReportUpload> vulnerabilityReportUploads = new ArrayList<>();
 
-	private final Service spark;
+	private static final int SC_NO_CONTENT = 204;
+	private static final int SC_NOT_FOUND = 404;
+	private static final int SC_INTERNAL_SERVER_ERROR = 500;
+
+	private static final char[] KEYSTORE_PASSWORD = "password".toCharArray();
+
+	private static final Pattern OPEN_SESSION_PATH = Pattern
+			.compile("/api/v8\\.2/projects/[^/]+/external-analysis/session");
+	private static final Pattern SESSION_PATH = Pattern
+			.compile("/api/v8\\.2/projects/[^/]+/external-analysis/session/[^/]+");
+	private static final Pattern REPORT_PATH = Pattern
+			.compile("/api/v8\\.2/projects/[^/]+/external-analysis/session/[^/]+/report");
+	private static final Pattern VULNERABILITY_REPORT_PATH = Pattern
+			.compile("/api/v2026\\.7\\.0/projects/[^/]+/vulnerability-report");
+
+	/** Matches a parameter of a Content-Disposition header, for example {@code name="report"}. */
+	private static final Pattern CONTENT_DISPOSITION_PARAMETER = Pattern.compile(";\\s*([a-z]+)=\"([^\"]*)\"");
+
+	private final MockWebServer server = new MockWebServer();
 
 	/**
-	 * Time in seconds to wait in the {@link #openSession(Request, Response)}
+	 * Time in seconds to wait in the {@link #openSession(RecordedRequest)}
 	 * handler to simulate slow Teamscale request processing.
 	 */
 	private final long openSessionRequestTimeInSeconds;
@@ -128,106 +153,157 @@ public class TeamscaleMockServer implements AutoCloseable {
 			Assertions.fail(
 					"Could not initialize TeamscaleMockServer: Could not find keystore.jks or truststore.jks test resources");
 		}
-		this.spark = Service.ignite();
 		this.openSessionRequestTimeInSeconds = openSessionRequestTimeInSeconds;
 		this.countOfInitialFailedRequestsPerEndpoint = countOfInitialFailedRequestsPerEndpoint;
 
 		if (useSelfSignedCertificate) {
-			spark.secure(KEYSTORE.getAbsolutePath(), "password", null, null);
+			server.useHttps(createSelfSignedSslContext().getSocketFactory());
 		}
-		spark.port(port);
-		spark.before((request, response) -> {
-			if (forcedStatusCode != null) {
-				spark.halt(forcedStatusCode, forcedResponseBody);
+		server.setDispatcher(new Dispatcher() {
+			@Override
+			public MockResponse dispatch(RecordedRequest request) {
+				if (forcedStatusCode != null) {
+					return response(forcedStatusCode, forcedResponseBody);
+				}
+				try {
+					return route(request);
+				} catch (Exception e) {
+					return response(SC_INTERNAL_SERVER_ERROR, "Exception: " + e.getMessage());
+				}
 			}
 		});
-		spark.post("/api/v8.2/projects/:projectName/external-analysis/session", this::openSession);
-		spark.post("/api/v8.2/projects/:projectName/external-analysis/session/:session", this::noOpHandler);
-		spark.post("/api/v8.2/projects/:projectName/external-analysis/session/:session/report",
-				this::receiveReportHandler);
-		spark.post("/api/v2026.7.0/projects/:projectName/vulnerability-report",
-				this::receiveVulnerabilityReportHandler);
-		spark.exception(Exception.class, (Exception exception, Request request, Response response) -> {
-			response.status(SC_INTERNAL_SERVER_ERROR);
-			response.body("Exception: " + exception.getMessage());
-		});
-		spark.awaitInitialization();
+		try {
+			// The wildcard address also accepts IPv6. OkHttp tries ::1 after 127.0.0.1 failed, and would otherwise
+			// report the refused ::1 connection instead of the actual error.
+			server.start(new InetSocketAddress(port).getAddress(), port);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Could not start TeamscaleMockServer on port " + port, e);
+		}
 	}
 
-	private void simulateRequestTime() {
+	private static SSLContext createSelfSignedSslContext() {
+		try (InputStream keystoreStream = new FileInputStream(KEYSTORE)) {
+			KeyStore keyStore = KeyStore.getInstance("JKS");
+			keyStore.load(keystoreStream, KEYSTORE_PASSWORD);
+			KeyManagerFactory keyManagerFactory = KeyManagerFactory
+					.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+			keyManagerFactory.init(keyStore, KEYSTORE_PASSWORD);
+			SSLContext sslContext = SSLContext.getInstance("TLS");
+			sslContext.init(keyManagerFactory.getKeyManagers(), null, null);
+			return sslContext;
+		} catch (IOException | GeneralSecurityException e) {
+			throw new AssertionError("Failed to load the self-signed certificate from " + KEYSTORE, e);
+		}
+	}
+
+	private MockResponse route(RecordedRequest request) throws IOException, InterruptedException {
+		String path = request.getUrl().encodedPath();
+		if (!"POST".equals(request.getMethod())) {
+			return response(SC_NOT_FOUND, "");
+		}
+		if (OPEN_SESSION_PATH.matcher(path).matches()) {
+			return openSession(request);
+		}
+		if (SESSION_PATH.matcher(path).matches()) {
+			return response(200, "");
+		}
+		if (REPORT_PATH.matcher(path).matches()) {
+			return receiveReport(request);
+		}
+		if (VULNERABILITY_REPORT_PATH.matcher(path).matches()) {
+			return receiveVulnerabilityReport(request);
+		}
+		return response(SC_NOT_FOUND, "");
+	}
+
+	private static MockResponse response(int statusCode, String body) {
+		return new MockResponse.Builder().code(statusCode).body(body).build();
+	}
+
+	private MockResponse openSession(RecordedRequest request) throws InterruptedException {
 		if (openSessionRequestTimeInSeconds > 0) {
-			try {
-				Thread.sleep(openSessionRequestTimeInSeconds * 1000);
-			} catch (InterruptedException e) {
-				throw new RuntimeException("Unable to simulate request time: " + e.getMessage(), e);
-			}
+			Thread.sleep(openSessionRequestTimeInSeconds * 1000);
 		}
-	}
-
-	private String openSession(Request request, Response response) {
-		simulateRequestTime();
 		int requestNumber = sessionRequestCounter.incrementAndGet();
 		if (requestNumber <= countOfInitialFailedRequestsPerEndpoint) {
-			response.status(SC_INTERNAL_SERVER_ERROR);
-			return "Simulated intermittent server error";
+			return response(SC_INTERNAL_SERVER_ERROR, "Simulated intermittent server error");
 		}
-		String message = request.queryParams("message");
-		String revisionOrTimestamp = request.queryParams("revision");
+		String message = request.getUrl().queryParameter("message");
+		String revisionOrTimestamp = request.getUrl().queryParameter("revision");
 		if (revisionOrTimestamp == null) {
-			revisionOrTimestamp = request.queryParams("t");
+			revisionOrTimestamp = request.getUrl().queryParameter("t");
 		}
 		sessions.add(new Session(message, revisionOrTimestamp));
-		return "fake-session-id";
+		return response(200, "fake-session-id");
 	}
 
-	private String receiveReportHandler(Request request, Response response) throws ServletException, IOException {
-		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement(""));
-
+	private MockResponse receiveReport(RecordedRequest request) throws IOException {
 		// one request carries one part per uploaded report, so reading a single part
 		// would silently drop all reports but the first
-		for (Part report : request.raw().getParts()) {
-			if (!"report".equals(report.getName())) {
-				continue;
-			}
-			try (InputStream is = report.getInputStream()) {
-				uploadedReportsByName.put(report.getSubmittedFileName(), is.readAllBytes());
+		for (FormDataPart report : readFormDataParts(request)) {
+			if ("report".equals(report.name())) {
+				uploadedReportsByName.put(report.fileName(), report.content());
 			}
 		}
-
-		return "Report uploaded";
+		return response(200, "Report uploaded");
 	}
 
-	private String receiveVulnerabilityReportHandler(Request request, Response response)
-			throws ServletException, IOException {
+	private MockResponse receiveVulnerabilityReport(RecordedRequest request) throws IOException {
 		int requestNumber = vulnerabilityReportRequestCounter.incrementAndGet();
 		if (requestNumber <= countOfInitialFailedRequestsPerEndpoint) {
-			response.status(SC_INTERNAL_SERVER_ERROR);
-			return "Simulated intermittent server error";
+			return response(SC_INTERNAL_SERVER_ERROR, "Simulated intermittent server error");
 		}
 
-		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement(""));
-		Part report = request.raw().getPart("file");
-
-		byte[] content;
-		try (InputStream is = report.getInputStream()) {
-			content = is.readAllBytes();
-		}
-		vulnerabilityReportUploads
-				.add(new VulnerabilityReportUpload(request.queryParams("build-name"), request.queryParams("version"),
-						request.queryParams("revision"), report.getSubmittedFileName(), content));
+		FormDataPart report = readFormDataParts(request).stream().filter(part -> "file".equals(part.name()))
+				.findFirst().orElseThrow(() -> new IOException("The request has no part named \"file\""));
+		vulnerabilityReportUploads.add(new VulnerabilityReportUpload(request.getUrl().queryParameter("build-name"),
+				request.getUrl().queryParameter("version"), request.getUrl().queryParameter("revision"),
+				report.fileName(), report.content()));
 
 		// the real endpoint returns 204 with an empty body
-		response.status(SC_NO_CONTENT);
-		return "";
+		return response(SC_NO_CONTENT, "");
 	}
 
-	private String noOpHandler(Request request, Response response) {
-		return "";
+	/**
+	 * Returns all parts of the multipart/form-data body of the given request.
+	 */
+	private static List<FormDataPart> readFormDataParts(RecordedRequest request) throws IOException {
+		MediaType contentType = MediaType.parse(request.getHeaders().get("Content-Type"));
+		if (contentType == null || contentType.parameter("boundary") == null || request.getBody() == null) {
+			throw new IOException("The request has no multipart body");
+		}
+		List<FormDataPart> parts = new ArrayList<>();
+		try (MultipartReader reader = new MultipartReader(new Buffer().write(request.getBody()),
+				contentType.parameter("boundary"))) {
+			for (MultipartReader.Part part = reader.nextPart(); part != null; part = reader.nextPart()) {
+				Map<String, String> dispositionParameters = new HashMap<>();
+				Matcher matcher = CONTENT_DISPOSITION_PARAMETER.matcher(part.headers().get("Content-Disposition"));
+				while (matcher.find()) {
+					dispositionParameters.put(matcher.group(1), matcher.group(2));
+				}
+				parts.add(new FormDataPart(dispositionParameters.get("name"), dispositionParameters.get("filename"),
+						part.body().readByteArray()));
+			}
+		}
+		return parts;
 	}
 
 	@Override
 	public void close() {
-		spark.stop();
+		server.close();
+	}
+
+	/**
+	 * One part of a multipart/form-data request body.
+	 *
+	 * @param name
+	 *            the form field name.
+	 * @param fileName
+	 *            the submitted file name, or {@code null} if the part is no file.
+	 * @param content
+	 *            the raw content of the part.
+	 */
+	private record FormDataPart(String name, String fileName, byte[] content) {
 	}
 
 	/**
