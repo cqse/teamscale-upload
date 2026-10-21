@@ -18,7 +18,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -32,7 +31,6 @@ import javax.net.ssl.X509TrustManager;
 import org.jetbrains.nativecerts.NativeTrustedCertificates;
 import org.jetbrains.nativecerts.NativeTrustedRootsInternalUtils;
 import org.jetbrains.nativecerts.linux.LinuxTrustedCertificatesUtil;
-import org.jetbrains.nativecerts.mac.SecurityFramework;
 import org.jetbrains.nativecerts.mac.SecurityFrameworkUtil;
 import org.jetbrains.nativecerts.win32.Crypt32ExtUtil;
 
@@ -205,7 +203,6 @@ public class OkHttpUtils {
 			return List.of(trustManagerFactory.getTrustManagers());
 
 		} catch (Exception e) {
-			// There could be reflection calls which we are missing in GraalVM
 			// Make sure the program will still run
 			LogUtils.warn("Could not import certificates from the operating system."
 					+ "\nThis is a bug. Please report it to CQSE (support@teamscale.com).", e);
@@ -223,13 +220,8 @@ public class OkHttpUtils {
 		if (NativeTrustedRootsInternalUtils.isLinux) {
 			return LinuxTrustedCertificatesUtil.getSystemCertificates();
 		} else if (NativeTrustedRootsInternalUtils.isMac) {
-			List<X509Certificate> admin = SecurityFrameworkUtil
-					.getTrustedRoots(SecurityFramework.SecTrustSettingsDomain.admin);
-			List<X509Certificate> user = SecurityFrameworkUtil
-					.getTrustedRoots(SecurityFramework.SecTrustSettingsDomain.user);
-			Set<X509Certificate> result = new HashSet<>(admin);
-			result.addAll(user);
-			return result;
+			// Covers the admin and the user trust domain
+			return new HashSet<>(SecurityFrameworkUtil.getTrustedRoots());
 		} else if (NativeTrustedRootsInternalUtils.isWindows) {
 			return Crypt32ExtUtil.getCustomTrustedRootCertificates();
 		} else {

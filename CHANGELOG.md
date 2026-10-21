@@ -5,9 +5,13 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
+- [fix] with `--debug`, the conversion of Xcode reports crashed with a `NullPointerException` if `xcodebuild` was not available
 - [maintenance] update the bundled Java runtime to Java 25 (25.0.4.1). On Windows, Windows 10 / Windows Server 2016 or later is required
 - [maintenance] the build runs on any Java 17 or newer and downloads the required JDK automatically
 - [maintenance] the build verifies the SHA-256 checksums of all downloaded dependencies, plugins and of the bundled Java runtime
+- [maintenance] upgrade dependencies with known vulnerabilities: Bouncy Castle 1.86, commons-compress 1.28.0, commons-io 2.22.0 and commons-lang3 3.21.0
+- [maintenance] upgrade jvm-native-trusted-roots to 2.0.8, which reads the certificate store of the operating system without JNA
+- [maintenance] remove the dependency on Google Guava
 
 # 2.11.1
 - [fix] the README of the Windows distribution referred to a non-existent `teamscale-upload.exe` instead of `teamscale-upload.bat`

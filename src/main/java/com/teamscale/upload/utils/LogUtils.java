@@ -1,5 +1,8 @@
 package com.teamscale.upload.utils;
 
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
+
 import com.teamscale.upload.client.SafeResponse;
 
 /**
@@ -116,17 +119,20 @@ public class LogUtils {
 	}
 
 	/**
-	 * Print a debug message to stdout and log the given throwable.
+	 * Print a debug message to stdout and log the given throwable, if there is
+	 * one.
 	 * <p>
 	 * Use to log information that is not useful during normal operations but
 	 * helpful when something goes wrong.
 	 */
-	public static void debug(String message, Throwable throwable) {
+	public static void debug(String message, @Nullable Throwable throwable) {
 		if (!debugLogEnabled) {
 			return;
 		}
 		debug(message);
-		throwable.printStackTrace();
+		if (throwable != null) {
+			throwable.printStackTrace();
+		}
 	}
 
 	/**
@@ -135,5 +141,12 @@ public class LogUtils {
 	public static void enableDebugLogging() {
 		debugLogEnabled = true;
 		printStackTracesForKnownErrors = true;
+	}
+
+	/** Restores the default of logging neither debug messages nor stack traces. */
+	@VisibleForTesting
+	static void disableDebugLogging() {
+		debugLogEnabled = false;
+		printStackTracesForKnownErrors = false;
 	}
 }

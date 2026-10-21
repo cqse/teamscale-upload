@@ -67,11 +67,52 @@ jobs:
           # fail if the zip files are not found
           if-no-files-found: error
 
+  # builds the distribution of the runner's platform and runs all tests against it.
+  # build-jlink runs only on Linux, so without this job no test would read the certificate store of Windows or macOS.
+  test-other-platforms:
+    name: Test Dist on ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            platform: windows-x86_64
+          - runner: macos-latest
+            platform: macos-aarch64
+          - runner: macos-15-intel
+            platform: macos-x86_64
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        # The same commands as on Linux, also on Windows
+        shell: bash
+    steps:
+      - name: 'Checkout project sources'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetches all history for all branches and tags
+      - name: 'Setup Java'
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+      - name: 'Setup Gradle'
+        uses: gradle/actions/setup-gradle@v5
+      - name: 'Build Dist'
+        run: ./gradlew customRuntimeZip-${{ matrix.platform }}
+      - name: 'Test Dist'
+        env:
+          TEAMSCALE_PROXY_USER: "User"
+          TEAMSCALE_PROXY_PASSWORD: "Pass~word"
+          TEAMSCALE_ACCESS_KEY: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
+        run: ./gradlew test
+
   # uploads the jlink distributions built by the build-jlink job to a public storage (public release job)
   release-jlink:
     if: startsWith(github.ref, 'refs/tags/v')
     needs:
       - build-jlink
+      - test-other-platforms
     name: Create Release (jlink)
     runs-on: ubuntu-latest
     env:
