@@ -20,11 +20,13 @@ public class LogUtils {
 	}
 
 	/**
-	 * Print error message and server response, then exit program
+	 * Creates the error message for a failed request, including the request URL
+	 * and Teamscale's response body.
 	 */
-	public static void fail(String message, SafeResponse response) {
+	public static String createResponseErrorMessage(String message, SafeResponse response) {
 		String url = response.unsafeResponse.request().url().toString();
-		fail("Upload to Teamscale failed:\n\n" + message + "\n\nTeamscale's response:\n" + url + "\n" + response.body);
+		return "Upload to Teamscale failed:\n\n" + message + "\n\nTeamscale's response:\n" + url + "\n"
+				+ response.body;
 	}
 
 	/**

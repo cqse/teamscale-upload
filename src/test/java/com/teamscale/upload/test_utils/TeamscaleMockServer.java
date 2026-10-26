@@ -72,6 +72,11 @@ public class TeamscaleMockServer implements AutoCloseable {
 	 */
 	public final List<VulnerabilityReportUpload> vulnerabilityReportUploads = new ArrayList<>();
 
+	/**
+	 * The IDs of all sessions deleted on this Teamscale instance.
+	 */
+	public final List<String> deletedSessionIds = new ArrayList<>();
+
 	private final Service spark;
 
 	/**
@@ -89,6 +94,12 @@ public class TeamscaleMockServer implements AutoCloseable {
 	 * error before they start processing them.
 	 */
 	private final int countOfInitialFailedRequestsPerEndpoint;
+
+	/**
+	 * HTTP status code that all report upload requests fail with, or 0 if report
+	 * uploads succeed.
+	 */
+	private final int reportUploadStatusCode;
 
 	private final AtomicInteger sessionRequestCounter = new AtomicInteger(0);
 
@@ -109,7 +120,7 @@ public class TeamscaleMockServer implements AutoCloseable {
 	public TeamscaleMockServer(int port, boolean useSelfSignedCertificate, long openSessionRequestTimeInSeconds,
 			int countOfInitialFailedRequestsPerEndpoint) {
 		this(port, useSelfSignedCertificate, openSessionRequestTimeInSeconds, countOfInitialFailedRequestsPerEndpoint,
-				null, null);
+				null, null, 0);
 	}
 
 	/**
@@ -119,11 +130,21 @@ public class TeamscaleMockServer implements AutoCloseable {
 	 * that does not exist.
 	 */
 	public static TeamscaleMockServer respondingWith(int port, int statusCode, String body) {
-		return new TeamscaleMockServer(port, false, 0L, 0, statusCode, body);
+		return new TeamscaleMockServer(port, false, 0L, 0, statusCode, body, 0);
+	}
+
+	/**
+	 * Creates a server that opens sessions normally but answers every report
+	 * upload request with the given status code. Use this to simulate an upload
+	 * attempt that fails while its session is open.
+	 */
+	public static TeamscaleMockServer failingReportUploadsWith(int port, int statusCode) {
+		return new TeamscaleMockServer(port, false, 0L, 0, null, null, statusCode);
 	}
 
 	private TeamscaleMockServer(int port, boolean useSelfSignedCertificate, long openSessionRequestTimeInSeconds,
-			int countOfInitialFailedRequestsPerEndpoint, Integer forcedStatusCode, String forcedResponseBody) {
+			int countOfInitialFailedRequestsPerEndpoint, Integer forcedStatusCode, String forcedResponseBody,
+			int reportUploadStatusCode) {
 		if (KEYSTORE == null || TRUSTSTORE == null) {
 			Assertions.fail(
 					"Could not initialize TeamscaleMockServer: Could not find keystore.jks or truststore.jks test resources");
@@ -131,6 +152,7 @@ public class TeamscaleMockServer implements AutoCloseable {
 		this.spark = Service.ignite();
 		this.openSessionRequestTimeInSeconds = openSessionRequestTimeInSeconds;
 		this.countOfInitialFailedRequestsPerEndpoint = countOfInitialFailedRequestsPerEndpoint;
+		this.reportUploadStatusCode = reportUploadStatusCode;
 
 		if (useSelfSignedCertificate) {
 			spark.secure(KEYSTORE.getAbsolutePath(), "password", null, null);
@@ -143,6 +165,8 @@ public class TeamscaleMockServer implements AutoCloseable {
 		});
 		spark.post("/api/v8.2/projects/:projectName/external-analysis/session", this::openSession);
 		spark.post("/api/v8.2/projects/:projectName/external-analysis/session/:session", this::noOpHandler);
+		spark.delete("/api/v8.2/projects/:projectName/external-analysis/session/:session",
+				this::deleteSessionHandler);
 		spark.post("/api/v8.2/projects/:projectName/external-analysis/session/:session/report",
 				this::receiveReportHandler);
 		spark.post("/api/v2026.7.0/projects/:projectName/vulnerability-report",
@@ -181,6 +205,11 @@ public class TeamscaleMockServer implements AutoCloseable {
 	}
 
 	private String receiveReportHandler(Request request, Response response) throws ServletException, IOException {
+		if (reportUploadStatusCode != 0) {
+			response.status(reportUploadStatusCode);
+			return "Simulated report upload error";
+		}
+
 		request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement(""));
 
 		// one request carries one part per uploaded report, so reading a single part
@@ -218,6 +247,11 @@ public class TeamscaleMockServer implements AutoCloseable {
 
 		// the real endpoint returns 204 with an empty body
 		response.status(SC_NO_CONTENT);
+		return "";
+	}
+
+	private String deleteSessionHandler(Request request, Response response) {
+		deletedSessionIds.add(request.params("session"));
 		return "";
 	}
 

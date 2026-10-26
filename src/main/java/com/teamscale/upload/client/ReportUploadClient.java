@@ -36,14 +36,30 @@ public class ReportUploadClient {
 	public static void performUpload(ReportCommandLineOptions commandLine, Map<String, Set<File>> filesByFormat)
 			throws IOException {
 		String detectedCommit = detectCommitIfNeeded(commandLine);
-		TeamscaleRequestExecutor.performUpload(commandLine, client -> {
-			String sessionId = openSession(client, commandLine, filesByFormat.keySet(), detectedCommit);
+		TeamscaleRequestExecutor.performUpload(commandLine,
+				client -> uploadInSession(client, commandLine, filesByFormat, detectedCommit));
+	}
+
+	/**
+	 * Uploads all reports within a single session.
+	 * <p>
+	 * If the upload fails, the session is deleted before the error is rethrown, so
+	 * that a failed attempt does not leave an open session in Teamscale.
+	 */
+	private static void uploadInSession(OkHttpClient client, ReportCommandLineOptions commandLine,
+			Map<String, Set<File>> filesByFormat, String detectedCommit) throws IOException, FatalUploadException {
+		String sessionId = null;
+		try {
+			sessionId = openSession(client, commandLine, filesByFormat.keySet(), detectedCommit);
 			for (String format : filesByFormat.keySet()) {
 				Set<File> filesForFormat = filesByFormat.get(format);
 				sendRequestForFormat(client, commandLine, format, filesForFormat, sessionId);
 			}
 			closeSession(client, commandLine, sessionId);
-		});
+		} catch (IOException | FatalUploadException | RuntimeException e) {
+			deleteSessionIfOpen(client, commandLine, sessionId);
+			throw e;
+		}
 	}
 
 	/**
@@ -66,7 +82,7 @@ public class ReportUploadClient {
 	}
 
 	private static String openSession(OkHttpClient client, ReportCommandLineOptions commandLine,
-			Collection<String> formats, String detectedCommit) throws IOException {
+			Collection<String> formats, String detectedCommit) throws IOException, FatalUploadException {
 		HttpUrl.Builder builder = commandLine.url.newBuilder().addPathSegments("api")
 				.addPathSegments(MINIMUM_REQUIRED_API_VERSION).addPathSegments("projects")
 				.addPathSegment(commandLine.project).addPathSegments("external-analysis/session")
@@ -94,7 +110,7 @@ public class ReportUploadClient {
 		LogUtils.debug("Opening upload session");
 		String sessionId = TeamscaleRequestExecutor.sendRequest(client, commandLine, url, request);
 		if (sessionId == null) {
-			LogUtils.fail("Could not open session.");
+			throw new FatalUploadException("Could not open session.");
 		}
 		LogUtils.debug("Session ID: " + sessionId);
 		return sessionId;
@@ -131,7 +147,7 @@ public class ReportUploadClient {
 	}
 
 	private static void closeSession(OkHttpClient client, ReportCommandLineOptions commandLine, String sessionId)
-			throws IOException {
+			throws IOException, FatalUploadException {
 		HttpUrl.Builder builder = commandLine.url.newBuilder().addPathSegments("api")
 				.addPathSegments(MINIMUM_REQUIRED_API_VERSION).addPathSegments("projects")
 				.addPathSegment(commandLine.project).addPathSegments("external-analysis/session")
@@ -146,8 +162,47 @@ public class ReportUploadClient {
 		TeamscaleRequestExecutor.sendRequest(client, commandLine, url, request);
 	}
 
+	/**
+	 * Deletes the upload session of a failed attempt so that it does not stay open
+	 * in Teamscale.
+	 * <p>
+	 * Failures are only logged as warnings, since the error that caused the
+	 * attempt to fail is the one relevant to the user.
+	 *
+	 * @param sessionId
+	 *            the ID of the session to delete, or {@code null} if the attempt
+	 *            failed before Teamscale opened a session. In that case, this
+	 *            method does nothing.
+	 */
+	private static void deleteSessionIfOpen(OkHttpClient client, ReportCommandLineOptions commandLine,
+			String sessionId) {
+		if (sessionId == null) {
+			return;
+		}
+
+		HttpUrl url = commandLine.url.newBuilder().addPathSegments("api")
+				.addPathSegments(MINIMUM_REQUIRED_API_VERSION).addPathSegments("projects")
+				.addPathSegment(commandLine.project).addPathSegments("external-analysis/session")
+				.addPathSegment(sessionId).build();
+
+		Request request = new Request.Builder()
+				.header("Authorization", Credentials.basic(commandLine.username, commandLine.accessKey)).url(url)
+				.delete().build();
+		LogUtils.debug("Deleting upload session " + sessionId);
+		try {
+			TeamscaleRequestExecutor.sendRequest(client, commandLine, url, request);
+		} catch (IOException e) {
+			LogUtils.warn("Failed to delete upload session " + sessionId + ": " + e.getMessage());
+		} catch (FatalUploadException e) {
+			// we do not include the exception message in the warning since it would drown
+			// out the more relevant message of the original upload failure that caused us
+			// to try and delete the open session
+			LogUtils.warn("Failed to delete upload session " + sessionId);
+		}
+	}
+
 	private static void sendRequestForFormat(OkHttpClient client, ReportCommandLineOptions commandLine, String format,
-			Set<File> fileList, String sessionId) throws IOException {
+			Set<File> fileList, String sessionId) throws IOException, FatalUploadException {
 		MultipartBody.Builder multipartBodyBuilder = new MultipartBody.Builder().setType(MultipartBody.FORM);
 
 		for (File file : fileList) {

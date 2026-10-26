@@ -1,6 +1,8 @@
 package com.teamscale.upload;
 
 import static java.util.Objects.requireNonNull;
+import static javax.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
+import static javax.servlet.http.HttpServletResponse.SC_SERVICE_UNAVAILABLE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
@@ -525,6 +527,38 @@ public abstract class IntegrationTestBase {
 						.isZero();
 				softly.assertThat(result.getOutputAndErrorOutput()).contains("Failed attempt 1 / 3");
 				softly.assertThat(server.sessions).hasSize(1);
+				softly.assertThat(server.deletedSessionIds).isEmpty();
+			});
+		}
+	}
+
+	@Test
+	public void failedAttemptsDeleteTheirSessions() {
+		try (TeamscaleMockServer server = TeamscaleMockServer.failingReportUploadsWith(MOCK_TEAMSCALE_PORT,
+				SC_SERVICE_UNAVAILABLE)) {
+			ProcessUtils.ProcessResult result = runUploader(
+					new ReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(2));
+			assertSoftlyThat(softly -> {
+				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
+						.isNotZero();
+				softly.assertThat(result.errorOutput).contains("Upload failed after 2 attempt(s)");
+				softly.assertThat(server.deletedSessionIds).hasSize(2);
+			});
+		}
+	}
+
+	@Test
+	public void nonRetriableFailureDeletesSession() {
+		try (TeamscaleMockServer server = TeamscaleMockServer.failingReportUploadsWith(MOCK_TEAMSCALE_PORT,
+				SC_BAD_REQUEST)) {
+			ProcessUtils.ProcessResult result = runUploader(
+					new ReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(3));
+			assertSoftlyThat(softly -> {
+				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
+						.isNotZero();
+				softly.assertThat(result.errorOutput).doesNotContain("Failed attempt");
+				softly.assertThat(result.errorOutput).contains("Teamscale rejected the upload request as invalid.");
+				softly.assertThat(server.deletedSessionIds).hasSize(1);
 			});
 		}
 	}
