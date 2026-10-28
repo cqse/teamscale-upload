@@ -535,13 +535,14 @@ public abstract class IntegrationTestBase {
 	@Test
 	public void failedAttemptsDeleteTheirSessions() {
 		try (TeamscaleMockServer server = TeamscaleMockServer.failingReportUploadsWith(MOCK_TEAMSCALE_PORT,
-				SC_SERVICE_UNAVAILABLE)) {
+				SC_SERVICE_UNAVAILABLE, false)) {
 			ProcessUtils.ProcessResult result = runUploader(
 					new ReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(2));
 			assertSoftlyThat(softly -> {
 				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
 						.isNotZero();
 				softly.assertThat(result.errorOutput).contains("Upload failed after 2 attempt(s)");
+				softly.assertThat(result.getOutputAndErrorOutput()).doesNotContain("Failed to delete upload session");
 				softly.assertThat(server.deletedSessionIds).hasSize(2);
 			});
 		}
@@ -550,7 +551,7 @@ public abstract class IntegrationTestBase {
 	@Test
 	public void nonRetriableFailureDeletesSession() {
 		try (TeamscaleMockServer server = TeamscaleMockServer.failingReportUploadsWith(MOCK_TEAMSCALE_PORT,
-				SC_BAD_REQUEST)) {
+				SC_BAD_REQUEST, false)) {
 			ProcessUtils.ProcessResult result = runUploader(
 					new ReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(3));
 			assertSoftlyThat(softly -> {
@@ -559,6 +560,42 @@ public abstract class IntegrationTestBase {
 				softly.assertThat(result.errorOutput).doesNotContain("Failed attempt");
 				softly.assertThat(result.errorOutput).contains("Teamscale rejected the upload request as invalid.");
 				softly.assertThat(server.deletedSessionIds).hasSize(1);
+			});
+		}
+	}
+
+	@Test
+	public void sessionAlreadyDeletedByTeamscaleCausesNoWarning() {
+		try (TeamscaleMockServer server = TeamscaleMockServer.failingReportUploadsWith(MOCK_TEAMSCALE_PORT,
+				SC_BAD_REQUEST, true)) {
+			ProcessUtils.ProcessResult result = runUploader(
+					new ReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT));
+			assertSoftlyThat(softly -> {
+				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
+						.isNotZero();
+				softly.assertThat(result.errorOutput).contains("Teamscale rejected the upload request as invalid.");
+				softly.assertThat(result.getOutputAndErrorOutput()).doesNotContain("Failed to delete upload session");
+				softly.assertThat(server.deletedSessionIds).isEmpty();
+			});
+		}
+	}
+
+	/**
+	 * Teamscale may have committed the session even though the upload session
+	 * commit request failed on the client side, so the session must not be deleted.
+	 */
+	@Test
+	public void failedUploadSessionCommitDoesNotDeleteSession() {
+		try (TeamscaleMockServer server = TeamscaleMockServer.failingUploadSessionCommitsWith(MOCK_TEAMSCALE_PORT,
+				SC_SERVICE_UNAVAILABLE)) {
+			ProcessUtils.ProcessResult result = runUploader(
+					new ReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(2));
+			assertSoftlyThat(softly -> {
+				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
+						.isNotZero();
+				softly.assertThat(result.errorOutput).contains("Upload failed after 2 attempt(s)");
+				softly.assertThat(server.sessions).hasSize(2);
+				softly.assertThat(server.deletedSessionIds).isEmpty();
 			});
 		}
 	}

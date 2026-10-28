@@ -10,11 +10,29 @@ package com.teamscale.upload.client;
  */
 public class FatalUploadException extends Exception {
 
+	/**
+	 * The HTTP status code of the Teamscale response that caused this exception,
+	 * or {@code null} if the cause is not an HTTP response, e.g. an unknown host.
+	 */
+	private final Integer httpStatusCode;
+
 	public FatalUploadException(String message) {
 		super(message);
+		this.httpStatusCode = null;
 	}
 
 	public FatalUploadException(String message, Throwable cause) {
 		super(message, cause);
+		this.httpStatusCode = null;
+	}
+
+	public FatalUploadException(String message, int httpStatusCode) {
+		super(message);
+		this.httpStatusCode = httpStatusCode;
+	}
+
+	/** @see #httpStatusCode */
+	public Integer getHttpStatusCode() {
+		return httpStatusCode;
 	}
 }

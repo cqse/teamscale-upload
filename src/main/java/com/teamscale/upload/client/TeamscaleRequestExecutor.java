@@ -250,6 +250,7 @@ public class TeamscaleRequestExecutor {
 
 	private static void throwFatalUploadExceptionForBadResponse(String message, SafeResponse response)
 			throws FatalUploadException {
-		throw new FatalUploadException(LogUtils.createResponseErrorMessage(message, response));
+		throw new FatalUploadException(LogUtils.createResponseErrorMessage(message, response),
+				response.unsafeResponse.code());
 	}
 }

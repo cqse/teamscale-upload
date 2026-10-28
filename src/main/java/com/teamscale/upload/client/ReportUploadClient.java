@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.teamscale.upload.ReportCommandLineOptions;
@@ -43,8 +44,16 @@ public class ReportUploadClient {
 	/**
 	 * Uploads all reports within a single session.
 	 * <p>
-	 * If the upload fails, the session is deleted before the error is rethrown, so
-	 * that a failed attempt does not leave an open session in Teamscale.
+	 * If opening the session or uploading a report fails, the session is deleted
+	 * before the error is rethrown, so that a failed attempt does not leave an open
+	 * session in Teamscale.
+	 * <p>
+	 * A failed upload session commit does not delete the session: Teamscale may
+	 * have committed the session even though the client sees an error, e.g. if the
+	 * response is lost or Teamscale fails after committing. Since Teamscale's DELETE endpoint also
+	 * removes committed sessions, deleting it could discard an accepted upload. A
+	 * session whose upload session commit really failed stays open until Teamscale's stale-session
+	 * cleanup removes it.
 	 */
 	private static void uploadInSession(OkHttpClient client, ReportCommandLineOptions commandLine,
 			Map<String, Set<File>> filesByFormat, String detectedCommit) throws IOException, FatalUploadException {
@@ -55,11 +64,11 @@ public class ReportUploadClient {
 				Set<File> filesForFormat = filesByFormat.get(format);
 				sendRequestForFormat(client, commandLine, format, filesForFormat, sessionId);
 			}
-			closeSession(client, commandLine, sessionId);
 		} catch (IOException | FatalUploadException | RuntimeException e) {
 			deleteSessionIfOpen(client, commandLine, sessionId);
 			throw e;
 		}
+		closeSession(client, commandLine, sessionId);
 	}
 
 	/**
@@ -167,7 +176,9 @@ public class ReportUploadClient {
 	 * in Teamscale.
 	 * <p>
 	 * Failures are only logged as warnings, since the error that caused the
-	 * attempt to fail is the one relevant to the user.
+	 * attempt to fail is the one relevant to the user. If the session no longer
+	 * exists, this is logged at debug level only: when Teamscale rejects or fails
+	 * to store a report sent to the session, it deletes the whole session itself.
 	 *
 	 * @param sessionId
 	 *            the ID of the session to delete, or {@code null} if the attempt
@@ -194,6 +205,14 @@ public class ReportUploadClient {
 		} catch (IOException e) {
 			LogUtils.warn("Failed to delete upload session " + sessionId + ": " + e.getMessage());
 		} catch (FatalUploadException e) {
+			if (Objects.equals(e.getHttpStatusCode(), 404)) {
+				// Teamscale answers a DELETE for an unknown session ID with 404. The session ID
+				// was valid when the attempt opened it, so a 404 here means Teamscale has
+				// already deleted the session, which it does when a report upload into the
+				// session fails on the server
+				LogUtils.debug("Upload session " + sessionId + " was already deleted by Teamscale");
+				return;
+			}
 			// we do not include the exception message in the warning since it would drown
 			// out the more relevant message of the original upload failure that caused us
 			// to try and delete the open session

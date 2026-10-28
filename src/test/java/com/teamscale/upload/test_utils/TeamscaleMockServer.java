@@ -15,11 +15,14 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+import static javax.servlet.http.HttpServletResponse.SC_NOT_FOUND;
 import static javax.servlet.http.HttpServletResponse.SC_NO_CONTENT;
 
 /**
@@ -96,10 +99,29 @@ public class TeamscaleMockServer implements AutoCloseable {
 	private final int countOfInitialFailedRequestsPerEndpoint;
 
 	/**
-	 * HTTP status code that all report upload requests fail with, or 0 if report
-	 * uploads succeed.
+	 * HTTP status code that all report upload requests fail with, or {@code null}
+	 * if report uploads succeed.
 	 */
-	private final int reportUploadStatusCode;
+	private final Integer reportUploadStatusCode;
+
+	/**
+	 * Whether a failed report upload deletes its session, as Teamscale does when it
+	 * rejects or fails to store a report. A later request to delete that session is
+	 * then answered with 404.
+	 */
+	private final boolean deletesSessionOnFailedReportUpload;
+
+	/**
+	 * HTTP status code that all upload session commit requests fail with, or
+	 * {@code null} if upload session commits succeed.
+	 */
+	private final Integer uploadSessionCommitStatusCode;
+
+	/**
+	 * The IDs of all sessions this server deleted on its own after a failed report
+	 * upload.
+	 */
+	private final Set<String> sessionIdsDeletedByServer = new HashSet<>();
 
 	private final AtomicInteger sessionRequestCounter = new AtomicInteger(0);
 
@@ -120,7 +142,7 @@ public class TeamscaleMockServer implements AutoCloseable {
 	public TeamscaleMockServer(int port, boolean useSelfSignedCertificate, long openSessionRequestTimeInSeconds,
 			int countOfInitialFailedRequestsPerEndpoint) {
 		this(port, useSelfSignedCertificate, openSessionRequestTimeInSeconds, countOfInitialFailedRequestsPerEndpoint,
-				null, null, 0);
+				null, null, null, false, null);
 	}
 
 	/**
@@ -130,21 +152,36 @@ public class TeamscaleMockServer implements AutoCloseable {
 	 * that does not exist.
 	 */
 	public static TeamscaleMockServer respondingWith(int port, int statusCode, String body) {
-		return new TeamscaleMockServer(port, false, 0L, 0, statusCode, body, 0);
+		return new TeamscaleMockServer(port, false, 0L, 0, statusCode, body, null, false, null);
 	}
 
 	/**
 	 * Creates a server that opens sessions normally but answers every report
 	 * upload request with the given status code. Use this to simulate an upload
 	 * attempt that fails while its session is open.
+	 *
+	 * @param deletesSessionOnFailure
+	 *            whether the server deletes the session when the report upload
+	 *            fails, as Teamscale does when it rejects or fails to store a
+	 *            report. Pass {@code false} to simulate a failure outside
+	 *            Teamscale, e.g. in a reverse proxy.
 	 */
-	public static TeamscaleMockServer failingReportUploadsWith(int port, int statusCode) {
-		return new TeamscaleMockServer(port, false, 0L, 0, null, null, statusCode);
+	public static TeamscaleMockServer failingReportUploadsWith(int port, int statusCode,
+			boolean deletesSessionOnFailure) {
+		return new TeamscaleMockServer(port, false, 0L, 0, null, null, statusCode, deletesSessionOnFailure, null);
+	}
+
+	/**
+	 * Creates a server that opens sessions and receives reports normally but
+	 * answers every upload session commit request with the given status code.
+	 */
+	public static TeamscaleMockServer failingUploadSessionCommitsWith(int port, int statusCode) {
+		return new TeamscaleMockServer(port, false, 0L, 0, null, null, null, false, statusCode);
 	}
 
 	private TeamscaleMockServer(int port, boolean useSelfSignedCertificate, long openSessionRequestTimeInSeconds,
 			int countOfInitialFailedRequestsPerEndpoint, Integer forcedStatusCode, String forcedResponseBody,
-			int reportUploadStatusCode) {
+			Integer reportUploadStatusCode, boolean deletesSessionOnFailedReportUpload, Integer uploadSessionCommitStatusCode) {
 		if (KEYSTORE == null || TRUSTSTORE == null) {
 			Assertions.fail(
 					"Could not initialize TeamscaleMockServer: Could not find keystore.jks or truststore.jks test resources");
@@ -153,6 +190,8 @@ public class TeamscaleMockServer implements AutoCloseable {
 		this.openSessionRequestTimeInSeconds = openSessionRequestTimeInSeconds;
 		this.countOfInitialFailedRequestsPerEndpoint = countOfInitialFailedRequestsPerEndpoint;
 		this.reportUploadStatusCode = reportUploadStatusCode;
+		this.deletesSessionOnFailedReportUpload = deletesSessionOnFailedReportUpload;
+		this.uploadSessionCommitStatusCode = uploadSessionCommitStatusCode;
 
 		if (useSelfSignedCertificate) {
 			spark.secure(KEYSTORE.getAbsolutePath(), "password", null, null);
@@ -164,7 +203,7 @@ public class TeamscaleMockServer implements AutoCloseable {
 			}
 		});
 		spark.post("/api/v8.2/projects/:projectName/external-analysis/session", this::openSession);
-		spark.post("/api/v8.2/projects/:projectName/external-analysis/session/:session", this::noOpHandler);
+		spark.post("/api/v8.2/projects/:projectName/external-analysis/session/:session", this::commitUploadSessionHandler);
 		spark.delete("/api/v8.2/projects/:projectName/external-analysis/session/:session",
 				this::deleteSessionHandler);
 		spark.post("/api/v8.2/projects/:projectName/external-analysis/session/:session/report",
@@ -205,7 +244,10 @@ public class TeamscaleMockServer implements AutoCloseable {
 	}
 
 	private String receiveReportHandler(Request request, Response response) throws ServletException, IOException {
-		if (reportUploadStatusCode != 0) {
+		if (reportUploadStatusCode != null) {
+			if (deletesSessionOnFailedReportUpload) {
+				sessionIdsDeletedByServer.add(request.params("session"));
+			}
 			response.status(reportUploadStatusCode);
 			return "Simulated report upload error";
 		}
@@ -250,12 +292,21 @@ public class TeamscaleMockServer implements AutoCloseable {
 		return "";
 	}
 
-	private String deleteSessionHandler(Request request, Response response) {
-		deletedSessionIds.add(request.params("session"));
+	private String commitUploadSessionHandler(Request request, Response response) {
+		if (uploadSessionCommitStatusCode != null) {
+			response.status(uploadSessionCommitStatusCode);
+			return "Simulated upload session commit error";
+		}
 		return "";
 	}
 
-	private String noOpHandler(Request request, Response response) {
+	private String deleteSessionHandler(Request request, Response response) {
+		String sessionId = request.params("session");
+		if (sessionIdsDeletedByServer.contains(sessionId)) {
+			response.status(SC_NOT_FOUND);
+			return "Session with ID '" + sessionId + "' does not exist.";
+		}
+		deletedSessionIds.add(sessionId);
 		return "";
 	}
 
