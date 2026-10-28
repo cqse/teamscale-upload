@@ -26,6 +26,7 @@ import org.junit.jupiter.api.io.TempDir;
 import com.teamscale.upload.autodetect_revision.ProcessUtils;
 import com.teamscale.upload.test_utils.ProxyMockServer;
 import com.teamscale.upload.test_utils.TeamscaleMockServer;
+import com.teamscale.upload.test_utils.TeamscaleMockServer.SimulatedFailures;
 import com.teamscale.upload.utils.SecretUtils;
 
 /**
@@ -519,7 +520,8 @@ public abstract class IntegrationTestBase {
 
 	@Test
 	public void retrySucceedsAfterIntermittentFailure() {
-		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 0L, 1)) {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 0L,
+				SimulatedFailures.failingInitialRequestsPerEndpoint(1))) {
 			ProcessUtils.ProcessResult result = runUploader(
 					new ReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(3));
 			assertSoftlyThat(softly -> {
@@ -608,7 +610,8 @@ public abstract class IntegrationTestBase {
 	 */
 	@Test
 	public void retriedUploadDetectsTheCommitOnlyOnce() {
-		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 0L, 2)) {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 0L,
+				SimulatedFailures.failingInitialRequestsPerEndpoint(2))) {
 			ProcessUtils.ProcessResult result = runUploader(new ReportUploadArguments()
 					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withAutoDetectCommit().withMaxAttempts(3));
 			String output = result.getOutputAndErrorOutput();
@@ -832,7 +835,8 @@ public abstract class IntegrationTestBase {
 
 	@Test
 	public void vulnerabilityReportUploadRetriesAfterIntermittentFailure() {
-		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 0L, 2)) {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 0L,
+				SimulatedFailures.failingInitialRequestsPerEndpoint(2))) {
 			ProcessUtils.ProcessResult result = runUploader(new VulnerabilityReportUploadArguments()
 					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(3));
 			assertSoftlyThat(softly -> {
@@ -847,7 +851,8 @@ public abstract class IntegrationTestBase {
 
 	@Test
 	public void vulnerabilityReportUploadReportsFailuresAfterAllAttempts() {
-		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 0L, 3)) {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 0L,
+				SimulatedFailures.failingInitialRequestsPerEndpoint(3))) {
 			ProcessUtils.ProcessResult result = runUploader(new VulnerabilityReportUploadArguments()
 					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(3));
 			assertSoftlyThat(softly -> {
