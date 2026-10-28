@@ -1,6 +1,8 @@
 package com.teamscale.upload;
 
 import static java.util.Objects.requireNonNull;
+import static javax.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
+import static javax.servlet.http.HttpServletResponse.SC_SERVICE_UNAVAILABLE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
@@ -24,6 +26,7 @@ import org.junit.jupiter.api.io.TempDir;
 import com.teamscale.upload.autodetect_revision.ProcessUtils;
 import com.teamscale.upload.test_utils.ProxyMockServer;
 import com.teamscale.upload.test_utils.TeamscaleMockServer;
+import com.teamscale.upload.test_utils.TeamscaleMockServer.SimulatedFailures;
 import com.teamscale.upload.utils.SecretUtils;
 
 /**
@@ -517,7 +520,8 @@ public abstract class IntegrationTestBase {
 
 	@Test
 	public void retrySucceedsAfterIntermittentFailure() {
-		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 0L, 1)) {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 0L,
+				SimulatedFailures.failingInitialRequestsPerEndpoint(1))) {
 			ProcessUtils.ProcessResult result = runUploader(
 					new ReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(3));
 			assertSoftlyThat(softly -> {
@@ -525,6 +529,75 @@ public abstract class IntegrationTestBase {
 						.isZero();
 				softly.assertThat(result.getOutputAndErrorOutput()).contains("Failed attempt 1 / 3");
 				softly.assertThat(server.sessions).hasSize(1);
+				softly.assertThat(server.deletedSessionIds).isEmpty();
+			});
+		}
+	}
+
+	@Test
+	public void failedAttemptsDeleteTheirSessions() {
+		try (TeamscaleMockServer server = TeamscaleMockServer.failingReportUploadsWith(MOCK_TEAMSCALE_PORT,
+				SC_SERVICE_UNAVAILABLE, false)) {
+			ProcessUtils.ProcessResult result = runUploader(
+					new ReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(2));
+			assertSoftlyThat(softly -> {
+				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
+						.isNotZero();
+				softly.assertThat(result.errorOutput).contains("Upload failed after 2 attempt(s)");
+				softly.assertThat(result.getOutputAndErrorOutput()).doesNotContain("Failed to delete upload session");
+				softly.assertThat(server.deletedSessionIds).hasSize(2);
+			});
+		}
+	}
+
+	@Test
+	public void nonRetriableFailureDeletesSession() {
+		try (TeamscaleMockServer server = TeamscaleMockServer.failingReportUploadsWith(MOCK_TEAMSCALE_PORT,
+				SC_BAD_REQUEST, false)) {
+			ProcessUtils.ProcessResult result = runUploader(
+					new ReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(3));
+			assertSoftlyThat(softly -> {
+				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
+						.isNotZero();
+				softly.assertThat(result.errorOutput).doesNotContain("Failed attempt");
+				softly.assertThat(result.errorOutput).contains("Teamscale rejected the upload request as invalid.");
+				softly.assertThat(server.deletedSessionIds).hasSize(1);
+			});
+		}
+	}
+
+	@Test
+	public void sessionAlreadyDeletedByTeamscaleCausesNoWarning() {
+		try (TeamscaleMockServer server = TeamscaleMockServer.failingReportUploadsWith(MOCK_TEAMSCALE_PORT,
+				SC_BAD_REQUEST, true)) {
+			ProcessUtils.ProcessResult result = runUploader(
+					new ReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT));
+			assertSoftlyThat(softly -> {
+				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
+						.isNotZero();
+				softly.assertThat(result.errorOutput).contains("Teamscale rejected the upload request as invalid.");
+				softly.assertThat(result.getOutputAndErrorOutput()).doesNotContain("Failed to delete upload session");
+				softly.assertThat(server.deletedSessionIds).isEmpty();
+			});
+		}
+	}
+
+	/**
+	 * Teamscale may have committed the session even though the upload session
+	 * commit request failed on the client side, so the session must not be deleted.
+	 */
+	@Test
+	public void failedUploadSessionCommitDoesNotDeleteSession() {
+		try (TeamscaleMockServer server = TeamscaleMockServer.failingUploadSessionCommitsWith(MOCK_TEAMSCALE_PORT,
+				SC_SERVICE_UNAVAILABLE)) {
+			ProcessUtils.ProcessResult result = runUploader(
+					new ReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(2));
+			assertSoftlyThat(softly -> {
+				softly.assertThat(result.exitCode).describedAs("Stderr and stdout: " + result.getOutputAndErrorOutput())
+						.isNotZero();
+				softly.assertThat(result.errorOutput).contains("Upload failed after 2 attempt(s)");
+				softly.assertThat(server.sessions).hasSize(2);
+				softly.assertThat(server.deletedSessionIds).isEmpty();
 			});
 		}
 	}
@@ -537,7 +610,8 @@ public abstract class IntegrationTestBase {
 	 */
 	@Test
 	public void retriedUploadDetectsTheCommitOnlyOnce() {
-		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 0L, 2)) {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 0L,
+				SimulatedFailures.failingInitialRequestsPerEndpoint(2))) {
 			ProcessUtils.ProcessResult result = runUploader(new ReportUploadArguments()
 					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withAutoDetectCommit().withMaxAttempts(3));
 			String output = result.getOutputAndErrorOutput();
@@ -761,7 +835,8 @@ public abstract class IntegrationTestBase {
 
 	@Test
 	public void vulnerabilityReportUploadRetriesAfterIntermittentFailure() {
-		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 0L, 2)) {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 0L,
+				SimulatedFailures.failingInitialRequestsPerEndpoint(2))) {
 			ProcessUtils.ProcessResult result = runUploader(new VulnerabilityReportUploadArguments()
 					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(3));
 			assertSoftlyThat(softly -> {
@@ -776,7 +851,8 @@ public abstract class IntegrationTestBase {
 
 	@Test
 	public void vulnerabilityReportUploadReportsFailuresAfterAllAttempts() {
-		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 0L, 3)) {
+		try (TeamscaleMockServer server = new TeamscaleMockServer(MOCK_TEAMSCALE_PORT, false, 0L,
+				SimulatedFailures.failingInitialRequestsPerEndpoint(3))) {
 			ProcessUtils.ProcessResult result = runUploader(new VulnerabilityReportUploadArguments()
 					.withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(3));
 			assertSoftlyThat(softly -> {

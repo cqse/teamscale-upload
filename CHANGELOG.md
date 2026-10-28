@@ -5,6 +5,7 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
+- [fix] when an upload attempt fails, its upload session is now deleted in Teamscale instead of being left open
 - [maintenance] update the bundled Java runtime to Java 25 (25.0.4.1). On Windows, Windows 10 / Windows Server 2016 or later is required
 - [maintenance] the build runs on any Java 17 or newer and downloads the required JDK automatically
 - [maintenance] the build verifies the SHA-256 checksums of all downloaded dependencies, plugins and of the bundled Java runtime
