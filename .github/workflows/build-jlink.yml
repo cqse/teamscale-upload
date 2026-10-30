@@ -94,7 +94,6 @@ jobs:
 
   # starts the GitLab pipeline that publishes the release assets to downloads.teamscale.com and the Homebrew tap
   trigger-gitlab-dist:
-    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/ts/48320_trigger_ts_upload_release'
     name: Trigger GitLab distribution pipeline
     runs-on: ubuntu-latest
     steps:
