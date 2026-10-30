@@ -92,6 +92,23 @@ jobs:
           file_glob: true
           overwrite: true
 
+  # starts the GitLab pipeline that publishes the release assets to downloads.teamscale.com and the Homebrew tap
+  trigger-gitlab-dist:
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/ts/48320_trigger_ts_upload_release'
+    name: Trigger GitLab distribution pipeline
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger ts-upload-cli pipeline
+        env:
+          GL_TRIGGER_TOKEN: ${{ secrets.GL_TRIGGER_TOKEN }}
+        run: |
+          curl --silent --show-error --fail-with-body -X POST \
+            -F "token=$GL_TRIGGER_TOKEN" \
+            -F ref=ts/48320_trigger_ts_upload_release \
+            -F "variables[CUSTOM_PIPELINE]=ts-upload-cli" \
+            "https://gitlab.com/api/v4/projects/38574964/trigger/pipeline" \
+            | jq -r '"Triggered GitLab pipeline: \(.web_url)"'
+
   # builds the Docker image from the linux jlink distribution and publishes it to Docker Hub
   # with the same version as the teamscale-upload release
   release-docker:
