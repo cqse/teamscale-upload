@@ -23,8 +23,10 @@ import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -79,6 +81,11 @@ public class TeamscaleMockServer implements AutoCloseable {
 	 */
 	public final List<VulnerabilityReportUpload> vulnerabilityReportUploads = new ArrayList<>();
 
+	/**
+	 * The IDs of all sessions deleted on this Teamscale instance.
+	 */
+	public final List<String> deletedSessionIds = new ArrayList<>();
+
 	private static final int SC_NO_CONTENT = 204;
 	private static final int SC_NOT_FOUND = 404;
 	private static final int SC_INTERNAL_SERVER_ERROR = 500;
@@ -87,10 +94,18 @@ public class TeamscaleMockServer implements AutoCloseable {
 
 	private static final Pattern OPEN_SESSION_PATH = Pattern
 			.compile("/api/v8\\.2/projects/[^/]+/external-analysis/session");
+	/**
+	 * Matches the path of an upload session, which is committed with POST and
+	 * deleted with DELETE. Group 1 is the session ID.
+	 */
 	private static final Pattern SESSION_PATH = Pattern
-			.compile("/api/v8\\.2/projects/[^/]+/external-analysis/session/[^/]+");
+			.compile("/api/v8\\.2/projects/[^/]+/external-analysis/session/([^/]+)");
+	/**
+	 * Matches the path a report is uploaded to within an upload session. Group 1
+	 * is the session ID.
+	 */
 	private static final Pattern REPORT_PATH = Pattern
-			.compile("/api/v8\\.2/projects/[^/]+/external-analysis/session/[^/]+/report");
+			.compile("/api/v8\\.2/projects/[^/]+/external-analysis/session/([^/]+)/report");
 	private static final Pattern VULNERABILITY_REPORT_PATH = Pattern
 			.compile("/api/v2026\\.7\\.0/projects/[^/]+/vulnerability-report");
 
@@ -105,15 +120,14 @@ public class TeamscaleMockServer implements AutoCloseable {
 	 */
 	private final long openSessionRequestTimeInSeconds;
 
+	/** The requests this server fails on purpose. */
+	private final SimulatedFailures failures;
+
 	/**
-	 * Number of initial requests that should fail with HTTP 500 to simulate
-	 * intermittent server errors.
-	 * <p>
-	 * Counted per endpoint rather than over all requests: the session endpoint and
-	 * the vulnerability report endpoint each answer this many requests with an
-	 * error before they start processing them.
+	 * The IDs of all sessions this server deleted on its own after a failed report
+	 * upload.
 	 */
-	private final int countOfInitialFailedRequestsPerEndpoint;
+	private final Set<String> sessionIdsDeletedByServer = new HashSet<>();
 
 	private final AtomicInteger sessionRequestCounter = new AtomicInteger(0);
 
@@ -124,17 +138,11 @@ public class TeamscaleMockServer implements AutoCloseable {
 	}
 
 	public TeamscaleMockServer(int port, boolean useSelfSignedCertificate) {
-		this(port, useSelfSignedCertificate, 0L, 0);
+		this(port, useSelfSignedCertificate, 0L);
 	}
 
 	public TeamscaleMockServer(int port, boolean useSelfSignedCertificate, long openSessionRequestTimeInSeconds) {
-		this(port, useSelfSignedCertificate, openSessionRequestTimeInSeconds, 0);
-	}
-
-	public TeamscaleMockServer(int port, boolean useSelfSignedCertificate, long openSessionRequestTimeInSeconds,
-			int countOfInitialFailedRequestsPerEndpoint) {
-		this(port, useSelfSignedCertificate, openSessionRequestTimeInSeconds, countOfInitialFailedRequestsPerEndpoint,
-				null, null);
+		this(port, useSelfSignedCertificate, openSessionRequestTimeInSeconds, SimulatedFailures.NONE);
 	}
 
 	/**
@@ -144,17 +152,42 @@ public class TeamscaleMockServer implements AutoCloseable {
 	 * that does not exist.
 	 */
 	public static TeamscaleMockServer respondingWith(int port, int statusCode, String body) {
-		return new TeamscaleMockServer(port, false, 0L, 0, statusCode, body);
+		return new TeamscaleMockServer(port, false, 0L, new SimulatedFailures(0, statusCode, body, null, false, null));
 	}
 
-	private TeamscaleMockServer(int port, boolean useSelfSignedCertificate, long openSessionRequestTimeInSeconds,
-			int countOfInitialFailedRequestsPerEndpoint, Integer forcedStatusCode, String forcedResponseBody) {
+	/**
+	 * Creates a server that opens sessions normally but answers every report
+	 * upload request with the given status code. Use this to simulate an upload
+	 * attempt that fails while its session is open.
+	 *
+	 * @param deletesSessionOnFailure
+	 *            whether the server deletes the session when the report upload
+	 *            fails, as Teamscale does when it rejects or fails to store a
+	 *            report. Pass {@code false} to simulate a failure outside
+	 *            Teamscale, e.g. in a reverse proxy.
+	 */
+	public static TeamscaleMockServer failingReportUploadsWith(int port, int statusCode,
+			boolean deletesSessionOnFailure) {
+		return new TeamscaleMockServer(port, false, 0L,
+				new SimulatedFailures(0, null, null, statusCode, deletesSessionOnFailure, null));
+	}
+
+	/**
+	 * Creates a server that opens sessions and receives reports normally but
+	 * answers every upload session commit request with the given status code.
+	 */
+	public static TeamscaleMockServer failingUploadSessionCommitsWith(int port, int statusCode) {
+		return new TeamscaleMockServer(port, false, 0L, new SimulatedFailures(0, null, null, null, false, statusCode));
+	}
+
+	public TeamscaleMockServer(int port, boolean useSelfSignedCertificate, long openSessionRequestTimeInSeconds,
+			SimulatedFailures failures) {
 		if (KEYSTORE == null || TRUSTSTORE == null) {
 			Assertions.fail(
 					"Could not initialize TeamscaleMockServer: Could not find keystore.jks or truststore.jks test resources");
 		}
 		this.openSessionRequestTimeInSeconds = openSessionRequestTimeInSeconds;
-		this.countOfInitialFailedRequestsPerEndpoint = countOfInitialFailedRequestsPerEndpoint;
+		this.failures = failures;
 
 		if (useSelfSignedCertificate) {
 			server.useHttps(createSelfSignedSslContext().getSocketFactory());
@@ -162,8 +195,8 @@ public class TeamscaleMockServer implements AutoCloseable {
 		server.setDispatcher(new Dispatcher() {
 			@Override
 			public MockResponse dispatch(RecordedRequest request) {
-				if (forcedStatusCode != null) {
-					return response(forcedStatusCode, forcedResponseBody);
+				if (failures.forcedStatusCode() != null) {
+					return response(failures.forcedStatusCode(), failures.forcedResponseBody());
 				}
 				try {
 					return route(request);
@@ -198,17 +231,22 @@ public class TeamscaleMockServer implements AutoCloseable {
 
 	private MockResponse route(RecordedRequest request) throws IOException, InterruptedException {
 		String path = request.getUrl().encodedPath();
+		Matcher sessionPathMatcher = SESSION_PATH.matcher(path);
+		if ("DELETE".equals(request.getMethod()) && sessionPathMatcher.matches()) {
+			return deleteSession(sessionPathMatcher.group(1));
+		}
 		if (!"POST".equals(request.getMethod())) {
 			return response(SC_NOT_FOUND, "");
 		}
 		if (OPEN_SESSION_PATH.matcher(path).matches()) {
 			return openSession(request);
 		}
-		if (SESSION_PATH.matcher(path).matches()) {
-			return response(200, "");
+		if (sessionPathMatcher.matches()) {
+			return commitUploadSession();
 		}
-		if (REPORT_PATH.matcher(path).matches()) {
-			return receiveReport(request);
+		Matcher reportPathMatcher = REPORT_PATH.matcher(path);
+		if (reportPathMatcher.matches()) {
+			return receiveReport(request, reportPathMatcher.group(1));
 		}
 		if (VULNERABILITY_REPORT_PATH.matcher(path).matches()) {
 			return receiveVulnerabilityReport(request);
@@ -225,7 +263,7 @@ public class TeamscaleMockServer implements AutoCloseable {
 			Thread.sleep(openSessionRequestTimeInSeconds * 1000);
 		}
 		int requestNumber = sessionRequestCounter.incrementAndGet();
-		if (requestNumber <= countOfInitialFailedRequestsPerEndpoint) {
+		if (requestNumber <= failures.countOfInitialFailedRequestsPerEndpoint()) {
 			return response(SC_INTERNAL_SERVER_ERROR, "Simulated intermittent server error");
 		}
 		String message = request.getUrl().queryParameter("message");
@@ -237,7 +275,14 @@ public class TeamscaleMockServer implements AutoCloseable {
 		return response(200, "fake-session-id");
 	}
 
-	private MockResponse receiveReport(RecordedRequest request) throws IOException {
+	private MockResponse receiveReport(RecordedRequest request, String sessionId) throws IOException {
+		if (failures.reportUploadStatusCode() != null) {
+			if (failures.deletesSessionOnFailedReportUpload()) {
+				sessionIdsDeletedByServer.add(sessionId);
+			}
+			return response(failures.reportUploadStatusCode(), "Simulated report upload error");
+		}
+
 		// one request carries one part per uploaded report, so reading a single part
 		// would silently drop all reports but the first
 		for (FormDataPart report : readFormDataParts(request)) {
@@ -250,7 +295,7 @@ public class TeamscaleMockServer implements AutoCloseable {
 
 	private MockResponse receiveVulnerabilityReport(RecordedRequest request) throws IOException {
 		int requestNumber = vulnerabilityReportRequestCounter.incrementAndGet();
-		if (requestNumber <= countOfInitialFailedRequestsPerEndpoint) {
+		if (requestNumber <= failures.countOfInitialFailedRequestsPerEndpoint()) {
 			return response(SC_INTERNAL_SERVER_ERROR, "Simulated intermittent server error");
 		}
 
@@ -262,6 +307,21 @@ public class TeamscaleMockServer implements AutoCloseable {
 
 		// the real endpoint returns 204 with an empty body
 		return response(SC_NO_CONTENT, "");
+	}
+
+	private MockResponse commitUploadSession() {
+		if (failures.uploadSessionCommitStatusCode() != null) {
+			return response(failures.uploadSessionCommitStatusCode(), "Simulated upload session commit error");
+		}
+		return response(200, "");
+	}
+
+	private MockResponse deleteSession(String sessionId) {
+		if (sessionIdsDeletedByServer.contains(sessionId)) {
+			return response(SC_NOT_FOUND, "Session with ID '" + sessionId + "' does not exist.");
+		}
+		deletedSessionIds.add(sessionId);
+		return response(200, "");
 	}
 
 	/**
@@ -334,5 +394,47 @@ public class TeamscaleMockServer implements AutoCloseable {
 	 *            the revision or timestamp used during the upload.
 	 */
 	public record Session(String message, String revisionOrTimestamp) {
+	}
+
+	/**
+	 * The requests a {@link TeamscaleMockServer} fails on purpose. A
+	 * {@code null} status code means the corresponding requests succeed.
+	 *
+	 * @param countOfInitialFailedRequestsPerEndpoint
+	 *            Number of initial requests that should fail with HTTP 500 to
+	 *            simulate intermittent server errors.
+	 *            <p>
+	 *            Counted per endpoint rather than over all requests: the session
+	 *            endpoint and the vulnerability report endpoint each answer this
+	 *            many requests with an error before they start processing them.
+	 * @param forcedStatusCode
+	 *            HTTP status code that all requests are answered with instead of
+	 *            being processed.
+	 * @param forcedResponseBody
+	 *            the response body sent with {@code forcedStatusCode}.
+	 * @param reportUploadStatusCode
+	 *            HTTP status code that all report upload requests fail with.
+	 * @param deletesSessionOnFailedReportUpload
+	 *            whether a failed report upload deletes its session, as Teamscale
+	 *            does when it rejects or fails to store a report. A later request
+	 *            to delete that session is then answered with 404.
+	 * @param uploadSessionCommitStatusCode
+	 *            HTTP status code that all upload session commit requests fail
+	 *            with.
+	 */
+	public record SimulatedFailures(int countOfInitialFailedRequestsPerEndpoint, Integer forcedStatusCode,
+			String forcedResponseBody, Integer reportUploadStatusCode, boolean deletesSessionOnFailedReportUpload,
+			Integer uploadSessionCommitStatusCode) {
+
+		/** No request fails on purpose. */
+		public static final SimulatedFailures NONE = new SimulatedFailures(0, null, null, null, false, null);
+
+		/**
+		 * Lets the given number of initial requests to each endpoint fail with HTTP
+		 * 500, and no other requests.
+		 */
+		public static SimulatedFailures failingInitialRequestsPerEndpoint(int count) {
+			return new SimulatedFailures(count, null, null, null, false, null);
+		}
 	}
 }

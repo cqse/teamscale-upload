@@ -31,7 +31,7 @@ public class TeamscaleRequestExecutor {
 	public interface Upload {
 
 		/** Performs the upload with the given client. */
-		void perform(OkHttpClient client) throws IOException;
+		void perform(OkHttpClient client) throws IOException, FatalUploadException;
 	}
 
 	/**
@@ -45,6 +45,12 @@ public class TeamscaleRequestExecutor {
 			performWithRetry(client, upload, commandLine.maxAttempts);
 		} catch (SSLHandshakeException e) {
 			handleSslConnectionFailure(commandLine, e);
+		} catch (FatalUploadException e) {
+			if (e.getCause() != null) {
+				LogUtils.failWithoutStackTrace(e.getMessage(), e.getCause());
+			} else {
+				LogUtils.fail(e.getMessage());
+			}
 		} finally {
 			// we must shut down OkHttp as otherwise it will leave threads running and
 			// prevent JVM shutdown
@@ -58,10 +64,13 @@ public class TeamscaleRequestExecutor {
 	 * fails with an {@link IOException}.
 	 * <p>
 	 * An {@link SSLHandshakeException} is not retried but rethrown, as retrying
-	 * will not make a broken certificate setup work. If all attempts fail, the
-	 * program is terminated with an error message.
+	 * will not make a broken certificate setup work. Neither is a
+	 * {@link FatalUploadException}, which signals an error that a retry cannot
+	 * fix, e.g. incorrect credentials. If all attempts fail, the program is
+	 * terminated with an error message.
 	 */
-	private static void performWithRetry(OkHttpClient client, Upload upload, int maxAttempts) throws IOException {
+	private static void performWithRetry(OkHttpClient client, Upload upload, int maxAttempts)
+			throws IOException, FatalUploadException {
 		for (int attemptNumber = 1; attemptNumber <= maxAttempts; attemptNumber++) {
 			try {
 				upload.perform(client);
@@ -84,7 +93,7 @@ public class TeamscaleRequestExecutor {
 	 * response body.
 	 */
 	static String sendRequest(OkHttpClient client, CommonCommandLineOptions commandLine, HttpUrl url, Request request)
-			throws IOException {
+			throws IOException, FatalUploadException {
 
 		HttpUrl host = new HttpUrl.Builder().scheme(url.scheme()).host(url.host()).port(url.port()).build();
 
@@ -95,12 +104,12 @@ public class TeamscaleRequestExecutor {
 					safeResponse.unsafeResponse.code());
 			return safeResponse.body;
 		} catch (UnknownHostException e) {
-			LogUtils.failWithoutStackTrace(
+			throw new FatalUploadException(
 					"The host " + host + " could not be resolved. Please ensure you have no typo and that"
 							+ " this host is reachable from this server.",
 					e);
 		} catch (FileNotFoundException e) {
-			LogUtils.failWithoutStackTrace(
+			throw new FatalUploadException(
 					"Could not find the specified report file for uploading. Please ensure that you have no typo"
 							+ " in the file path and that the specified report file is readable.",
 					e);
@@ -114,8 +123,6 @@ public class TeamscaleRequestExecutor {
 					"Request timeout reached. Consider setting a higher timeout value using the '--timeout' option.",
 					e);
 		}
-
-		return null;
 	}
 
 	/**
@@ -158,21 +165,25 @@ public class TeamscaleRequestExecutor {
 		}
 	}
 
-	private static void handleErrors(SafeResponse response, CommonCommandLineOptions commandLine) throws IOException {
+	private static void handleErrors(SafeResponse response, CommonCommandLineOptions commandLine)
+			throws IOException, FatalUploadException {
 		if (response.unsafeResponse.isRedirect()) {
 			String location = response.unsafeResponse.header("Location");
 			if (location == null) {
 				location = "<server did not provide a location header>";
 			}
-			LogUtils.fail("You provided an incorrect URL. The server responded with a redirect to " + "'" + location
-					+ "'." + " This may e.g. happen if you used HTTP instead of HTTPS."
-					+ " Please use the correct URL for Teamscale instead.", response);
+			throwFatalUploadExceptionForBadResponse(
+					"You provided an incorrect URL. The server responded with a redirect to " + "'" + location + "'."
+							+ " This may e.g. happen if you used HTTP instead of HTTPS."
+							+ " Please use the correct URL for Teamscale instead.",
+					response);
 		}
 
 		if (response.unsafeResponse.code() == 401) {
 			String editUserUrl = TeamscaleUrlUtils.getEditUserUrl(commandLine.url, commandLine.username);
-			LogUtils.fail("You provided incorrect credentials." + " Either the user '" + commandLine.username
-					+ "' does not exist in Teamscale" + " or the access key you provided is incorrect."
+			throwFatalUploadExceptionForBadResponse("You provided incorrect credentials." + " Either the user '"
+					+ commandLine.username + "' does not exist in Teamscale"
+					+ " or the access key you provided is incorrect."
 					+ " Please check both the username and access key in Teamscale under Admin > Users: " + editUserUrl
 					+ "\nPlease use the user's access key, not their password.", response);
 		}
@@ -180,7 +191,7 @@ public class TeamscaleRequestExecutor {
 		if (response.unsafeResponse.code() == 403) {
 			String projectPermissionUrl = TeamscaleUrlUtils.getProjectPermissionUrl(commandLine.url,
 					commandLine.project);
-			LogUtils.fail("The user user '" + commandLine.username
+			throwFatalUploadExceptionForBadResponse("The user user '" + commandLine.username
 					+ "' is not allowed to upload data to the Teamscale project '" + commandLine.project + "'."
 					+ " Please grant this user the 'Perform External Uploads' permission in Teamscale"
 					+ " under Project Configuration > Projects: " + projectPermissionUrl
@@ -192,7 +203,7 @@ public class TeamscaleRequestExecutor {
 		}
 
 		if (response.unsafeResponse.code() == 400) {
-			LogUtils.fail("Teamscale rejected the upload request as invalid.", response);
+			throwFatalUploadExceptionForBadResponse("Teamscale rejected the upload request as invalid.", response);
 		}
 
 		if (!response.unsafeResponse.isSuccessful()) {
@@ -201,17 +212,19 @@ public class TeamscaleRequestExecutor {
 				String url = response.unsafeResponse.request().url().toString();
 				throw new IOException("Server error (HTTP " + code + ") from " + url + ": " + response.body);
 			}
-			LogUtils.fail("Unexpected response from Teamscale", response);
+			throwFatalUploadExceptionForBadResponse("Unexpected response from Teamscale", response);
 		}
 	}
 
-	private static void handleError404(SafeResponse response, CommonCommandLineOptions commandLine) {
+	private static void handleError404(SafeResponse response, CommonCommandLineOptions commandLine)
+			throws FatalUploadException {
 		if (responseBodyIndicatesInvalidRevision(response)) {
 			// the revision we sent, which is not necessarily the one the user passed: it
 			// may have been detected from the environment or from the checkout
 			String revision = response.unsafeResponse.request().url().queryParameter("revision");
-			LogUtils.fail("The revision '" + revision + "' is not known to Teamscale or the version"
-					+ " control system(s) you configured in the Teamscale project '" + commandLine.project + "'."
+			throwFatalUploadExceptionForBadResponse("The revision '" + revision
+					+ "' is not known to Teamscale or the version control system(s) you configured in the Teamscale"
+					+ " project '" + commandLine.project + "'."
 					+ " Please ensure that you used a valid version control revision:"
 					+ " (e.g. a Git SHA1, SVN revision number or TFS changeset ID) and"
 					+ " that the checked out revision is also present in your central"
@@ -228,10 +241,16 @@ public class TeamscaleRequestExecutor {
 		if (notFoundHint != null) {
 			message += "\n" + notFoundHint;
 		}
-		LogUtils.fail(message, response);
+		throwFatalUploadExceptionForBadResponse(message, response);
 	}
 
 	private static boolean responseBodyIndicatesInvalidRevision(SafeResponse response) {
 		return response.body.contains("Revision") && response.body.contains("not found in either Teamscale or");
+	}
+
+	private static void throwFatalUploadExceptionForBadResponse(String message, SafeResponse response)
+			throws FatalUploadException {
+		throw new FatalUploadException(LogUtils.createResponseErrorMessage(message, response),
+				response.unsafeResponse.code());
 	}
 }
