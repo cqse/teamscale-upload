@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import com.teamscale.upload.utils.FileSystemUtils;
-import com.teamscale.upload.utils.ZipFile;
+import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -49,9 +49,10 @@ public class JLinkIntegrationTest extends IntegrationTestBase {
 		if (SystemUtils.IS_OS_WINDOWS) {
 			distribution = "build/distributions/teamscale-upload-windows-x86_64.zip";
 			executableInZip = "bin/teamscale-upload.bat";
+		} else if (SystemUtils.IS_OS_MAC_OSX && "x86_64".equals(SystemUtils.OS_ARCH)) {
+			distribution = "build/distributions/teamscale-upload-macos-x86_64.zip";
+			executableInZip = "bin/teamscale-upload";
 		} else if (SystemUtils.IS_OS_MAC_OSX) {
-			// Can't distinguish between Mac (Intel) and Mac (ARM) here, sorry.
-			// Assuming ARM
 			distribution = "build/distributions/teamscale-upload-macos-aarch64.zip";
 			executableInZip = "bin/teamscale-upload";
 		} else {
@@ -65,7 +66,7 @@ public class JLinkIntegrationTest extends IntegrationTestBase {
 			if (!distributionFile.exists()) {
 				Assertions.fail("Could not find distribution file " + distributionFile.getPath());
 			}
-			try (ZipFile zipFile = new ZipFile(distributionFile)) {
+			try (ZipFile zipFile = ZipFile.builder().setFile(distributionFile).get()) {
 				FileSystemUtils.unzip(zipFile, tempDir.toFile());
 			}
 		}

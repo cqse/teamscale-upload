@@ -1,8 +1,6 @@
 package com.teamscale.upload;
 
 import static java.util.Objects.requireNonNull;
-import static javax.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
-import static javax.servlet.http.HttpServletResponse.SC_SERVICE_UNAVAILABLE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
@@ -537,7 +535,7 @@ public abstract class IntegrationTestBase {
 	@Test
 	public void failedAttemptsDeleteTheirSessions() {
 		try (TeamscaleMockServer server = TeamscaleMockServer.failingReportUploadsWith(MOCK_TEAMSCALE_PORT,
-				SC_SERVICE_UNAVAILABLE, false)) {
+				503, false)) {
 			ProcessUtils.ProcessResult result = runUploader(
 					new ReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(2));
 			assertSoftlyThat(softly -> {
@@ -553,7 +551,7 @@ public abstract class IntegrationTestBase {
 	@Test
 	public void nonRetriableFailureDeletesSession() {
 		try (TeamscaleMockServer server = TeamscaleMockServer.failingReportUploadsWith(MOCK_TEAMSCALE_PORT,
-				SC_BAD_REQUEST, false)) {
+				400, false)) {
 			ProcessUtils.ProcessResult result = runUploader(
 					new ReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(3));
 			assertSoftlyThat(softly -> {
@@ -569,7 +567,7 @@ public abstract class IntegrationTestBase {
 	@Test
 	public void sessionAlreadyDeletedByTeamscaleCausesNoWarning() {
 		try (TeamscaleMockServer server = TeamscaleMockServer.failingReportUploadsWith(MOCK_TEAMSCALE_PORT,
-				SC_BAD_REQUEST, true)) {
+				400, true)) {
 			ProcessUtils.ProcessResult result = runUploader(
 					new ReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT));
 			assertSoftlyThat(softly -> {
@@ -589,7 +587,7 @@ public abstract class IntegrationTestBase {
 	@Test
 	public void failedUploadSessionCommitDoesNotDeleteSession() {
 		try (TeamscaleMockServer server = TeamscaleMockServer.failingUploadSessionCommitsWith(MOCK_TEAMSCALE_PORT,
-				SC_SERVICE_UNAVAILABLE)) {
+				503)) {
 			ProcessUtils.ProcessResult result = runUploader(
 					new ReportUploadArguments().withUrl("http://localhost:" + MOCK_TEAMSCALE_PORT).withMaxAttempts(2));
 			assertSoftlyThat(softly -> {
