@@ -5,6 +5,8 @@ We use [semantic versioning](http://semver.org/):
 - PATCH version when you make backwards compatible bug fixes.
 
 # Next Release
+
+# 2.11.2
 - [fix] when an upload attempt fails, its upload session is now deleted in Teamscale instead of being left open
 - [fix] with `--debug`, the conversion of Xcode reports crashed with a `NullPointerException` if `xcodebuild` was not available
 - [maintenance] update the bundled Java runtime to Java 25 (25.0.4.1). On Windows, Windows 10 / Windows Server 2016 or later is required
